@@ -1,0 +1,111 @@
+/* TMS System CSS Design Tokens & Variable Architecture */
+:root {
+  /* Color Palette - Light Mode (Default) */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --bg-elevated: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.75);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --border-color: #e2e8f0;
+  --border-color-hover: #cbd5e1;
+  --border-color-focus: #3b82f6;
+
+  /* Brand / Accent Colors */
+  --brand-primary: #2563eb;
+  --brand-primary-hover: #1d4ed8;
+  --brand-primary-light: #eff6ff;
+  --brand-accent: #06b6d4;
+
+  /* Status Colors */
+  --status-success: #10b981;
+  --status-success-bg: #ecfdf5;
+  --status-warning: #f59e0b;
+  --status-warning-bg: #fffbeb;
+  --status-danger: #ef4444;
+  --status-danger-bg: #fef2f2;
+  --status-info: #3b82f6;
+  --status-info-bg: #eff6ff;
+
+  /* Cargo / Dispatch Specific Statuses */
+  --status-in-transit: #8b5cf6;
+  --status-in-transit-bg: #f5f3ff;
+  --status-delivered: #10b981;
+  --status-delivered-bg: #ecfdf5;
+  --status-pending: #f59e0b;
+  --status-pending-bg: #fffbeb;
+  --status-delayed: #ef4444;
+  --status-delayed-bg: #fef2f2;
+
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.15);
+
+  /* Layout & Spacing */
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 72px;
+  --navbar-height: 64px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Theme Overrides */
+[data-theme='dark'] {
+  --bg-primary: #0b0f17;
+  --bg-secondary: #131b2e;
+  --bg-tertiary: #1c2640;
+  --bg-elevated: #1a233a;
+  --bg-glass: rgba(19, 27, 46, 0.85);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  --border-color: #1e293b;
+  --border-color-hover: #334155;
+  --border-color-focus: #60a5fa;
+
+  --brand-primary: #3b82f6;
+  --brand-primary-hover: #2563eb;
+  --brand-primary-light: rgba(59, 130, 246, 0.15);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 25px rgba(59, 130, 246, 0.25);
+
+  --status-success-bg: rgba(16, 185, 129, 0.15);
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-danger-bg: rgba(239, 68, 68, 0.15);
+  --status-info-bg: rgba(59, 130, 246, 0.15);
+
+  --status-in-transit-bg: rgba(139, 92, 246, 0.2);
+  --status-delivered-bg: rgba(16, 185, 129, 0.2);
+  --status-pending-bg: rgba(245, 158, 11, 0.2);
+  --status-delayed-bg: rgba(239, 68, 68, 0.2);
+}

@@ -1,0 +1,27 @@
+export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+export type PaymentStatus = 'paid' | 'partial' | 'unpaid' | 'refunded';
+
+export interface TravelerInfo {
+  name: string;
+  email: string;
+  phone: string;
+  nationality: string;
+  specialRequests?: string;
+}
+
+export interface Booking {
+  id: string;
+  bookingReference: string;
+  tourPackageId: string;
+  tourTitle: string;
+  destinationName: string;
+  traveler: TravelerInfo;
+  travelDate: string;
+  numberOfTravelers: number;
+  totalPrice: number;
+  status: BookingStatus;
+  paymentStatus: PaymentStatus;
+  bookingDate: string;
+  assignedGuideId?: string;
+  assignedGuideName?: string;
+}
