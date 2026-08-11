@@ -8,7 +8,15 @@ import { Input } from '@/components/common/Input';
 import { PermissionGuard } from '@/components/common/PermissionGuard';
 import { tourismService } from '@/services/tourismService';
 import type { Booking, BookingStatus } from '@/types/booking';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, UserCheck } from 'lucide-react';
+
+const AVAILABLE_GUIDES = [
+  'Abebe Bekele',
+  'Tigist Assefa',
+  'Biruk Tadesse',
+  'Gennet Worku',
+  'Solomon Haile',
+];
 
 export const AdminBookingsPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -32,6 +40,11 @@ export const AdminBookingsPage: React.FC = () => {
 
   const handleStatusChange = async (id: string, newStatus: BookingStatus) => {
     await tourismService.updateBookingStatus(id, newStatus);
+    fetchBookings();
+  };
+
+  const handleGuideAssign = async (id: string, guideName: string) => {
+    await tourismService.assignGuideToBooking(id, guideName);
     fetchBookings();
   };
 
@@ -59,6 +72,34 @@ export const AdminBookingsPage: React.FC = () => {
     {
       header: 'Total Price',
       cell: (row) => <span style={{ fontWeight: 700, color: 'var(--status-success)' }}>${row.totalPrice.toLocaleString()}</span>,
+    },
+    {
+      header: 'Assigned Guide',
+      cell: (row) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <UserCheck size={14} style={{ color: 'var(--brand-primary)' }} />
+          <select
+            value={row.assignedGuideName || 'Abebe Bekele'}
+            onChange={(e) => handleGuideAssign(row.id, e.target.value)}
+            style={{
+              padding: '0.25rem 0.5rem',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-secondary)',
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+            }}
+          >
+            {AVAILABLE_GUIDES.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
+        </div>
+      ),
     },
     {
       header: 'Status',
@@ -89,7 +130,7 @@ export const AdminBookingsPage: React.FC = () => {
     <div>
       <PageHeader
         title="Reservations & Passenger Manifest"
-        description="Verify incoming traveler reservations, issue confirmation vouchers, and assign ranger guides."
+        description="Verify incoming traveler reservations submitted from the public portal, issue confirmation vouchers, and assign eco-ranger guides."
         actions={
           <Button variant="secondary" size="sm" icon={<RefreshCw size={14} />} onClick={fetchBookings}>
             Refresh Reservations

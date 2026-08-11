@@ -22,17 +22,60 @@ export interface IssueTicket {
   status: 'open' | 'in_progress' | 'resolved';
 }
 
+export interface EnquiryRecord {
+  id: string;
+  name: string;
+  email: string;
+  mobile: string;
+  subject: string;
+  message: string;
+  date: string;
+  status: 'unread' | 'read' | 'replied';
+}
+
 const INITIAL_ISSUES: IssueTicket[] = [
   { id: 'iss-1', ticketId: 'ISS-801', reportedBy: 'Eleanor Vance', email: 'eleanor.vance@example.com', issueType: 'Booking Issues', description: 'Deposit clarification for Wenchi Crater Lake tour.', dateReported: '2026-08-09', status: 'open' },
   { id: 'iss-2', ticketId: 'ISS-802', reportedBy: 'Liam Hemsworth', email: 'liam.h@example.co.uk', issueType: 'Cancellation', description: 'Requesting +2 days extension for Simien Mountains trek.', dateReported: '2026-08-08', status: 'in_progress' },
   { id: 'iss-3', ticketId: 'ISS-803', reportedBy: 'Sophia Rossi', email: 'sophia.r@example.it', issueType: 'Refund', description: 'Fasting vegan meal plan for Lalibela Pilgrimage.', dateReported: '2026-08-05', status: 'resolved' },
 ];
 
+const INITIAL_ENQUIRIES: EnquiryRecord[] = [
+  { id: 'enq-1', name: 'David Miller', email: 'david.m@example.com', mobile: '+1 (555) 441-2091', subject: 'Private Danakil Lava Lake Expedition', message: 'Looking for a private 8-person charter to Danakil & Erta Ale in October.', date: '2026-08-10', status: 'unread' },
+  { id: 'enq-2', name: 'Claire Dupont', email: 'claire.d@example.fr', mobile: '+33 1 42 68 55 00', subject: 'Corporate Retreat at Wenchi Eco-Lodge', message: 'Inquiring about resort room block reservations for 25 executives in Oromia.', date: '2026-08-07', status: 'read' },
+  { id: 'enq-3', name: 'Kenji Sato', email: 'kenji.s@example.jp', mobile: '+81 3 1234 5678', subject: 'Lalibela Cultural Coffee Ceremony', message: 'Can we request a private coffee ceremony master for a family of 4 in Lalibela?', date: '2026-08-04', status: 'replied' },
+];
+
+// Helper functions for localStorage state persistence across tabs/reloads
+const STORAGE_KEYS = {
+  TOURS: 'michuu_tours',
+  BOOKINGS: 'michuu_bookings',
+  ISSUES: 'michuu_issues',
+  ENQUIRIES: 'michuu_enquiries',
+};
+
+function loadStoredData<T>(key: string, fallback: T[]): T[] {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveStoredData<T>(key: string, data: T[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (err) {
+    console.error('Failed to save to localStorage', err);
+  }
+}
+
 class TourismService {
-  private tours: TourPackage[] = [...INITIAL_TOUR_PACKAGES];
-  private bookings: Booking[] = [...INITIAL_BOOKINGS];
+  private tours: TourPackage[] = loadStoredData(STORAGE_KEYS.TOURS, INITIAL_TOUR_PACKAGES);
+  private bookings: Booking[] = loadStoredData(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS);
   private guides: TourGuide[] = [...INITIAL_GUIDES];
-  private issues: IssueTicket[] = [...INITIAL_ISSUES];
+  private issues: IssueTicket[] = loadStoredData(STORAGE_KEYS.ISSUES, INITIAL_ISSUES);
+  private enquiries: EnquiryRecord[] = loadStoredData(STORAGE_KEYS.ENQUIRIES, INITIAL_ENQUIRIES);
 
   async getMetrics(): Promise<MetricCardData[]> {
     const res = await apiClient.get(INITIAL_TOURISM_METRICS);
@@ -80,8 +123,24 @@ class TourismService {
       reviewCount: 1,
     };
     this.tours.unshift(tour);
+    saveStoredData(STORAGE_KEYS.TOURS, this.tours);
     const res = await apiClient.post(tour);
     return res.data;
+  }
+
+  async updateTourPackage(id: string, updated: Partial<TourPackage>): Promise<TourPackage | null> {
+    const idx = this.tours.findIndex((t) => t.id === id);
+    if (idx === -1) return null;
+    this.tours[idx] = { ...this.tours[idx], ...updated };
+    saveStoredData(STORAGE_KEYS.TOURS, this.tours);
+    const res = await apiClient.update(this.tours[idx]);
+    return res.data;
+  }
+
+  async deleteTourPackage(id: string): Promise<boolean> {
+    this.tours = this.tours.filter((t) => t.id !== id);
+    saveStoredData(STORAGE_KEYS.TOURS, this.tours);
+    return true;
   }
 
   async getBookings(statusFilter?: BookingStatus | 'all', search?: string): Promise<Booking[]> {
@@ -114,8 +173,8 @@ class TourismService {
   ): Promise<Booking> {
     const tour = this.tours.find((t) => t.id === tourPackageId);
     const pricePerPerson = tour ? tour.pricePerPerson : 1500;
-    const tourTitle = tour ? tour.title : 'Custom Luxury Travel Tour';
-    const destinationName = tour ? `${tour.destination.name}, ${tour.destination.country}` : 'Global Destination';
+    const tourTitle = tour ? tour.title : 'Custom Luxury Expedition';
+    const destinationName = tour ? `${tour.destination.name}, ${tour.destination.country}` : 'Ethiopian Destination';
 
     const newBooking: Booking = {
       id: `bk-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -134,6 +193,7 @@ class TourismService {
     };
 
     this.bookings.unshift(newBooking);
+    saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
     const res = await apiClient.post(newBooking);
     return res.data;
   }
@@ -146,6 +206,20 @@ class TourismService {
       ...this.bookings[idx],
       status,
     };
+    saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
+    const res = await apiClient.update(this.bookings[idx]);
+    return res.data;
+  }
+
+  async assignGuideToBooking(bookingId: string, guideName: string): Promise<Booking | null> {
+    const idx = this.bookings.findIndex((b) => b.id === bookingId);
+    if (idx === -1) return null;
+
+    this.bookings[idx] = {
+      ...this.bookings[idx],
+      assignedGuideName: guideName,
+    };
+    saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
     const res = await apiClient.update(this.bookings[idx]);
     return res.data;
   }
@@ -164,7 +238,7 @@ class TourismService {
     const newTicket: IssueTicket = {
       id: `iss-${Date.now()}`,
       ticketId: `ISS-${Math.floor(800 + Math.random() * 200)}`,
-      reportedBy: data.reportedBy || 'Traveler Customer',
+      reportedBy: data.reportedBy || 'Public Traveler',
       email: data.email || 'customer@example.com',
       issueType: data.issueType || 'Booking Issues',
       description: data.description || 'Customer support issue ticket.',
@@ -172,6 +246,7 @@ class TourismService {
       status: 'open',
     };
     this.issues.unshift(newTicket);
+    saveStoredData(STORAGE_KEYS.ISSUES, this.issues);
     const res = await apiClient.post(newTicket);
     return res.data;
   }
@@ -180,7 +255,39 @@ class TourismService {
     const idx = this.issues.findIndex((i) => i.id === id);
     if (idx === -1) return null;
     this.issues[idx] = { ...this.issues[idx], status };
+    saveStoredData(STORAGE_KEYS.ISSUES, this.issues);
     const res = await apiClient.update(this.issues[idx]);
+    return res.data;
+  }
+
+  async getEnquiries(): Promise<EnquiryRecord[]> {
+    const res = await apiClient.get([...this.enquiries]);
+    return res.data;
+  }
+
+  async createEnquiry(data: { name: string; email: string; mobile: string; subject: string; message: string }): Promise<EnquiryRecord> {
+    const newEnquiry: EnquiryRecord = {
+      id: `enq-${Date.now()}`,
+      name: data.name,
+      email: data.email,
+      mobile: data.mobile || '+251 91 123 4567',
+      subject: data.subject || 'Custom Expedition Inquiry',
+      message: data.message,
+      date: new Date().toISOString().split('T')[0],
+      status: 'unread',
+    };
+    this.enquiries.unshift(newEnquiry);
+    saveStoredData(STORAGE_KEYS.ENQUIRIES, this.enquiries);
+    const res = await apiClient.post(newEnquiry);
+    return res.data;
+  }
+
+  async updateEnquiryStatus(id: string, status: 'unread' | 'read' | 'replied'): Promise<EnquiryRecord | null> {
+    const idx = this.enquiries.findIndex((e) => e.id === id);
+    if (idx === -1) return null;
+    this.enquiries[idx] = { ...this.enquiries[idx], status };
+    saveStoredData(STORAGE_KEYS.ENQUIRIES, this.enquiries);
+    const res = await apiClient.update(this.enquiries[idx]);
     return res.data;
   }
 }

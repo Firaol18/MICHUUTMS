@@ -1,32 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import type { Column } from '@/components/data-display/DataTable';
 import { DataTable } from '@/components/data-display/DataTable';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
-import { Search } from 'lucide-react';
-
-interface EnquiryRecord {
-  id: string;
-  name: string;
-  email: string;
-  mobile: string;
-  subject: string;
-  message: string;
-  date: string;
-  status: 'unread' | 'read' | 'replied';
-}
-
-const INITIAL_ENQUIRIES: EnquiryRecord[] = [
-  { id: 'enq-1', name: 'David Miller', email: 'david.m@example.com', mobile: '+1 (555) 441-2091', subject: 'Private Danakil Lava Lake Expedition', message: 'Looking for a private 8-person charter to Danakil & Erta Ale in October.', date: '2026-08-10', status: 'unread' },
-  { id: 'enq-2', name: 'Claire Dupont', email: 'claire.d@example.fr', mobile: '+33 1 42 68 55 00', subject: 'Corporate Retreat at Wenchi Eco-Lodge', message: 'Inquiring about resort room block reservations for 25 executives in Oromia.', date: '2026-08-07', status: 'read' },
-  { id: 'enq-3', name: 'Kenji Sato', email: 'kenji.s@example.jp', mobile: '+81 3 1234 5678', subject: 'Lalibela Cultural Coffee Ceremony', message: 'Can we request a private coffee ceremony master for a family of 4 in Lalibela?', date: '2026-08-04', status: 'replied' },
-];
+import { tourismService, type EnquiryRecord } from '@/services/tourismService';
+import { Search, RefreshCw } from 'lucide-react';
 
 export const AdminEnquiriesPage: React.FC = () => {
-  const [enquiries, setEnquiries] = useState<EnquiryRecord[]>(INITIAL_ENQUIRIES);
+  const [enquiries, setEnquiries] = useState<EnquiryRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchEnquiries = async () => {
+    setIsLoading(true);
+    try {
+      const data = await tourismService.getEnquiries();
+      setEnquiries(data);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEnquiries();
+  }, []);
 
   const filtered = enquiries.filter(
     (e) =>
@@ -36,8 +35,9 @@ export const AdminEnquiriesPage: React.FC = () => {
       e.message.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const markReplied = (id: string) => {
-    setEnquiries(enquiries.map((e) => (e.id === id ? { ...e, status: 'replied' } : e)));
+  const markReplied = async (id: string) => {
+    await tourismService.updateEnquiryStatus(id, 'replied');
+    fetchEnquiries();
   };
 
   const columns: Column<EnquiryRecord>[] = [
@@ -78,8 +78,13 @@ export const AdminEnquiriesPage: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="Manage Enquiries"
-        description="View customer inquiry form submissions, corporate travel quotes, and message requests."
+        title="Manage Enquiries & Custom Trips"
+        description="View customer inquiry form submissions, custom trip requests, and corporate travel quotes."
+        actions={
+          <Button variant="secondary" size="sm" icon={<RefreshCw size={14} />} onClick={fetchEnquiries}>
+            Refresh Enquiries
+          </Button>
+        }
       />
 
       <div style={{ marginBottom: '1.25rem', maxWidth: '320px' }}>
@@ -91,7 +96,7 @@ export const AdminEnquiriesPage: React.FC = () => {
         />
       </div>
 
-      <DataTable columns={columns} data={filtered} keyExtractor={(item) => item.id} />
+      <DataTable columns={columns} data={filtered} keyExtractor={(item) => item.id} isLoading={isLoading} />
     </div>
   );
 };

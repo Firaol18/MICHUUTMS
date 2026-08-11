@@ -3,6 +3,7 @@ import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { tourismService } from '@/services/tourismService';
 import {
   HelpCircle,
   Phone,
@@ -79,14 +80,22 @@ export const ContactFaqPage: React.FC = () => {
     (item) => faqCategory === 'all' || item.category === faqCategory
   );
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await tourismService.createEnquiry({
+        name: contactName || 'Traveler Customer',
+        email: contactEmail || 'traveler@example.com',
+        mobile: contactPhone || '+251 91 123 4567',
+        subject: contactSubject || 'Custom Ethiopian Expedition Inquiry',
+        message: contactMessage,
+      });
       setIsContactSuccess(true);
       setContactMessage('');
-    }, 600);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {

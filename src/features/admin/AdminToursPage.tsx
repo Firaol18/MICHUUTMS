@@ -142,6 +142,28 @@ export const AdminToursPage: React.FC = () => {
       header: 'Status',
       cell: (row) => <Badge variant={row.status === 'active' ? 'success' : 'warning'}>{row.status.toUpperCase()}</Badge>,
     },
+    {
+      header: 'Actions',
+      cell: (row) => (
+        <PermissionGuard resource="tours" action="delete">
+          <div style={{ display: 'flex', gap: '0.35rem' }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              style={{ color: '#ef4444' }}
+              onClick={async () => {
+                if (window.confirm(`Delete tour package "${row.title}" from public catalog?`)) {
+                  await tourismService.deleteTourPackage(row.id);
+                  fetchTours();
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </PermissionGuard>
+      ),
+    },
   ];
 
   return (
