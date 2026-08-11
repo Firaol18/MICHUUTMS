@@ -143,17 +143,22 @@ export const AdminSidebar: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', paddingLeft: '2.5rem', marginTop: '0.25rem' }}>
               <NavLink
                 to="/admin/tours"
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.45rem 0.75rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: 'var(--font-size-xs)',
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                  textDecoration: 'none',
-                })}
+                end
+                style={() => {
+                  const isActive = location.pathname === '/admin/tours' && !location.search.includes('create=true');
+                  return {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.45rem 0.75rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 'var(--font-size-xs)',
+                    fontWeight: isActive ? 700 : 400,
+                    color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                    backgroundColor: isActive ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                    textDecoration: 'none',
+                  };
+                }}
               >
                 <List size={14} />
                 <span>Manage Packages</span>
@@ -161,17 +166,21 @@ export const AdminSidebar: React.FC = () => {
 
               <NavLink
                 to="/admin/tours?create=true"
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.45rem 0.75rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: 'var(--font-size-xs)',
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                  textDecoration: 'none',
-                })}
+                style={() => {
+                  const isActive = location.pathname === '/admin/tours' && location.search.includes('create=true');
+                  return {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.45rem 0.75rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 'var(--font-size-xs)',
+                    fontWeight: isActive ? 700 : 400,
+                    color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                    backgroundColor: isActive ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                    textDecoration: 'none',
+                  };
+                }}
               >
                 <PlusCircle size={14} />
                 <span>Create Package</span>

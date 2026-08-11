@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import type { Column } from '@/components/data-display/DataTable';
 import { DataTable } from '@/components/data-display/DataTable';
@@ -33,6 +34,8 @@ export const AdminToursPage: React.FC = () => {
   const [originalPrice, setOriginalPrice] = useState(530);
   const [offerTag, setOfferTag] = useState('15% OFF SPECIAL PROMO');
 
+  const location = useLocation();
+
   const fetchTours = async () => {
     setIsLoading(true);
     try {
@@ -46,6 +49,12 @@ export const AdminToursPage: React.FC = () => {
   useEffect(() => {
     fetchTours();
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (location.search.includes('create=true')) {
+      setIsCreateModalOpen(true);
+    }
+  }, [location.search]);
 
   const handleCreateTour = async (e: React.FormEvent) => {
     e.preventDefault();
