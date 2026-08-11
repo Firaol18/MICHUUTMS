@@ -10,15 +10,15 @@ import { Modal } from '@/components/common/Modal';
 import { PermissionGuard } from '@/components/common/PermissionGuard';
 import { tourismService } from '@/services/tourismService';
 import type { TourPackage, TourCategory } from '@/types/tour';
-import { Plus, Search, Palmtree, RefreshCw, Tag } from 'lucide-react';
+import { Plus, Search, Palmtree, RefreshCw, Tag, Edit, Trash2, CheckCircle2 } from 'lucide-react';
 
 export const AdminToursPage: React.FC = () => {
   const [tours, setTours] = useState<TourPackage[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // New tour form state
+  // Create Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState<TourCategory>('luxury');
   const [newPrice, setNewPrice] = useState(450);
@@ -27,12 +27,27 @@ export const AdminToursPage: React.FC = () => {
   const [newSummary, setNewSummary] = useState('');
   const [newDestinationName, setNewDestinationName] = useState('Wenchi Crater Lake');
   const [newCountry, setNewCountry] = useState('Ethiopia');
-
-  // Special Offer state
   const [hasOffer, setHasOffer] = useState(false);
   const [discountPercent, setDiscountPercent] = useState(15);
   const [originalPrice, setOriginalPrice] = useState(530);
   const [offerTag, setOfferTag] = useState('15% OFF SPECIAL PROMO');
+
+  // Edit Modal State
+  const [editingTour, setEditingTour] = useState<TourPackage | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState<TourCategory>('luxury');
+  const [editPrice, setEditPrice] = useState(0);
+  const [editDuration, setEditDuration] = useState(1);
+  const [editGroupSize, setEditGroupSize] = useState(10);
+  const [editSummary, setEditSummary] = useState('');
+  const [editDestinationName, setEditDestinationName] = useState('');
+  const [editCountry, setEditCountry] = useState('Ethiopia');
+  const [editHasOffer, setEditHasOffer] = useState(false);
+  const [editDiscountPercent, setEditDiscountPercent] = useState(15);
+  const [editOriginalPrice, setEditOriginalPrice] = useState(0);
+  const [editOfferTag, setEditOfferTag] = useState('');
+  const [editStatus, setEditStatus] = useState<'active' | 'draft'>('active');
 
   const location = useLocation();
 
@@ -55,6 +70,54 @@ export const AdminToursPage: React.FC = () => {
       setIsCreateModalOpen(true);
     }
   }, [location.search]);
+
+  // Open Edit Modal & Populate Form
+  const handleStartEdit = (tour: TourPackage) => {
+    setEditingTour(tour);
+    setEditTitle(tour.title);
+    setEditCategory(tour.category);
+    setEditPrice(tour.pricePerPerson);
+    setEditDuration(tour.durationDays);
+    setEditGroupSize(tour.maxGroupSize);
+    setEditSummary(tour.summary);
+    setEditDestinationName(tour.destination.name);
+    setEditCountry(tour.destination.country);
+    setEditHasOffer(!!tour.hasOffer);
+    setEditDiscountPercent(tour.discountPercent || 15);
+    setEditOriginalPrice(tour.originalPrice || Math.round(tour.pricePerPerson * 1.25));
+    setEditOfferTag(tour.offerTag || 'SPECIAL OFFER');
+    setEditStatus(tour.status);
+    setIsEditModalOpen(true);
+  };
+
+  // Submit Edit Package
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTour) return;
+
+    await tourismService.updateTourPackage(editingTour.id, {
+      title: editTitle,
+      category: editCategory,
+      pricePerPerson: editPrice,
+      durationDays: editDuration,
+      maxGroupSize: editGroupSize,
+      summary: editSummary,
+      destination: {
+        ...editingTour.destination,
+        name: editDestinationName,
+        country: editCountry,
+      },
+      status: editStatus,
+      hasOffer: editHasOffer,
+      discountPercent: editHasOffer ? editDiscountPercent : undefined,
+      originalPrice: editHasOffer ? editOriginalPrice : undefined,
+      offerTag: editHasOffer ? editOfferTag : undefined,
+    });
+
+    setIsEditModalOpen(false);
+    setEditingTour(null);
+    fetchTours();
+  };
 
   const handleCreateTour = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +155,6 @@ export const AdminToursPage: React.FC = () => {
     });
 
     setIsCreateModalOpen(false);
-    // reset
     setNewTitle('');
     setNewSummary('');
     setHasOffer(false);
@@ -154,23 +216,35 @@ export const AdminToursPage: React.FC = () => {
     {
       header: 'Actions',
       cell: (row) => (
-        <PermissionGuard resource="tours" action="delete">
-          <div style={{ display: 'flex', gap: '0.35rem' }}>
+        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Edit size={14} />}
+            onClick={() => handleStartEdit(row)}
+            title="Edit Package Details"
+          >
+            Edit
+          </Button>
+
+          <PermissionGuard resource="tours" action="delete">
             <Button
               variant="ghost"
               size="sm"
               style={{ color: '#ef4444' }}
+              icon={<Trash2 size={14} />}
               onClick={async () => {
                 if (window.confirm(`Delete tour package "${row.title}" from public catalog?`)) {
                   await tourismService.deleteTourPackage(row.id);
                   fetchTours();
                 }
               }}
+              title="Delete Tour Package"
             >
               Delete
             </Button>
-          </div>
-        </PermissionGuard>
+          </PermissionGuard>
+        </div>
       ),
     },
   ];
@@ -179,7 +253,7 @@ export const AdminToursPage: React.FC = () => {
     <div>
       <PageHeader
         title="Tour Packages Inventory"
-        description="Create, publish, edit pricing, assign promotional offers, and manage daily itineraries."
+        description="Create, publish, edit pricing, update itineraries, assign promotional offers, and manage active status."
         actions={
           <>
             <Button variant="secondary" size="sm" icon={<RefreshCw size={14} />} onClick={fetchTours}>
@@ -210,7 +284,7 @@ export const AdminToursPage: React.FC = () => {
         isLoading={isLoading}
       />
 
-      {/* Create Tour Modal */}
+      {/* ─── CREATE TOUR MODAL ─── */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
@@ -256,7 +330,7 @@ export const AdminToursPage: React.FC = () => {
 
           <Input label="Summary Description" placeholder="Brief tour overview for travelers" value={newSummary} onChange={(e) => setNewSummary(e.target.value)} />
 
-          {/* Promotional Offer Box */}
+          {/* Special Offer Setup */}
           <div
             style={{
               padding: '1rem',
@@ -304,15 +378,162 @@ export const AdminToursPage: React.FC = () => {
                   onChange={(e) => setOfferTag(e.target.value)}
                   required={hasOffer}
                 />
-
-                <div style={{ fontSize: 'var(--font-size-xs)', color: '#16a34a', fontWeight: 600, backgroundColor: 'rgba(22, 163, 74, 0.1)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)' }}>
-                  ✓ Offer Preview: Travelers save ${(originalPrice - newPrice > 0 ? originalPrice - newPrice : 0)}! (Original: ${originalPrice} → Sale Price: ${newPrice})
-                </div>
               </div>
             )}
           </div>
         </form>
       </Modal>
+
+      {/* ─── EDIT TOUR MODAL ─── */}
+      {isEditModalOpen && editingTour && (
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          title={`Edit Tour Package — ${editingTour.title}`}
+          footer={
+            <div className="flex-between" style={{ width: '100%' }}>
+              <Button variant="ghost" size="sm" onClick={() => setIsEditModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleSaveEdit} icon={<CheckCircle2 size={16} />}>
+                Save Changes & Sync Public Catalog
+              </Button>
+            </div>
+          }
+        >
+          <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <Input
+              label="Tour Package Title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              required
+            />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+              <Input
+                label="Destination Name"
+                value={editDestinationName}
+                onChange={(e) => setEditDestinationName(e.target.value)}
+                required
+              />
+              <Input
+                label="Country"
+                value={editCountry}
+                onChange={(e) => setEditCountry(e.target.value)}
+                required
+              />
+              <div className="tms-input-group">
+                <label className="tms-input-label">Category</label>
+                <select
+                  className="tms-input"
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value as TourCategory)}
+                >
+                  <option value="safari">Safari</option>
+                  <option value="mountain">Mountain</option>
+                  <option value="beach">Beach</option>
+                  <option value="cultural">Cultural</option>
+                  <option value="luxury">Luxury</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+              <Input
+                label="Sale Price ($ per guest)"
+                type="number"
+                value={editPrice}
+                onChange={(e) => setEditPrice(Number(e.target.value))}
+                required
+              />
+              <Input
+                label="Duration (Days)"
+                type="number"
+                value={editDuration}
+                onChange={(e) => setEditDuration(Number(e.target.value))}
+                required
+              />
+              <Input
+                label="Max Group Size"
+                type="number"
+                value={editGroupSize}
+                onChange={(e) => setEditGroupSize(Number(e.target.value))}
+                required
+              />
+            </div>
+
+            <Input
+              label="Summary Description"
+              value={editSummary}
+              onChange={(e) => setEditSummary(e.target.value)}
+              required
+            />
+
+            <div className="tms-input-group">
+              <label className="tms-input-label">Publication Status</label>
+              <select
+                className="tms-input"
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value as 'active' | 'draft')}
+              >
+                <option value="active">Active (Visible on Public Portal)</option>
+                <option value="draft">Draft (Hidden)</option>
+              </select>
+            </div>
+
+            {/* Special Offer Setup Box */}
+            <div
+              style={{
+                padding: '1rem',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-color)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+              }}
+            >
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', cursor: 'pointer', fontWeight: 700, fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)' }}>
+                <input
+                  type="checkbox"
+                  checked={editHasOffer}
+                  onChange={(e) => setEditHasOffer(e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: 'var(--brand-primary)' }}
+                />
+                <Tag size={16} style={{ color: 'var(--status-danger)' }} /> Enable Promotional Discount Tag
+              </label>
+
+              {editHasOffer && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <Input
+                      label="Original Pre-Discount Price ($)"
+                      type="number"
+                      value={editOriginalPrice}
+                      onChange={(e) => setEditOriginalPrice(Number(e.target.value))}
+                      required={editHasOffer}
+                    />
+                    <Input
+                      label="Discount Percentage (%)"
+                      type="number"
+                      value={editDiscountPercent}
+                      onChange={(e) => setEditDiscountPercent(Number(e.target.value))}
+                      required={editHasOffer}
+                    />
+                  </div>
+
+                  <Input
+                    label="Offer Badge Tag Text"
+                    value={editOfferTag}
+                    onChange={(e) => setEditOfferTag(e.target.value)}
+                    required={editHasOffer}
+                  />
+                </div>
+              )}
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };
