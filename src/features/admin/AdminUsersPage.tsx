@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import type { Column } from '@/components/data-display/DataTable';
 import { DataTable } from '@/components/data-display/DataTable';
@@ -7,7 +7,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
 import { PermissionGuard } from '@/components/common/PermissionGuard';
-import { Search, RefreshCw, UserPlus } from 'lucide-react';
+import { Search, RefreshCw, UserPlus, Edit, Trash2, CheckCircle2 } from 'lucide-react';
 
 interface UserAccount {
   id: string;
@@ -28,16 +28,48 @@ const INITIAL_USERS: UserAccount[] = [
   { id: 'usr-6', name: 'Liam Hemsworth', email: 'liam.h@example.co.uk', mobile: '+44 20 7946 0912', role: 'Tourist', regDate: '2026-08-03', status: 'active' },
 ];
 
+function loadStoredUsers(): UserAccount[] {
+  try {
+    const data = localStorage.getItem('michuu_users');
+    return data ? JSON.parse(data) : INITIAL_USERS;
+  } catch {
+    return INITIAL_USERS;
+  }
+}
+
+function saveStoredUsers(users: UserAccount[]) {
+  try {
+    localStorage.setItem('michuu_users', JSON.stringify(users));
+  } catch (err) {
+    console.error('Failed to save users', err);
+  }
+}
+
 export const AdminUsersPage: React.FC = () => {
-  const [users, setUsers] = useState<UserAccount[]>(INITIAL_USERS);
+  const [users, setUsers] = useState<UserAccount[]>(loadStoredUsers);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  // Add User state
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newMobile, setNewMobile] = useState('');
   const [newRole, setNewRole] = useState('Tourist');
+
+  // Edit User state
+  const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editMobile, setEditMobile] = useState('');
+  const [editRole, setEditRole] = useState('Tourist');
+  const [editStatus, setEditStatus] = useState<'active' | 'blocked'>('active');
+
+  const updateUsersList = (newList: UserAccount[]) => {
+    setUsers(newList);
+    saveStoredUsers(newList);
+  };
 
   const filteredUsers = users.filter(
     (u) =>
@@ -57,15 +89,48 @@ export const AdminUsersPage: React.FC = () => {
       regDate: new Date().toISOString().split('T')[0],
       status: 'active',
     };
-    setUsers([newUser, ...users]);
+    updateUsersList([newUser, ...users]);
     setIsAddModalOpen(false);
     setNewName('');
     setNewEmail('');
     setNewMobile('');
   };
 
+  const handleStartEdit = (user: UserAccount) => {
+    setEditingUser(user);
+    setEditName(user.name);
+    setEditEmail(user.email);
+    setEditMobile(user.mobile);
+    setEditRole(user.role);
+    setEditStatus(user.status);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    const updated = users.map((u) =>
+      u.id === editingUser.id
+        ? { ...u, name: editName, email: editEmail, mobile: editMobile, role: editRole, status: editStatus }
+        : u
+    );
+
+    updateUsersList(updated);
+    setIsEditModalOpen(false);
+    setEditingUser(null);
+  };
+
+  const handleDeleteUser = (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete user "${name}"?`)) {
+      updateUsersList(users.filter((u) => u.id !== id));
+    }
+  };
+
   const toggleStatus = (id: string) => {
-    setUsers(users.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'blocked' : 'active' } : u));
+    updateUsersList(
+      users.map((u) => (u.id === id ? { ...u, status: u.status === 'active' ? 'blocked' : 'active' } : u))
+    );
   };
 
   const columns: Column<UserAccount>[] = [
@@ -94,9 +159,35 @@ export const AdminUsersPage: React.FC = () => {
       header: 'Actions',
       cell: (row) => (
         <PermissionGuard resource="users" action="update">
-          <Button variant={row.status === 'active' ? 'ghost' : 'outline'} size="sm" onClick={() => toggleStatus(row.id)}>
-            {row.status === 'active' ? 'Block' : 'Unblock'}
-          </Button>
+          <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<Edit size={14} />}
+              onClick={() => handleStartEdit(row)}
+              title="Edit User Profile"
+            >
+              Edit
+            </Button>
+
+            <Button
+              variant={row.status === 'active' ? 'ghost' : 'outline'}
+              size="sm"
+              onClick={() => toggleStatus(row.id)}
+              title={row.status === 'active' ? 'Block User' : 'Unblock User'}
+            >
+              {row.status === 'active' ? 'Block' : 'Unblock'}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              style={{ color: '#ef4444' }}
+              icon={<Trash2 size={14} />}
+              onClick={() => handleDeleteUser(row.id, row.name)}
+              title="Delete User"
+            />
+          </div>
         </PermissionGuard>
       ),
     },
@@ -106,11 +197,11 @@ export const AdminUsersPage: React.FC = () => {
     <div>
       <PageHeader
         title="Manage Users"
-        description="View registered travelers, manage account permissions, and control access statuses."
+        description="View registered travelers, edit user account details, manage roles, and control access statuses."
         actions={
           <>
             <Button variant="secondary" size="sm" icon={<RefreshCw size={14} />} onClick={() => setIsLoading(false)}>
-              Refresh
+              Refresh Users
             </Button>
             <PermissionGuard resource="users" action="create">
               <Button variant="primary" size="sm" icon={<UserPlus size={14} />} onClick={() => setIsAddModalOpen(true)}>
@@ -137,6 +228,7 @@ export const AdminUsersPage: React.FC = () => {
         isLoading={isLoading}
       />
 
+      {/* ─── ADD USER MODAL ─── */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -167,6 +259,51 @@ export const AdminUsersPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* ─── EDIT USER MODAL ─── */}
+      {isEditModalOpen && editingUser && (
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          title={`Edit User Account — ${editingUser.name}`}
+          footer={
+            <div className="flex-between" style={{ width: '100%' }}>
+              <Button variant="ghost" size="sm" onClick={() => setIsEditModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleSaveEdit} icon={<CheckCircle2 size={16} />}>
+                Save Changes
+              </Button>
+            </div>
+          }
+        >
+          <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <Input label="Full Name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+            <Input label="Email Address" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required />
+            <Input label="Mobile Number" value={editMobile} onChange={(e) => setEditMobile(e.target.value)} required />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="tms-input-group">
+                <label className="tms-input-label">User Role</label>
+                <select className="tms-input" value={editRole} onChange={(e) => setEditRole(e.target.value)}>
+                  <option value="Tourist">Tourist / Traveler</option>
+                  <option value="Tour Guide">Tour Guide</option>
+                  <option value="Tour Operator">Tour Operator</option>
+                  <option value="Administrator">Administrator</option>
+                </select>
+              </div>
+
+              <div className="tms-input-group">
+                <label className="tms-input-label">Account Status</label>
+                <select className="tms-input" value={editStatus} onChange={(e) => setEditStatus(e.target.value as 'active' | 'blocked')}>
+                  <option value="active">ACTIVE</option>
+                  <option value="blocked">BLOCKED</option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };
