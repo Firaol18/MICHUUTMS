@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import type { Column } from '@/components/data-display/DataTable';
 import { DataTable } from '@/components/data-display/DataTable';

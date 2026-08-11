@@ -47,7 +47,7 @@ export const AdminToursPage: React.FC = () => {
   const [editDiscountPercent, setEditDiscountPercent] = useState(15);
   const [editOriginalPrice, setEditOriginalPrice] = useState(0);
   const [editOfferTag, setEditOfferTag] = useState('');
-  const [editStatus, setEditStatus] = useState<'active' | 'draft'>('active');
+  const [editStatus, setEditStatus] = useState<'active' | 'draft' | 'sold_out'>('active');
 
   const location = useLocation();
 
