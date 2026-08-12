@@ -205,30 +205,32 @@ export const PublicNavbar: React.FC = () => {
               <PhoneCall size={14} /> Contact & FAQ
             </NavLink>
 
-            {/* Support / Issue Tickets Button */}
-            <button
-              type="button"
-              onClick={handleIssueClick}
-              style={{
-                fontWeight: 500,
-                color: 'var(--text-secondary)',
-                fontSize: 'var(--font-size-xs)',
-                whiteSpace: 'nowrap',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.35rem 0.6rem',
-                borderRadius: 'var(--radius-sm)',
-                transition: 'color 0.15s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-primary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            >
-              <HelpCircle size={14} /> {t('issue_tickets')}
-            </button>
+            {/* Support / Issue Tickets Button — visible only when authenticated */}
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={handleIssueClick}
+                style={{
+                  fontWeight: 500,
+                  color: 'var(--text-secondary)',
+                  fontSize: 'var(--font-size-xs)',
+                  whiteSpace: 'nowrap',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.35rem 0.6rem',
+                  borderRadius: 'var(--radius-sm)',
+                  transition: 'color 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-primary)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+              >
+                <HelpCircle size={14} /> {t('issue_tickets')}
+              </button>
+            )}
           </nav>
 
           {/* Right Side Actions */}
@@ -467,47 +469,49 @@ export const PublicNavbar: React.FC = () => {
               </div>
             )}
 
-            {/* Shopping Cart */}
-            <button
-              onClick={handleCartClick}
-              className="flex-center"
-              style={{
-                position: 'relative',
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                backgroundColor: 'var(--bg-tertiary)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-color)',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-              title="View Cart & Multi-Item Checkout"
-            >
-              <ShoppingBag size={16} />
-              {cartItemCount > 0 && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: -2,
-                    right: -2,
-                    backgroundColor: '#ef4444',
-                    color: '#ffffff',
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    width: 17,
-                    height: 17,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '2px solid var(--bg-secondary)',
-                  }}
-                >
-                  {cartItemCount}
-                </span>
-              )}
-            </button>
+            {/* Shopping Cart — visible only when authenticated */}
+            {isAuthenticated && (
+              <button
+                onClick={handleCartClick}
+                className="flex-center"
+                style={{
+                  position: 'relative',
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                title="View Cart & Multi-Item Checkout"
+              >
+                <ShoppingBag size={16} />
+                {cartItemCount > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      backgroundColor: '#ef4444',
+                      color: '#ffffff',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      width: 17,
+                      height: 17,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '2px solid var(--bg-secondary)',
+                    }}
+                  >
+                    {cartItemCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Theme Toggle */}
             <button
