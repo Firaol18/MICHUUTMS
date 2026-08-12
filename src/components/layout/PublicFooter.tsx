@@ -1,5 +1,6 @@
 import React from 'react';
-import { Compass, Mail, Phone, MapPin, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Compass, Mail, Phone, MapPin, ShieldCheck, Lock } from 'lucide-react';
 
 export const PublicFooter: React.FC = () => {
   return (
@@ -96,7 +97,19 @@ export const PublicFooter: React.FC = () => {
           <div className="flex-center" style={{ gap: '1.5rem' }}>
             <span>Privacy Policy</span>
             <span>Terms of Service</span>
-            <span>Sitemap</span>
+            <Link
+              to="/admin/login"
+              style={{
+                color: 'var(--brand-primary)',
+                textDecoration: 'none',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+              }}
+            >
+              <Lock size={12} /> Admin Staff Portal
+            </Link>
           </div>
         </div>
       </div>
