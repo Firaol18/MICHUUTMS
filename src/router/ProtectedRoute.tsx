@@ -74,3 +74,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   return <Outlet />;
 };
+
+/**
+ * GuestRoute — accessible only when NOT logged in.
+ * If the user is already authenticated, redirect them to the appropriate dashboard.
+ */
+export const GuestRoute: React.FC = () => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Outlet />;
+  }
+
+  // Redirect to correct portal based on role
+  const isAdmin = user && ['admin', 'tour_operator', 'finance_manager'].includes(user.role);
+  return <Navigate to={isAdmin ? '/admin/dashboard' : '/user/dashboard'} replace />;
+};

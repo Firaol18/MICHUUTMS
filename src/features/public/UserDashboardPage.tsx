@@ -31,7 +31,7 @@ import {
 
 export const UserDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout, login } = useAuthStore();
+  const { user, logout, login, isAuthenticated } = useAuthStore();
   const { wishlist, toggleWishlist } = useWishlistStore();
   const { reviews, addReview } = useReviewStore();
 
@@ -55,6 +55,13 @@ export const UserDashboardPage: React.FC = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState(false);
+
+  // Guard: redirect unauthenticated visitors to login (after all hooks)
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     const fetchCustomerBookings = async () => {
@@ -144,7 +151,12 @@ export const UserDashboardPage: React.FC = () => {
           <Button variant="outline" size="sm" icon={<Compass size={16} />} onClick={() => navigate('/tours')}>
             Explore Tours
           </Button>
-          <Button variant="ghost" size="sm" icon={<LogOut size={16} />} onClick={logout}>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<LogOut size={16} />}
+            onClick={() => { logout(); navigate('/'); }}
+          >
             Sign Out
           </Button>
         </div>

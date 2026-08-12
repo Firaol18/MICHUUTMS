@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient';
+import { useNotificationStore } from '@/store/useNotificationStore';
 import {
   INITIAL_TOURISM_METRICS,
   INITIAL_TOUR_PACKAGES,
@@ -19,7 +20,10 @@ export interface IssueTicket {
   issueType: string;
   description: string;
   dateReported: string;
-  status: 'open' | 'in_progress' | 'resolved';
+  status: 'open' | 'in_progress' | 'resolved' | 'rejected';
+  adminReason?: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
 }
 
 export interface EnquiryRecord {
@@ -36,7 +40,8 @@ export interface EnquiryRecord {
 const INITIAL_ISSUES: IssueTicket[] = [
   { id: 'iss-1', ticketId: 'ISS-801', reportedBy: 'Eleanor Vance', email: 'eleanor.vance@example.com', issueType: 'Booking Issues', description: 'Deposit clarification for Wenchi Crater Lake tour.', dateReported: '2026-08-09', status: 'open' },
   { id: 'iss-2', ticketId: 'ISS-802', reportedBy: 'Liam Hemsworth', email: 'liam.h@example.co.uk', issueType: 'Cancellation', description: 'Requesting +2 days extension for Simien Mountains trek.', dateReported: '2026-08-08', status: 'in_progress' },
-  { id: 'iss-3', ticketId: 'ISS-803', reportedBy: 'Sophia Rossi', email: 'sophia.r@example.it', issueType: 'Refund', description: 'Fasting vegan meal plan for Lalibela Pilgrimage.', dateReported: '2026-08-05', status: 'resolved' },
+  { id: 'iss-3', ticketId: 'ISS-803', reportedBy: 'Sophia Rossi', email: 'sophia.r@example.it', issueType: 'Refund', description: 'Fasting vegan meal plan for Lalibela Pilgrimage.', dateReported: '2026-08-05', status: 'resolved', adminReason: 'Meal plan updated with tour operator and chef notified.', resolvedAt: '2026-08-06', resolvedBy: 'Alex Morgan' },
+  { id: 'iss-4', ticketId: 'ISS-804', reportedBy: 'Marcus Brody', email: 'm.brody@example.org', issueType: 'Cancellation', description: 'Full refund request past 24-hour non-refundable deadline.', dateReported: '2026-08-03', status: 'rejected', adminReason: 'Cancellation requested past non-refundable 24-hour cutoff per Policy §4.2.', resolvedAt: '2026-08-04', resolvedBy: 'Alex Morgan' },
 ];
 
 const INITIAL_ENQUIRIES: EnquiryRecord[] = [
@@ -251,11 +256,37 @@ class TourismService {
     return res.data;
   }
 
-  async updateIssueStatus(id: string, status: 'open' | 'in_progress' | 'resolved'): Promise<IssueTicket | null> {
+  async updateIssueStatus(
+    id: string,
+    status: 'open' | 'in_progress' | 'resolved' | 'rejected',
+    adminReason?: string,
+    resolvedBy?: string
+  ): Promise<IssueTicket | null> {
     const idx = this.issues.findIndex((i) => i.id === id);
     if (idx === -1) return null;
-    this.issues[idx] = { ...this.issues[idx], status };
+
+    const updatedTicket = {
+      ...this.issues[idx],
+      status,
+      adminReason: adminReason !== undefined ? adminReason : this.issues[idx].adminReason,
+      resolvedAt: new Date().toISOString().split('T')[0],
+      resolvedBy: resolvedBy || 'Alex Morgan',
+    };
+
+    this.issues[idx] = updatedTicket;
     saveStoredData(STORAGE_KEYS.ISSUES, this.issues);
+
+    // Push in-app notification to ticket reporter
+    const statusLabel = status.toUpperCase().replace('_', ' ');
+    const reasonText = adminReason ? ` Note: "${adminReason}"` : '';
+    useNotificationStore.getState().addNotification({
+      userEmail: updatedTicket.email,
+      title: `Support Ticket #${updatedTicket.ticketId} ${statusLabel}`,
+      message: `Your ticket "${updatedTicket.issueType}" status was updated to ${statusLabel}.${reasonText}`,
+      type: status === 'resolved' ? 'issue_resolved' : status === 'rejected' ? 'issue_rejected' : 'issue_update',
+      link: '/user/issues',
+    });
+
     const res = await apiClient.update(this.issues[idx]);
     return res.data;
   }
