@@ -8,6 +8,7 @@ import { Modal } from '@/components/common/Modal';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { tourismService } from '@/services/tourismService';
 import { useCartStore } from '@/store/useCartStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Virtual360Modal } from '@/components/common/Virtual360Modal';
 import type { TourPackage } from '@/types/tour';
 import type { Booking } from '@/types/booking';
@@ -30,6 +31,8 @@ export const TourDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const { user, isAuthenticated } = useAuthStore();
+
   const [tour, setTour] = useState<TourPackage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedDay, setExpandedDay] = useState<number | null>(1);
@@ -39,10 +42,48 @@ export const TourDetailsPage: React.FC = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [travelersCount, setTravelersCount] = useState(2);
   const [travelDate, setTravelDate] = useState('2026-09-20');
-  const [travelerName, setTravelerName] = useState('Eleanor Vance');
-  const [travelerEmail, setTravelerEmail] = useState('eleanor.vance@example.com');
+  const [travelerName, setTravelerName] = useState(user?.name || '');
+  const [travelerEmail, setTravelerEmail] = useState(user?.email || '');
   const [travelerPhone, setTravelerPhone] = useState('+1 (555) 321-7890');
   const [travelerNationality, setTravelerNationality] = useState('United States');
+
+  useEffect(() => {
+    if (user) {
+      setTravelerName(user.name);
+      setTravelerEmail(user.email);
+    }
+  }, [user]);
+
+  const handleBookNow = () => {
+    if (!isAuthenticated) {
+      navigate('/login?mode=signin');
+      return;
+    }
+    setIsBookingModalOpen(true);
+  };
+
+  const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      navigate('/login?mode=signin');
+      return;
+    }
+    if (!tour) return;
+    useCartStore.getState().addItem({
+      id: `${tour.id}-cart`,
+      type: 'tour',
+      title: tour.title,
+      subtitle: `${tour.durationDays} Days • ${tour.destination.name}`,
+      imageUrl: tour.imageUrl,
+      unitPrice: tour.pricePerPerson,
+      quantity: travelersCount,
+      date: travelDate,
+      details: {
+        location: tour.destination.name,
+        duration: `${tour.durationDays} Days`,
+      },
+    });
+    useCartStore.getState().openCart();
+  };
   const [specialRequests, setSpecialRequests] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
@@ -359,29 +400,14 @@ export const TourDetailsPage: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              <Button variant="primary" size="lg" icon={<Ticket size={18} />} onClick={() => setIsBookingModalOpen(true)}>
+              <Button variant="primary" size="lg" icon={<Ticket size={18} />} onClick={handleBookNow}>
                 Book This Expedition Now
               </Button>
 
               <Button
                 variant="outline"
                 size="md"
-                onClick={() => {
-                  useCartStore.getState().addItem({
-                    id: `${tour.id}-cart`,
-                    type: 'tour',
-                    title: tour.title,
-                    subtitle: `${tour.durationDays} Days • ${tour.destination.name}`,
-                    imageUrl: tour.imageUrl,
-                    unitPrice: tour.pricePerPerson,
-                    quantity: travelersCount,
-                    date: travelDate,
-                    details: {
-                      location: tour.destination.name,
-                      duration: `${tour.durationDays} Days`,
-                    },
-                  });
-                }}
+                onClick={handleAddToCart}
               >
                 🛒 Add to Cart (Multi-Item Package)
               </Button>

@@ -115,6 +115,14 @@ export const PublicNavbar: React.FC = () => {
     }
   };
 
+  const handleCartClick = () => {
+    if (!isAuthenticated) {
+      setIsLoginPromptOpen(true);
+    } else {
+      openCart();
+    }
+  };
+
   return (
     <>
       <header
@@ -461,7 +469,7 @@ export const PublicNavbar: React.FC = () => {
 
             {/* Shopping Cart */}
             <button
-              onClick={openCart}
+              onClick={handleCartClick}
               className="flex-center"
               style={{
                 position: 'relative',
@@ -799,7 +807,7 @@ export const PublicNavbar: React.FC = () => {
               Sign In Required
             </h3>
             <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-              Please sign in to raise a support ticket and track real-time resolution updates from our concierge team.
+              Please sign in to your account to view your travel cart, manage support tickets, and proceed to multi-item expedition checkout.
             </p>
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>

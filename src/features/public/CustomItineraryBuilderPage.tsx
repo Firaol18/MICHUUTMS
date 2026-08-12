@@ -4,6 +4,7 @@ import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { Input } from '@/components/common/Input';
 import { useCartStore } from '@/store/useCartStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import {
   Compass,
   CheckCircle2,
@@ -23,6 +24,7 @@ const DESTINATION_OPTIONS = [
 
 export const CustomItineraryBuilderPage: React.FC = () => {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const addItem = useCartStore((state) => state.addItem);
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -54,6 +56,11 @@ export const CustomItineraryBuilderPage: React.FC = () => {
   const totalCustomPrice = estimatedPerPerson * travelersCount;
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      navigate('/login?mode=signin');
+      return;
+    }
+
     const destNames = selectedDestinations
       .map((id) => DESTINATION_OPTIONS.find((d) => d.id === id)?.name)
       .filter(Boolean)

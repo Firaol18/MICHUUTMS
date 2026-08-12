@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '@/store/useCartStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Modal } from '@/components/common/Modal';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
@@ -35,13 +37,16 @@ export const CartDrawer: React.FC = () => {
     getTotalPrice,
   } = useCartStore();
 
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
+
   const [inputCode, setInputCode] = useState('');
   const [promoMessage, setPromoMessage] = useState<{ success: boolean; text: string } | null>(null);
 
   // Checkout Form State
   const [isCheckoutStep, setIsCheckoutStep] = useState(false);
-  const [leadName, setLeadName] = useState('Eleanor Vance');
-  const [leadEmail, setLeadEmail] = useState('eleanor.vance@example.com');
+  const [leadName, setLeadName] = useState(user?.name || '');
+  const [leadEmail, setLeadEmail] = useState(user?.email || '');
   const [leadPhone, setLeadPhone] = useState('+251 91 123 4567');
   const [leadNationality, setLeadNationality] = useState('Ethiopia');
   const [paymentMethod, setPaymentMethod] = useState<'telebirr' | 'cbe' | 'card' | 'bank'>('telebirr');
@@ -51,6 +56,23 @@ export const CartDrawer: React.FC = () => {
   // Generated Booking for E-Ticket preview
   const [completedBooking, setCompletedBooking] = useState<Booking | null>(null);
   const [isETicketOpen, setIsETicketOpen] = useState(false);
+
+  // Sync user info when user logs in
+  useEffect(() => {
+    if (user) {
+      setLeadName(user.name);
+      setLeadEmail(user.email);
+    }
+  }, [user]);
+
+  const handleProceedToCheckout = () => {
+    if (!isAuthenticated) {
+      closeCart();
+      navigate('/login?mode=signin');
+      return;
+    }
+    setIsCheckoutStep(true);
+  };
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +155,7 @@ export const CartDrawer: React.FC = () => {
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => setIsCheckoutStep(true)}
+                  onClick={handleProceedToCheckout}
                   icon={<ArrowRight size={16} />}
                 >
                   Proceed to Checkout (${totalPrice.toLocaleString()})
