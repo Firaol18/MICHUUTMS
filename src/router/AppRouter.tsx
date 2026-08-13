@@ -53,12 +53,15 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { AdminLoginPage } from '@/features/auth/AdminLoginPage';
 
 export const AppRouter: React.FC = () => {
+  // Determine if the user is accessing the app via the designated Admin port (5174) or an admin subdomain
+  const isAdminApp = window.location.port === '5174' || window.location.hostname.startsWith('admin');
+
   return (
     <BrowserRouter>
       <Routes>
         {/* ── Public Traveler Portal (no auth required) ── */}
         <Route element={<PublicLayout />}>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={isAdminApp ? <Navigate to="/admin" replace /> : <HomePage />} />
           <Route path="/tours" element={<TourCatalogPage />} />
           <Route path="/tours/:id" element={<TourDetailsPage />} />
           <Route path="/events" element={<EventsCalendarPage />} />
