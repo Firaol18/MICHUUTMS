@@ -35,6 +35,9 @@ import { AdminEnquiriesPage } from '@/features/admin/AdminEnquiriesPage';
 import { AdminPagesPage } from '@/features/admin/AdminPagesPage';
 import { AdminGuidesPage } from '@/features/admin/AdminGuidesPage';
 import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
+import { AdminRolesPage } from '@/features/admin/AdminRolesPage';
+import { AdminPermissionResourcesPage } from '@/features/admin/AdminPermissionResourcesPage';
+import { AdminPermissionActionsPage } from '@/features/admin/AdminPermissionActionsPage';
 
 // Guide Portal Features
 import { GuideDashboardPage } from '@/features/guide/GuideDashboardPage';
@@ -124,6 +127,9 @@ export const AppRouter: React.FC = () => {
             <Route path="/admin/enquiries" element={<AdminEnquiriesPage />} />
             <Route path="/admin/pages" element={<AdminPagesPage />} />
             <Route path="/admin/guides" element={<AdminGuidesPage />} />
+            <Route path="/admin/roles" element={<AdminRolesPage />} />
+            <Route path="/admin/permission-resources" element={<AdminPermissionResourcesPage />} />
+            <Route path="/admin/permission-actions" element={<AdminPermissionActionsPage />} />
 
             {/* Guarded Settings Route */}
             <Route

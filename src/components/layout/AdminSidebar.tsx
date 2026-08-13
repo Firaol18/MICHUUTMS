@@ -17,6 +17,9 @@ import {
   PlusCircle,
   List,
   UserCheck,
+  Shield,
+  ShieldCheck,
+  Key,
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC = () => {
@@ -316,22 +319,88 @@ export const AdminSidebar: React.FC = () => {
           {!sidebarCollapsed && <span>Manage Pages</span>}
         </NavLink>
 
+        {/* ── RBAC Authorization Governance Section (Display at Bottom) ── */}
+        <div style={{ marginTop: 'auto', paddingTop: '0.875rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          {/* Role */}
+          <NavLink
+            to="/admin/roles"
+            style={({ isActive }) => ({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.875rem',
+              padding: '0.55rem 0.875rem',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+              backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
+              textDecoration: 'none',
+              transition: 'all var(--transition-fast)',
+            })}
+          >
+            <span style={{ display: 'flex', alignItems: 'center' }}><Shield size={18} /></span>
+            {!sidebarCollapsed && <span>Role</span>}
+          </NavLink>
+
+          {/* Permission Resource */}
+          <NavLink
+            to="/admin/permission-resources"
+            style={({ isActive }) => ({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.875rem',
+              padding: '0.55rem 0.875rem',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+              backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
+              textDecoration: 'none',
+              transition: 'all var(--transition-fast)',
+            })}
+          >
+            <span style={{ display: 'flex', alignItems: 'center' }}><ShieldCheck size={18} /></span>
+            {!sidebarCollapsed && <span>Permission Resource</span>}
+          </NavLink>
+
+          {/* Permission Action */}
+          <NavLink
+            to="/admin/permission-actions"
+            style={({ isActive }) => ({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.875rem',
+              padding: '0.55rem 0.875rem',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+              backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
+              textDecoration: 'none',
+              transition: 'all var(--transition-fast)',
+            })}
+          >
+            <span style={{ display: 'flex', alignItems: 'center' }}><Key size={18} /></span>
+            {!sidebarCollapsed && <span>Permission Action</span>}
+          </NavLink>
+        </div>
+
         {/* Back to Public Portal Link */}
-        <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+        <div style={{ paddingTop: '0.5rem' }}>
           <NavLink
             to="/"
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.875rem',
-              padding: '0.625rem 0.875rem',
+              padding: '0.5rem 0.875rem',
               borderRadius: 'var(--radius-sm)',
-              fontSize: 'var(--font-size-sm)',
+              fontSize: 'var(--font-size-xs)',
               color: 'var(--text-muted)',
               textDecoration: 'none',
             }}
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={16} />
             {!sidebarCollapsed && <span>Back to Public Portal</span>}
           </NavLink>
         </div>
