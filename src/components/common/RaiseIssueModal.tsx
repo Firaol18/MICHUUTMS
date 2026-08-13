@@ -14,7 +14,6 @@ import {
   Send,
   Loader2,
   Copy,
-  ChevronDown,
 } from 'lucide-react';
 
 interface RaiseIssueModalProps {

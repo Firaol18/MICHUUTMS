@@ -5,7 +5,6 @@ import { DataTable } from '@/components/data-display/DataTable';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
-import { Card } from '@/components/common/Card';
 import { tourismService, type IssueTicket } from '@/services/tourismService';
 import { useAuthStore } from '@/store/useAuthStore';
 import {

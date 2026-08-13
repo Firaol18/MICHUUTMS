@@ -24,7 +24,7 @@ import {
 
 export const UserDashboardOverview: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user: _user } = useAuthStore();
   const { wishlist } = useWishlistStore();
   const { reviews } = useReviewStore();
 

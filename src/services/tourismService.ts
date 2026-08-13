@@ -8,7 +8,7 @@ import {
   DESTINATIONS,
 } from './mockTourismData';
 import type { TourPackage, TourCategory, Destination } from '@/types/tour';
-import type { Booking, BookingStatus, TravelerInfo } from '@/types/booking';
+import type { Booking, BookingStatus, PaymentStatus, RefundStatus, TravelerInfo } from '@/types/booking';
 import type { TourGuide } from '@/types/guide';
 import type { MetricCardData } from '@/types/common';
 
@@ -174,12 +174,22 @@ class TourismService {
     tourPackageId: string,
     traveler: TravelerInfo,
     travelDate: string,
-    numberOfTravelers: number
+    numberOfTravelers: number,
+    numberOfAdults?: number,
+    numberOfChildren?: number
   ): Promise<Booking> {
     const tour = this.tours.find((t) => t.id === tourPackageId);
     const pricePerPerson = tour ? tour.pricePerPerson : 1500;
     const tourTitle = tour ? tour.title : 'Custom Luxury Expedition';
     const destinationName = tour ? `${tour.destination.name}, ${tour.destination.country}` : 'Ethiopian Destination';
+
+    // Capacity check
+    if (tour && numberOfTravelers > tour.maxGroupSize) {
+      throw new Error(`This tour only has ${tour.maxGroupSize} spots available. Please reduce your group size.`);
+    }
+
+    const adults = numberOfAdults ?? numberOfTravelers;
+    const children = numberOfChildren ?? 0;
 
     const newBooking: Booking = {
       id: `bk-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -190,11 +200,14 @@ class TourismService {
       traveler,
       travelDate,
       numberOfTravelers,
+      numberOfAdults: adults,
+      numberOfChildren: children,
       totalPrice: pricePerPerson * numberOfTravelers,
-      status: 'confirmed',
-      paymentStatus: 'paid',
+      status: 'pending',
+      paymentStatus: 'unpaid',
       bookingDate: new Date().toISOString().split('T')[0],
       assignedGuideName: 'Abebe Bekele',
+      refundStatus: 'none',
     };
 
     this.bookings.unshift(newBooking);
@@ -207,9 +220,38 @@ class TourismService {
     const idx = this.bookings.findIndex((b) => b.id === id);
     if (idx === -1) return null;
 
+    this.bookings[idx] = { ...this.bookings[idx], status };
+    saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
+    const res = await apiClient.update(this.bookings[idx]);
+    return res.data;
+  }
+
+  async updatePaymentStatus(id: string, paymentStatus: PaymentStatus): Promise<Booking | null> {
+    const idx = this.bookings.findIndex((b) => b.id === id);
+    if (idx === -1) return null;
+
+    this.bookings[idx] = { ...this.bookings[idx], paymentStatus };
+    saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
+    const res = await apiClient.update(this.bookings[idx]);
+    return res.data;
+  }
+
+  async cancelBookingWithRefund(
+    id: string,
+    reason: string,
+    requestRefund: boolean
+  ): Promise<Booking | null> {
+    const idx = this.bookings.findIndex((b) => b.id === id);
+    if (idx === -1) return null;
+
+    const wasAlreadyPaid = this.bookings[idx].paymentStatus === 'paid';
+
     this.bookings[idx] = {
       ...this.bookings[idx],
-      status,
+      status: 'cancelled',
+      cancellationReason: reason,
+      paymentStatus: wasAlreadyPaid && requestRefund ? 'refunded' : this.bookings[idx].paymentStatus,
+      refundStatus: wasAlreadyPaid && requestRefund ? 'pending' : 'none',
     };
     saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
     const res = await apiClient.update(this.bookings[idx]);
@@ -220,10 +262,7 @@ class TourismService {
     const idx = this.bookings.findIndex((b) => b.id === bookingId);
     if (idx === -1) return null;
 
-    this.bookings[idx] = {
-      ...this.bookings[idx],
-      assignedGuideName: guideName,
-    };
+    this.bookings[idx] = { ...this.bookings[idx], assignedGuideName: guideName };
     saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
     const res = await apiClient.update(this.bookings[idx]);
     return res.data;

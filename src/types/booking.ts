@@ -1,5 +1,6 @@
-export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+export type BookingStatus = 'pending' | 'confirmed' | 'paid' | 'completed' | 'cancelled';
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid' | 'refunded';
+export type RefundStatus = 'none' | 'pending' | 'processed' | 'denied';
 
 export interface TravelerInfo {
   name: string;
@@ -18,10 +19,14 @@ export interface Booking {
   traveler: TravelerInfo;
   travelDate: string;
   numberOfTravelers: number;
+  numberOfAdults: number;
+  numberOfChildren: number;
   totalPrice: number;
   status: BookingStatus;
   paymentStatus: PaymentStatus;
   bookingDate: string;
   assignedGuideId?: string;
   assignedGuideName?: string;
+  cancellationReason?: string;
+  refundStatus?: RefundStatus;
 }

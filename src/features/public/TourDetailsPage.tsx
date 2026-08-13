@@ -41,6 +41,8 @@ export const TourDetailsPage: React.FC = () => {
   const [is360Open, setIs360Open] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [travelersCount, setTravelersCount] = useState(2);
+  const [adultsCount, setAdultsCount] = useState(2);
+  const [childrenCount, setChildrenCount] = useState(0);
   const [travelDate, setTravelDate] = useState('2026-09-20');
   const [travelerName, setTravelerName] = useState(user?.name || '');
   const [travelerEmail, setTravelerEmail] = useState(user?.email || '');
@@ -86,6 +88,7 @@ export const TourDetailsPage: React.FC = () => {
   };
   const [specialRequests, setSpecialRequests] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState('');
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
@@ -118,6 +121,9 @@ export const TourDetailsPage: React.FC = () => {
   }
 
   const totalPrice = tour.pricePerPerson * travelersCount;
+  const totalTravelers = adultsCount + childrenCount;
+  const isOverCapacity = totalTravelers > tour.maxGroupSize;
+  const spotsRemaining = tour.maxGroupSize - totalTravelers;
 
   const originalPrice = tour.originalPrice
     ? tour.originalPrice
@@ -127,6 +133,8 @@ export const TourDetailsPage: React.FC = () => {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isOverCapacity) return;
+    setBookingError('');
     setIsSubmitting(true);
     try {
       const bkg = await tourismService.createBooking(
@@ -139,9 +147,13 @@ export const TourDetailsPage: React.FC = () => {
           specialRequests,
         },
         travelDate,
-        travelersCount
+        totalTravelers,
+        adultsCount,
+        childrenCount
       );
       setConfirmedBooking(bkg);
+    } catch (err: unknown) {
+      setBookingError(err instanceof Error ? err.message : 'Booking failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -438,8 +450,15 @@ export const TourDetailsPage: React.FC = () => {
               <Button variant="ghost" size="sm" onClick={() => setIsBookingModalOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" size="sm" onClick={handleBookingSubmit} isLoading={isSubmitting} icon={<Ticket size={16} />}>
-                Confirm Booking (${totalPrice.toLocaleString()})
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleBookingSubmit}
+                isLoading={isSubmitting}
+                icon={<Ticket size={16} />}
+                disabled={isOverCapacity}
+              >
+                Confirm Booking (${(tour.pricePerPerson * totalTravelers).toLocaleString()})
               </Button>
             </div>
           )
@@ -469,15 +488,43 @@ export const TourDetailsPage: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={handleBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {/* Capacity indicator */}
+            <div
+              style={{
+                padding: '0.625rem 1rem',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: isOverCapacity ? 'rgba(239,68,68,0.08)' : 'rgba(22,163,74,0.08)',
+                border: `1px solid ${isOverCapacity ? 'rgba(239,68,68,0.3)' : 'rgba(22,163,74,0.3)'}`,
+                fontSize: 'var(--font-size-xs)',
+                fontWeight: 600,
+                color: isOverCapacity ? '#dc2626' : '#16a34a',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>Max Group Size: {tour.maxGroupSize} guests</span>
+              <span>{isOverCapacity ? `⚠ Over capacity by ${Math.abs(spotsRemaining)}` : `✓ ${spotsRemaining} spot${spotsRemaining !== 1 ? 's' : ''} remaining`}</span>
+            </div>
+
+            {/* Adults + Children */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
               <Input
-                label="Number of Travelers"
+                label="Adults"
                 type="number"
                 min={1}
                 max={tour.maxGroupSize}
-                value={travelersCount}
-                onChange={(e) => setTravelersCount(Number(e.target.value))}
+                value={adultsCount}
+                onChange={(e) => setAdultsCount(Number(e.target.value))}
                 required
+              />
+              <Input
+                label="Children (under 12)"
+                type="number"
+                min={0}
+                max={tour.maxGroupSize}
+                value={childrenCount}
+                onChange={(e) => setChildrenCount(Number(e.target.value))}
               />
               <Input
                 label="Departure Date"
@@ -496,12 +543,18 @@ export const TourDetailsPage: React.FC = () => {
             </div>
 
             <Input label="Nationality / Passport Country" value={travelerNationality} onChange={(e) => setTravelerNationality(e.target.value)} required />
-            <Input label="Special Dietary / Access Requests" placeholder="e.g. Vegetarian meal plan, Airport pickup" value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} />
+            <Input label="Special Dietary / Access Requests" placeholder="e.g. Vegetarian meal plan, Wheelchair access" value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} />
+
+            {bookingError && (
+              <div style={{ padding: '0.75rem 1rem', backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-sm)', color: '#dc2626', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
+                ⚠ {bookingError}
+              </div>
+            )}
 
             <div className="flex-between" style={{ padding: '0.875rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', marginTop: '0.5rem' }}>
-              <span>Total Package Price ({travelersCount} guests):</span>
+              <span>Total ({totalTravelers} guest{totalTravelers !== 1 ? 's' : ''} · {adultsCount}A/{childrenCount}C):</span>
               <span style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, color: 'var(--brand-primary)' }}>
-                ${totalPrice.toLocaleString()}
+                ${(tour.pricePerPerson * totalTravelers).toLocaleString()}
               </span>
             </div>
           </form>
