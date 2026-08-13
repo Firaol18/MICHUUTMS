@@ -62,10 +62,10 @@ export const Sidebar: React.FC = () => {
           {!sidebarCollapsed && (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontWeight: 800, fontSize: 'var(--font-size-md)', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-                LOGIX <span style={{ color: 'var(--brand-primary)' }}>TMS</span>
+                MICHUU <span style={{ color: 'var(--brand-primary)' }}>TMS</span>
               </span>
               <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Enterprise Transport
+                Enterprise Tourism Management System
               </span>
             </div>
           )}
