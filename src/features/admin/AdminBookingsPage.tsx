@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import type { Column } from '@/components/data-display/DataTable';
 import { DataTable } from '@/components/data-display/DataTable';
@@ -11,7 +11,7 @@ import { tourismService } from '@/services/tourismService';
 import type { Booking, BookingStatus, PaymentStatus } from '@/types/booking';
 import {
   Search, RefreshCw, UserCheck, Eye, ChevronRight,
-  Users, CreditCard, AlertTriangle, CheckCircle2, XCircle, RotateCcw,
+  Users, AlertTriangle, CheckCircle2, XCircle, RotateCcw,
 } from 'lucide-react';
 
 const AVAILABLE_GUIDES = [

@@ -8,8 +8,8 @@ import {
   DESTINATIONS,
 } from './mockTourismData';
 import type { TourPackage, TourCategory, Destination } from '@/types/tour';
-import type { Booking, BookingStatus, PaymentStatus, RefundStatus, TravelerInfo } from '@/types/booking';
-import type { TourGuide } from '@/types/guide';
+import type { Booking, BookingStatus, PaymentStatus, TravelerInfo } from '@/types/booking';
+import type { TourGuide, GuideCertification, GuideAvailability, GuidePayment } from '@/types/guide';
 import type { MetricCardData } from '@/types/common';
 
 export interface IssueTicket {
@@ -56,6 +56,7 @@ const STORAGE_KEYS = {
   BOOKINGS: 'michuu_bookings',
   ISSUES: 'michuu_issues',
   ENQUIRIES: 'michuu_enquiries',
+  GUIDES: 'michuu_guides',
 };
 
 function loadStoredData<T>(key: string, fallback: T[]): T[] {
@@ -78,7 +79,7 @@ function saveStoredData<T>(key: string, data: T[]) {
 class TourismService {
   private tours: TourPackage[] = loadStoredData(STORAGE_KEYS.TOURS, INITIAL_TOUR_PACKAGES);
   private bookings: Booking[] = loadStoredData(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS);
-  private guides: TourGuide[] = [...INITIAL_GUIDES];
+  private guides: TourGuide[] = loadStoredData(STORAGE_KEYS.GUIDES, INITIAL_GUIDES);
   private issues: IssueTicket[] = loadStoredData(STORAGE_KEYS.ISSUES, INITIAL_ISSUES);
   private enquiries: EnquiryRecord[] = loadStoredData(STORAGE_KEYS.ENQUIRIES, INITIAL_ENQUIRIES);
 
@@ -270,6 +271,68 @@ class TourismService {
 
   async getGuides(): Promise<TourGuide[]> {
     const res = await apiClient.get(this.guides);
+    return res.data;
+  }
+
+  async createGuide(data: Omit<TourGuide, 'id'>): Promise<TourGuide> {
+    const newGuide: TourGuide = {
+      ...data,
+      id: `gd-${Date.now()}`,
+      rating: data.rating || 5.0,
+      toursGuidedCount: data.toursGuidedCount || 0,
+      certifications: data.certifications || [],
+      availability: data.availability || [],
+      paymentHistory: data.paymentHistory || [],
+    };
+    this.guides.unshift(newGuide);
+    saveStoredData(STORAGE_KEYS.GUIDES, this.guides);
+    const res = await apiClient.post(newGuide);
+    return res.data;
+  }
+
+  async updateGuide(id: string, updates: Partial<TourGuide>): Promise<TourGuide | null> {
+    const idx = this.guides.findIndex((g) => g.id === id);
+    if (idx === -1) return null;
+    this.guides[idx] = { ...this.guides[idx], ...updates };
+    saveStoredData(STORAGE_KEYS.GUIDES, this.guides);
+    const res = await apiClient.update(this.guides[idx]);
+    return res.data;
+  }
+
+  async deleteGuide(id: string): Promise<boolean> {
+    this.guides = this.guides.filter((g) => g.id !== id);
+    saveStoredData(STORAGE_KEYS.GUIDES, this.guides);
+    return true;
+  }
+
+  async addGuideCertification(guideId: string, cert: Omit<GuideCertification, 'id'>): Promise<TourGuide | null> {
+    const idx = this.guides.findIndex((g) => g.id === guideId);
+    if (idx === -1) return null;
+    const newCert: GuideCertification = { ...cert, id: `cert-${Date.now()}` };
+    const certs = [...(this.guides[idx].certifications || []), newCert];
+    this.guides[idx] = { ...this.guides[idx], certifications: certs };
+    saveStoredData(STORAGE_KEYS.GUIDES, this.guides);
+    const res = await apiClient.update(this.guides[idx]);
+    return res.data;
+  }
+
+  async addGuidePayment(guideId: string, payment: Omit<GuidePayment, 'id'>): Promise<TourGuide | null> {
+    const idx = this.guides.findIndex((g) => g.id === guideId);
+    if (idx === -1) return null;
+    const newPay: GuidePayment = { ...payment, id: `pay-${Date.now()}` };
+    const payments = [newPay, ...(this.guides[idx].paymentHistory || [])];
+    this.guides[idx] = { ...this.guides[idx], paymentHistory: payments };
+    saveStoredData(STORAGE_KEYS.GUIDES, this.guides);
+    const res = await apiClient.update(this.guides[idx]);
+    return res.data;
+  }
+
+  async updateGuideAvailability(guideId: string, availability: GuideAvailability[]): Promise<TourGuide | null> {
+    const idx = this.guides.findIndex((g) => g.id === guideId);
+    if (idx === -1) return null;
+    this.guides[idx] = { ...this.guides[idx], availability };
+    saveStoredData(STORAGE_KEYS.GUIDES, this.guides);
+    const res = await apiClient.update(this.guides[idx]);
     return res.data;
   }
 

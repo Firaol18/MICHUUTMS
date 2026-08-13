@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   PlusCircle,
   List,
+  UserCheck,
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC = () => {
@@ -208,6 +209,27 @@ export const AdminSidebar: React.FC = () => {
         >
           <span style={{ display: 'flex', alignItems: 'center' }}><Users size={20} /></span>
           {!sidebarCollapsed && <span>Manage Users</span>}
+        </NavLink>
+
+        {/* 3b. Manage Guides */}
+        <NavLink
+          to="/admin/guides"
+          style={({ isActive }) => ({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.875rem',
+            padding: '0.625rem 0.875rem',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: isActive ? 600 : 500,
+            color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+            backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
+            transition: 'all var(--transition-fast)',
+            textDecoration: 'none',
+          })}
+        >
+          <span style={{ display: 'flex', alignItems: 'center' }}><UserCheck size={20} /></span>
+          {!sidebarCollapsed && <span>Manage Guides</span>}
         </NavLink>
 
         {/* 4. Manage Booking */}

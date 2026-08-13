@@ -52,4 +52,6 @@ export interface TourPackage {
   discountPercent?: number;
   offerTag?: string;
   hasOffer?: boolean;
+  assignedGuideId?: string;
+  assignedGuideName?: string;
 }

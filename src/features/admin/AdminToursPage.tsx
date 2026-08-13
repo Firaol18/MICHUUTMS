@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import type { Column } from '@/components/data-display/DataTable';
@@ -10,6 +10,7 @@ import { Modal } from '@/components/common/Modal';
 import { PermissionGuard } from '@/components/common/PermissionGuard';
 import { tourismService } from '@/services/tourismService';
 import type { TourPackage, TourCategory, DifficultyLevel, ItineraryDay } from '@/types/tour';
+import type { TourGuide } from '@/types/guide';
 import {
   Plus,
   Search,
@@ -158,6 +159,7 @@ const defaultItinerary: ItineraryDay[] = [{ dayNumber: 1, title: 'Arrival & Scen
 
 export const AdminToursPage: React.FC = () => {
   const [tours, setTours] = useState<TourPackage[]>([]);
+  const [guides, setGuides] = useState<TourGuide[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -182,6 +184,7 @@ export const AdminToursPage: React.FC = () => {
   const [discountPercent, setDiscountPercent] = useState(15);
   const [originalPrice, setOriginalPrice] = useState(530);
   const [offerTag, setOfferTag] = useState('15% OFF SPECIAL PROMO');
+  const [newAssignedGuideId, setNewAssignedGuideId] = useState('');
 
   // Edit state
   const [editingTour, setEditingTour] = useState<TourPackage | null>(null);
@@ -205,6 +208,7 @@ export const AdminToursPage: React.FC = () => {
   const [editDiscountPercent, setEditDiscountPercent] = useState(15);
   const [editOriginalPrice, setEditOriginalPrice] = useState(0);
   const [editOfferTag, setEditOfferTag] = useState('');
+  const [editAssignedGuideId, setEditAssignedGuideId] = useState('');
 
   const location = useLocation();
 
@@ -213,6 +217,8 @@ export const AdminToursPage: React.FC = () => {
     try {
       const data = await tourismService.getTours('all', searchQuery);
       setTours(data);
+      const guideData = await tourismService.getGuides();
+      setGuides(guideData);
     } finally {
       setIsLoading(false);
     }
@@ -227,6 +233,7 @@ export const AdminToursPage: React.FC = () => {
     setNewStatus('active'); setNewImageUrl(''); setNewGalleryImages(['']);
     setNewIncluded([...defaultIncluded]); setNewExcluded([...defaultExcluded]); setNewItinerary([...defaultItinerary]);
     setHasOffer(false); setDiscountPercent(15); setOriginalPrice(530); setOfferTag('15% OFF SPECIAL PROMO');
+    setNewAssignedGuideId('');
   };
 
   const handleStartEdit = (tour: TourPackage) => {
@@ -242,12 +249,14 @@ export const AdminToursPage: React.FC = () => {
     setEditHasOffer(!!tour.hasOffer); setEditDiscountPercent(tour.discountPercent || 15);
     setEditOriginalPrice(tour.originalPrice || Math.round(tour.pricePerPerson * 1.25));
     setEditOfferTag(tour.offerTag || 'SPECIAL OFFER');
+    setEditAssignedGuideId(tour.assignedGuideId || '');
     setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTour) return;
+    const selectedGuide = guides.find((g) => g.id === editAssignedGuideId);
     await tourismService.updateTourPackage(editingTour.id, {
       title: editTitle, category: editCategory, pricePerPerson: editPrice, durationDays: editDuration,
       maxGroupSize: editGroupSize, difficulty: editDifficulty, summary: editSummary,
@@ -258,6 +267,8 @@ export const AdminToursPage: React.FC = () => {
       discountPercent: editHasOffer ? editDiscountPercent : undefined,
       originalPrice: editHasOffer ? editOriginalPrice : undefined,
       offerTag: editHasOffer ? editOfferTag : undefined,
+      assignedGuideId: editAssignedGuideId || undefined,
+      assignedGuideName: selectedGuide ? selectedGuide.name : undefined,
     });
     setIsEditModalOpen(false); setEditingTour(null); fetchTours();
   };
@@ -265,6 +276,7 @@ export const AdminToursPage: React.FC = () => {
   const handleCreateTour = async (e: React.FormEvent) => {
     e.preventDefault();
     const fb = 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=1000';
+    const selectedGuide = guides.find((g) => g.id === newAssignedGuideId);
     await tourismService.createTourPackage({
       title: newTitle,
       slug: newTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
@@ -278,6 +290,8 @@ export const AdminToursPage: React.FC = () => {
       discountPercent: hasOffer ? discountPercent : undefined,
       originalPrice: hasOffer ? originalPrice : undefined,
       offerTag: hasOffer ? offerTag : undefined,
+      assignedGuideId: newAssignedGuideId || undefined,
+      assignedGuideName: selectedGuide ? selectedGuide.name : undefined,
     });
     setIsCreateModalOpen(false); resetCreateForm(); fetchTours();
   };
@@ -320,6 +334,14 @@ export const AdminToursPage: React.FC = () => {
       ),
     },
     { header: 'Duration', cell: (row) => <span>{row.durationDays} Days</span> },
+    {
+      header: 'Ranger Guide',
+      cell: (row) => (
+        <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: row.assignedGuideName ? 'var(--brand-primary)' : 'var(--text-muted)' }}>
+          {row.assignedGuideName ? `👤 ${row.assignedGuideName}` : 'Unassigned'}
+        </span>
+      ),
+    },
     { header: 'Status', cell: (row) => <Badge variant={row.status === 'active' ? 'success' : 'warning'}>{row.status.toUpperCase()}</Badge> },
     {
       header: 'Actions',
@@ -435,8 +457,19 @@ export const AdminToursPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
             <Input label="Summary Description *" placeholder="Brief tour overview" value={newSummary} onChange={(e) => setNewSummary(e.target.value)} required />
+            <div className="tms-input-group">
+              <label className="tms-input-label">Assigned Ranger Guide</label>
+              <select className="tms-input" value={newAssignedGuideId} onChange={(e) => setNewAssignedGuideId(e.target.value)}>
+                <option value="">-- Unassigned --</option>
+                {guides.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} ({g.status.toUpperCase()})
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="tms-input-group">
               <label className="tms-input-label">Status</label>
               <select className="tms-input" value={newStatus} onChange={(e) => setNewStatus(e.target.value as 'active' | 'draft')}>
@@ -503,8 +536,19 @@ export const AdminToursPage: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
               <Input label="Summary Description *" value={editSummary} onChange={(e) => setEditSummary(e.target.value)} required />
+              <div className="tms-input-group">
+                <label className="tms-input-label">Assigned Ranger Guide</label>
+                <select className="tms-input" value={editAssignedGuideId} onChange={(e) => setEditAssignedGuideId(e.target.value)}>
+                  <option value="">-- Unassigned --</option>
+                  {guides.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name} ({g.status.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="tms-input-group">
                 <label className="tms-input-label">Status</label>
                 <select className="tms-input" value={editStatus} onChange={(e) => setEditStatus(e.target.value as 'active' | 'draft' | 'sold_out')}>

@@ -19,6 +19,7 @@ import {
 const NAV_ITEMS = [
   { to: '/user/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
   { to: '/my-bookings', label: 'My Bookings', icon: <Ticket size={16} /> },
+  { to: '/user/guide-dashboard', label: 'Guide Portal', icon: <Compass size={16} /> },
   { to: '/user/issues', label: 'Support Tickets', icon: <HelpCircle size={16} /> },
   { to: '/user/invoices', label: 'Invoices & Receipts', icon: <FileText size={16} /> },
   { to: '/user/wishlist', label: 'Wishlist', icon: <Heart size={16} /> },

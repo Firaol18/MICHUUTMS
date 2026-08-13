@@ -40,7 +40,6 @@ export const TourDetailsPage: React.FC = () => {
   // Booking Modal Form State
   const [is360Open, setIs360Open] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [travelersCount, setTravelersCount] = useState(2);
   const [adultsCount, setAdultsCount] = useState(2);
   const [childrenCount, setChildrenCount] = useState(0);
   const [travelDate, setTravelDate] = useState('2026-09-20');
@@ -77,7 +76,7 @@ export const TourDetailsPage: React.FC = () => {
       subtitle: `${tour.durationDays} Days • ${tour.destination.name}`,
       imageUrl: tour.imageUrl,
       unitPrice: tour.pricePerPerson,
-      quantity: travelersCount,
+      quantity: adultsCount + childrenCount,
       date: travelDate,
       details: {
         location: tour.destination.name,
@@ -120,7 +119,6 @@ export const TourDetailsPage: React.FC = () => {
     );
   }
 
-  const totalPrice = tour.pricePerPerson * travelersCount;
   const totalTravelers = adultsCount + childrenCount;
   const isOverCapacity = totalTravelers > tour.maxGroupSize;
   const spotsRemaining = tour.maxGroupSize - totalTravelers;

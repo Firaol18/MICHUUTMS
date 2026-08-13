@@ -36,6 +36,9 @@ import { AdminPagesPage } from '@/features/admin/AdminPagesPage';
 import { AdminGuidesPage } from '@/features/admin/AdminGuidesPage';
 import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
 
+// Guide Portal Features
+import { GuideDashboardPage } from '@/features/guide/GuideDashboardPage';
+
 // Auth Login Pages
 import { LoginPage } from '@/features/auth/LoginPage';
 import { AdminLoginPage } from '@/features/auth/AdminLoginPage';
@@ -86,6 +89,10 @@ export const AppRouter: React.FC = () => {
 
               {/* /user/profile → profile & settings */}
               <Route path="/user/profile" element={<ProfilePage />} />
+
+              {/* /user/guide-dashboard & /guide/dashboard → Guide Portal */}
+              <Route path="/user/guide-dashboard" element={<GuideDashboardPage />} />
+              <Route path="/guide/dashboard" element={<GuideDashboardPage />} />
             </Route>
           </Route>
         </Route>
