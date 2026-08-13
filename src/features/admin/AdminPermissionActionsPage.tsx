@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
-import { Plus, Search, Edit2, Trash2, Zap } from 'lucide-react';
+import { Plus, Edit2, Trash2, Zap } from 'lucide-react';
+import type { Column } from '@/components/data-display/DataTable';
+import { DataTable } from '@/components/data-display/DataTable';
 
 interface PermissionActionItem {
   id: string;
@@ -30,7 +31,6 @@ const INITIAL_ACTIONS: PermissionActionItem[] = [
 export const AdminPermissionActionsPage: React.FC = () => {
   const [actions, setActions] = useState<PermissionActionItem[]>(INITIAL_ACTIONS);
   const [searchQuery, setSearchQuery] = useState('');
-  const [entriesPerPage, setEntriesPerPage] = useState(15);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -88,6 +88,106 @@ export const AdminPermissionActionsPage: React.FC = () => {
       a.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const columns: Column<PermissionActionItem>[] = [
+    {
+      header: 'Action Name',
+      cell: (act) => (
+        <>
+          <div style={{ fontWeight: 700, color: '#034ea2' }}>
+            {act.name}
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+            {act.name.toLowerCase()}
+          </div>
+        </>
+      ),
+    },
+    {
+      header: 'Description',
+      cell: (act) => (
+        <span style={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+          {act.description}
+        </span>
+      ),
+    },
+    {
+      header: 'Status',
+      width: '120px',
+      align: 'center',
+      cell: (act) => (
+        <span
+          style={{
+            padding: '2px 10px',
+            borderRadius: 'var(--radius-full)',
+            fontSize: 10,
+            fontWeight: 800,
+            backgroundColor: 'rgba(22, 163, 74, 0.12)',
+            color: '#16a34a',
+          }}
+        >
+          {act.status}
+        </span>
+      ),
+    },
+    {
+      header: 'Created Date',
+      width: '130px',
+      cell: (act) => (
+        <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+          {act.createdDate}
+        </span>
+      ),
+    },
+    {
+      header: 'Actions',
+      width: '160px',
+      align: 'center',
+      cell: (act) => (
+        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={() => handleOpenEdit(act)}
+            style={{
+              padding: '0.3rem 0.65rem',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid rgba(37,99,235,0.3)',
+              backgroundColor: 'rgba(37,99,235,0.08)',
+              color: 'var(--brand-primary)',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <Edit2 size={12} /> Edit
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDelete(act.id)}
+            style={{
+              padding: '0.3rem 0.65rem',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              backgroundColor: 'rgba(239,68,68,0.08)',
+              color: '#ef4444',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <Trash2 size={12} /> Delete
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       
@@ -118,157 +218,15 @@ export const AdminPermissionActionsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem', backgroundColor: 'var(--bg-secondary)', padding: '0.875rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-        <div style={{ position: 'relative', minWidth: 280, flex: 1, maxWidth: 400 }}>
-          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by action name..."
-            style={{
-              width: '100%',
-              padding: '0.45rem 0.875rem 0.45rem 2.25rem',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--bg-primary)',
-              color: 'var(--text-primary)',
-              fontSize: 'var(--font-size-xs)',
-              outline: 'none',
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-          <span>Show</span>
-          <select
-            value={entriesPerPage}
-            onChange={(e) => setEntriesPerPage(Number(e.target.value))}
-            style={{
-              padding: '0.35rem 0.6rem',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--bg-primary)',
-              color: 'var(--text-primary)',
-              fontSize: 'var(--font-size-xs)',
-            }}
-          >
-            <option value={10}>10</option>
-            <option value={15}>15</option>
-            <option value={25}>25</option>
-          </select>
-          <span>entries</span>
-        </div>
-      </div>
-
-      {/* Data Table Matching Image 4 */}
-      <Card glass style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#034ea2', color: '#ffffff' }}>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50 }}># ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>ACTION NAME ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>DESCRIPTION ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 120 }}>STATUS ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 130 }}>CREATED DATE ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 160 }}>ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredActions.map((act, idx) => (
-              <tr
-                key={act.id}
-                style={{
-                  borderBottom: '1px solid var(--border-color)',
-                  backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--bg-tertiary)',
-                  transition: 'background-color 0.15s ease',
-                }}
-              >
-                <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                  {idx + 1}
-                </td>
-
-                <td style={{ padding: '0.875rem 1rem' }}>
-                  <div style={{ fontWeight: 700, color: '#034ea2' }}>
-                    {act.name}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {act.name.toLowerCase()}
-                  </div>
-                </td>
-
-                <td style={{ padding: '0.875rem 1rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                  {act.description}
-                </td>
-
-                <td style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>
-                  <span
-                    style={{
-                      padding: '2px 10px',
-                      borderRadius: 'var(--radius-full)',
-                      fontSize: 10,
-                      fontWeight: 800,
-                      backgroundColor: 'rgba(22, 163, 74, 0.12)',
-                      color: '#16a34a',
-                    }}
-                  >
-                    {act.status}
-                  </span>
-                </td>
-
-                <td style={{ padding: '0.875rem 1rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                  {act.createdDate}
-                </td>
-
-                <td style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEdit(act)}
-                      style={{
-                        padding: '0.3rem 0.65rem',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid rgba(37,99,235,0.3)',
-                        backgroundColor: 'rgba(37,99,235,0.08)',
-                        color: 'var(--brand-primary)',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
-                    >
-                      <Edit2 size={12} /> Edit
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(act.id)}
-                      style={{
-                        padding: '0.3rem 0.65rem',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid rgba(239,68,68,0.3)',
-                        backgroundColor: 'rgba(239,68,68,0.08)',
-                        color: '#ef4444',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
-                    >
-                      <Trash2 size={12} /> Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={filteredActions}
+        keyExtractor={(act) => act.id}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search by action name..."
+        entityName="actions"
+      />
 
       {/* Modal matching Image 4 creation */}
       <Modal

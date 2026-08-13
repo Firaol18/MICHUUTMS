@@ -8,9 +8,10 @@ import { tourismService } from '@/services/tourismService';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { TourGuide, GuideStatus, GuideAvailability } from '@/types/guide';
 import type { Booking } from '@/types/booking';
+import { TourManifestModal } from '@/components/common/TourManifestModal';
 import {
   Compass, Calendar, Award, DollarSign, User,
-  ShieldCheck, MapPin, Users,
+  ShieldCheck, MapPin, Users, FileText,
 } from 'lucide-react';
 
 const TAB_STYLE = (active: boolean): React.CSSProperties => ({
@@ -40,6 +41,10 @@ export const GuideDashboardPage: React.FC = () => {
   const [assignedBookings, setAssignedBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'tours' | 'schedule' | 'certs' | 'earnings' | 'profile'>('tours');
+
+  // Manifest Modal State
+  const [isManifestOpen, setIsManifestOpen] = useState(false);
+  const [selectedManifestBooking, setSelectedManifestBooking] = useState<Booking | null>(null);
 
   // Availability add state
   const [newAvailDate, setNewAvailDate] = useState('');
@@ -234,13 +239,27 @@ export const GuideDashboardPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', marginTop: '0.875rem', fontSize: 'var(--font-size-xs)' }}>
-                      <div>Lead Traveler: <strong>{b.traveler.name}</strong> ({b.traveler.email} · {b.traveler.phone})</div>
-                      {b.traveler.specialRequests && (
-                        <div style={{ marginTop: 4, color: '#b45309', fontWeight: 600 }}>
-                          ⚠ Special Request: {b.traveler.specialRequests}
-                        </div>
-                      )}
+                    <div className="flex-between" style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', marginTop: '0.875rem', fontSize: 'var(--font-size-xs)' }}>
+                      <div>
+                        <div>Lead Traveler: <strong>{b.traveler.name}</strong> ({b.traveler.email} · {b.traveler.phone})</div>
+                        {b.traveler.specialRequests && (
+                          <div style={{ marginTop: 4, color: '#b45309', fontWeight: 600 }}>
+                            ⚠ Special Request: {b.traveler.specialRequests}
+                          </div>
+                        )}
+                      </div>
+
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={<FileText size={14} />}
+                        onClick={() => {
+                          setSelectedManifestBooking(b);
+                          setIsManifestOpen(true);
+                        }}
+                      >
+                        View Tour Manifest
+                      </Button>
                     </div>
                   </Card>
                 ))
@@ -403,6 +422,15 @@ export const GuideDashboardPage: React.FC = () => {
 
         </div>
       </Card>
+
+      {/* Operational Tour Manifest Modal */}
+      <TourManifestModal
+        isOpen={isManifestOpen}
+        onClose={() => setIsManifestOpen(false)}
+        tourTitle={selectedManifestBooking?.tourTitle || 'Historic Ethiopia & Wenchi Expedition'}
+        dateRange={selectedManifestBooking ? `Aug 20 – 27, 2026 (Departure: ${selectedManifestBooking.travelDate})` : 'Aug 20 – 27, 2026'}
+        guideName={guide.name}
+      />
     </div>
   );
 };

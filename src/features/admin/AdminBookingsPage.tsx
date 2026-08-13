@@ -4,14 +4,14 @@ import type { Column } from '@/components/data-display/DataTable';
 import { DataTable } from '@/components/data-display/DataTable';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
-import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
 import { PermissionGuard } from '@/components/common/PermissionGuard';
 import { tourismService } from '@/services/tourismService';
 import type { Booking, BookingStatus, PaymentStatus } from '@/types/booking';
+import { TourManifestModal } from '@/components/common/TourManifestModal';
 import {
-  Search, RefreshCw, UserCheck, Eye, ChevronRight,
-  Users, AlertTriangle, CheckCircle2, XCircle, RotateCcw,
+  RefreshCw, UserCheck, Eye, ChevronRight,
+  Users, AlertTriangle, CheckCircle2, XCircle, RotateCcw, FileText,
 } from 'lucide-react';
 
 const AVAILABLE_GUIDES = [
@@ -43,6 +43,8 @@ export const AdminBookingsPage: React.FC = () => {
 
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isManifestOpen, setIsManifestOpen] = useState(false);
+  const [selectedManifestBooking, setSelectedManifestBooking] = useState<Booking | null>(null);
 
   const fetchBookings = async () => {
     setIsLoading(true);
@@ -188,6 +190,17 @@ export const AdminBookingsPage: React.FC = () => {
           <Button variant="ghost" size="sm" icon={<Eye size={13} />} onClick={() => openDetail(row)}>
             View
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<FileText size={13} />}
+            onClick={() => {
+              setSelectedManifestBooking(row);
+              setIsManifestOpen(true);
+            }}
+          >
+            Manifest
+          </Button>
           <PermissionGuard resource="bookings" action="update">
             {/* Advance status button */}
             {row.status !== 'completed' && row.status !== 'cancelled' && (() => {
@@ -265,17 +278,17 @@ export const AdminBookingsPage: React.FC = () => {
             </button>
           ))}
         </div>
-        <div style={{ width: '280px' }}>
-          <Input
-            placeholder="Search reference, name, tour..."
-            icon={<Search size={16} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
       </div>
-
-      <DataTable columns={columns} data={bookings} keyExtractor={(item) => item.id} isLoading={isLoading} />
+      <DataTable
+        columns={columns}
+        data={bookings}
+        keyExtractor={(item) => item.id}
+        isLoading={isLoading}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search reference, traveler name, tour title..."
+        entityName="bookings"
+      />
 
       {/* Booking Detail Modal */}
       {isDetailOpen && detailBooking && (
@@ -421,6 +434,15 @@ export const AdminBookingsPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Operational Tour Manifest Modal */}
+      <TourManifestModal
+        isOpen={isManifestOpen}
+        onClose={() => setIsManifestOpen(false)}
+        tourTitle={selectedManifestBooking?.tourTitle || 'Historic Ethiopia & Wenchi Expedition'}
+        dateRange={selectedManifestBooking ? `Aug 20 – 27, 2026 (Departure: ${selectedManifestBooking.travelDate})` : 'Aug 20 – 27, 2026'}
+        guideName={selectedManifestBooking?.assignedGuideName || 'Abebe Bekele'}
+      />
     </div>
   );
 };

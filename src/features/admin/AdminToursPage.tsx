@@ -13,7 +13,6 @@ import type { TourPackage, TourCategory, DifficultyLevel, ItineraryDay } from '@
 import type { TourGuide } from '@/types/guide';
 import {
   Plus,
-  Search,
   Palmtree,
   RefreshCw,
   Tag,
@@ -417,11 +416,16 @@ export const AdminToursPage: React.FC = () => {
         }
       />
 
-      <div style={{ marginBottom: '1.25rem', maxWidth: '300px' }}>
-        <Input placeholder="Search tour inventory..." icon={<Search size={16} />} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-      </div>
-
-      <DataTable columns={columns} data={tours} keyExtractor={(item) => item.id} isLoading={isLoading} />
+      <DataTable
+        columns={columns}
+        data={tours}
+        keyExtractor={(item) => item.id}
+        isLoading={isLoading}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search tour package title, destination, or category..."
+        entityName="tours"
+      />
 
       {/* CREATE MODAL */}
       <Modal

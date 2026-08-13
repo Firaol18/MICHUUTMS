@@ -12,7 +12,7 @@ import type { Booking } from '@/types/booking';
 import type { CustomerProfile, CommunicationEntry, LoyaltyTier } from '@/types/customer';
 import { getLoyaltyTier, getNextTierThreshold, LOYALTY_META } from '@/types/customer';
 import {
-  Search, RefreshCw, UserPlus, Edit, Trash2, CheckCircle2, Eye,
+  RefreshCw, UserPlus, Edit, Trash2, CheckCircle2, Eye,
   ShieldAlert, User, FileText, Heart, MessageSquare, Award,
   PlusCircle, Phone, Plane,
 } from 'lucide-react';
@@ -283,10 +283,16 @@ export const AdminUsersPage: React.FC = () => {
           </>
         }
       />
-      <div style={{ marginBottom: '1.25rem', maxWidth: '320px' }}>
-        <Input placeholder="Search by name, email, role..." icon={<Search size={16} />} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-      </div>
-      <DataTable columns={columns} data={filtered} keyExtractor={(item) => item.id} isLoading={isLoading} />
+      <DataTable
+        columns={columns}
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        isLoading={isLoading}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search customer name, email, or role..."
+        entityName="customers"
+      />
 
       {/* DETAIL MODAL */}
       {isDetailOpen && detailCustomer && (

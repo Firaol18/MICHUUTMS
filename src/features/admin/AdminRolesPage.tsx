@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import {
-  Users, Plus, Search, ArrowLeft, Edit2, Trash2, Shield, Save, X,
+  Users, Plus, ArrowLeft, Edit2, Trash2, Shield, Save, X,
 } from 'lucide-react';
+import type { Column } from '@/components/data-display/DataTable';
+import { DataTable } from '@/components/data-display/DataTable';
 
 interface ExtendedRoleItem {
   id: string;
@@ -177,9 +179,8 @@ export const AdminRolesPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [rolesList, setRolesList] = useState<ExtendedRoleItem[]>(INITIAL_ROLES_LIST);
 
-  // Search & Pagination filters for Image 1
+  // Search filter
   const [searchQuery, setSearchQuery] = useState('');
-  const [entriesPerPage, setEntriesPerPage] = useState(15);
 
   // Form State for Image 2 (Create / Edit Role Detail)
   const [activeEditingId, setActiveEditingId] = useState<string | null>(null);
@@ -290,6 +291,117 @@ export const AdminRolesPage: React.FC = () => {
       r.roleKey.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const columns: Column<ExtendedRoleItem>[] = [
+    {
+      header: 'Role Name',
+      cell: (role) => (
+        <>
+          <div style={{ fontWeight: 800, color: '#034ea2', fontSize: 'var(--font-size-sm)' }}>
+            {role.name}
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+            {role.roleKey}
+          </div>
+        </>
+      ),
+    },
+    {
+      header: 'Description',
+      cell: (role) => (
+        <span style={{ color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+          {role.description}
+        </span>
+      ),
+    },
+    {
+      header: 'Status',
+      width: '120px',
+      align: 'center',
+      cell: (role) => (
+        <div style={{ display: 'inline-flex', gap: 4, alignItems: 'center', justifyContent: 'center' }}>
+          <span
+            style={{
+              padding: '2px 10px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: 10,
+              fontWeight: 800,
+              backgroundColor: role.status === 'Active' ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+              color: role.status === 'Active' ? '#16a34a' : '#ef4444',
+            }}
+          >
+            {role.status}
+          </span>
+          {role.isLocked && (
+            <span style={{ padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: 10, fontWeight: 700, backgroundColor: 'rgba(37, 99, 235, 0.12)', color: 'var(--brand-primary)' }}>
+              Locked
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: 'Created Date',
+      width: '130px',
+      cell: (role) => (
+        <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+          {role.createdDate}
+        </span>
+      ),
+    },
+    {
+      header: 'Actions',
+      width: '160px',
+      align: 'center',
+      cell: (role) => (
+        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={() => handleOpenEdit(role)}
+            style={{
+              padding: '0.3rem 0.65rem',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid rgba(37,99,235,0.3)',
+              backgroundColor: 'rgba(37,99,235,0.08)',
+              color: 'var(--brand-primary)',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+            title="Edit Role & Permissions Matrix"
+          >
+            <Edit2 size={12} /> Edit
+          </button>
+
+          {!role.isLocked && (
+            <button
+              type="button"
+              onClick={() => handleDeleteRole(role.id)}
+              style={{
+                padding: '0.3rem 0.65rem',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                backgroundColor: 'rgba(239,68,68,0.08)',
+                color: '#ef4444',
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+              title="Delete Role"
+            >
+              <Trash2 size={12} /> Delete
+            </button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div>
       {/* ─────────────────────────────────────────────────────────────────────────────
@@ -325,169 +437,15 @@ export const AdminRolesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Search Bar & Show Entries Filter */}
-          <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem', backgroundColor: 'var(--bg-secondary)', padding: '0.875rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-            <div style={{ position: 'relative', minWidth: 280, flex: 1, maxWidth: 400 }}>
-              <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by role name or description..."
-                style={{
-                  width: '100%',
-                  padding: '0.45rem 0.875rem 0.45rem 2.25rem',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-color)',
-                  backgroundColor: 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                  fontSize: 'var(--font-size-xs)',
-                  outline: 'none',
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-              <span>Show</span>
-              <select
-                value={entriesPerPage}
-                onChange={(e) => setEntriesPerPage(Number(e.target.value))}
-                style={{
-                  padding: '0.35rem 0.6rem',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-color)',
-                  backgroundColor: 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                  fontSize: 'var(--font-size-xs)',
-                }}
-              >
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-              <span>entries</span>
-            </div>
-          </div>
-
-          {/* Roles Data Table matching Image 1 */}
-          <Card glass style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#034ea2', color: '#ffffff' }}>
-                  <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50 }}># ↕</th>
-                  <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>ROLE NAME ↕</th>
-                  <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>DESCRIPTION ↕</th>
-                  <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 120 }}>STATUS ↕</th>
-                  <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 130 }}>CREATED DATE ↕</th>
-                  <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 160 }}>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRoles.map((role, idx) => (
-                  <tr
-                    key={role.id}
-                    style={{
-                      borderBottom: '1px solid var(--border-color)',
-                      backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--bg-tertiary)',
-                      transition: 'background-color 0.15s ease',
-                    }}
-                  >
-                    <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                      {idx + 1}
-                    </td>
-
-                    <td style={{ padding: '0.875rem 1rem' }}>
-                      <div style={{ fontWeight: 800, color: '#034ea2', fontSize: 'var(--font-size-sm)' }}>
-                        {role.name}
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                        {role.roleKey}
-                      </div>
-                    </td>
-
-                    <td style={{ padding: '0.875rem 1rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                      {role.description}
-                    </td>
-
-                    <td style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>
-                      <div style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-                        <span
-                          style={{
-                            padding: '2px 10px',
-                            borderRadius: 'var(--radius-full)',
-                            fontSize: 10,
-                            fontWeight: 800,
-                            backgroundColor: role.status === 'Active' ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                            color: role.status === 'Active' ? '#16a34a' : '#ef4444',
-                          }}
-                        >
-                          {role.status}
-                        </span>
-                        {role.isLocked && (
-                          <span style={{ padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: 10, fontWeight: 700, backgroundColor: 'rgba(37, 99, 235, 0.12)', color: 'var(--brand-primary)' }}>
-                            Locked
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    <td style={{ padding: '0.875rem 1rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      {role.createdDate}
-                    </td>
-
-                    <td style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(role)}
-                          style={{
-                            padding: '0.3rem 0.65rem',
-                            borderRadius: 'var(--radius-sm)',
-                            border: '1px solid rgba(37,99,235,0.3)',
-                            backgroundColor: 'rgba(37,99,235,0.08)',
-                            color: 'var(--brand-primary)',
-                            fontSize: 11,
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                          }}
-                          title="Edit Role & Permissions Matrix"
-                        >
-                          <Edit2 size={12} /> Edit
-                        </button>
-
-                        {!role.isLocked && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteRole(role.id)}
-                            style={{
-                              padding: '0.3rem 0.65rem',
-                              borderRadius: 'var(--radius-sm)',
-                              border: '1px solid rgba(239,68,68,0.3)',
-                              backgroundColor: 'rgba(239,68,68,0.08)',
-                              color: '#ef4444',
-                              fontSize: 11,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                            title="Delete Role"
-                          >
-                            <Trash2 size={12} /> Delete
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+          <DataTable
+            columns={columns}
+            data={filteredRoles}
+            keyExtractor={(role) => role.id}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search by role name or description..."
+            entityName="roles"
+          />
         </div>
       )}
 

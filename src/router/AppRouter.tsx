@@ -38,6 +38,12 @@ import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
 import { AdminRolesPage } from '@/features/admin/AdminRolesPage';
 import { AdminPermissionResourcesPage } from '@/features/admin/AdminPermissionResourcesPage';
 import { AdminPermissionActionsPage } from '@/features/admin/AdminPermissionActionsPage';
+import { AdminSuppliersPage } from '@/features/admin/AdminSuppliersPage';
+import { AdminDriversPage } from '@/features/admin/AdminDriversPage';
+import { AdminVehiclesPage } from '@/features/admin/AdminVehiclesPage';
+import { AdminPaymentsPage } from '@/features/admin/AdminPaymentsPage';
+import { AdminExpensesPage } from '@/features/admin/AdminExpensesPage';
+import { AdminReportsPage } from '@/features/admin/AdminReportsPage';
 
 // Guide Portal Features
 import { GuideDashboardPage } from '@/features/guide/GuideDashboardPage';
@@ -121,12 +127,19 @@ export const AppRouter: React.FC = () => {
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/tours" element={<AdminToursPage />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/bookings" element={<AdminBookingsPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/customers" element={<AdminUsersPage />} />
+            <Route path="/admin/suppliers" element={<AdminSuppliersPage />} />
+            <Route path="/admin/guides" element={<AdminGuidesPage />} />
+            <Route path="/admin/drivers" element={<AdminDriversPage />} />
+            <Route path="/admin/vehicles" element={<AdminVehiclesPage />} />
+            <Route path="/admin/payments" element={<AdminPaymentsPage />} />
+            <Route path="/admin/expenses" element={<AdminExpensesPage />} />
+            <Route path="/admin/reports" element={<AdminReportsPage />} />
             <Route path="/admin/issues" element={<AdminIssuesPage />} />
             <Route path="/admin/enquiries" element={<AdminEnquiriesPage />} />
             <Route path="/admin/pages" element={<AdminPagesPage />} />
-            <Route path="/admin/guides" element={<AdminGuidesPage />} />
             <Route path="/admin/roles" element={<AdminRolesPage />} />
             <Route path="/admin/permission-resources" element={<AdminPermissionResourcesPage />} />
             <Route path="/admin/permission-actions" element={<AdminPermissionActionsPage />} />

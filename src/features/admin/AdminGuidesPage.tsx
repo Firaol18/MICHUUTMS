@@ -11,7 +11,7 @@ import { tourismService } from '@/services/tourismService';
 import type { TourGuide, GuideStatus, GuideAvailability } from '@/types/guide';
 import type { Booking } from '@/types/booking';
 import {
-  Search, RefreshCw, UserPlus, Edit, Trash2, Eye, Award, Calendar, DollarSign,
+  RefreshCw, UserPlus, Edit, Trash2, Eye, Award, Calendar, DollarSign,
   Compass, CheckCircle2, Plus, Globe,
 } from 'lucide-react';
 
@@ -324,17 +324,17 @@ export const AdminGuidesPage: React.FC = () => {
             </button>
           ))}
         </div>
-        <div style={{ width: '280px' }}>
-          <Input
-            placeholder="Search guide by name, language, skill..."
-            icon={<Search size={16} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
       </div>
-
-      <DataTable columns={columns} data={filteredGuides} keyExtractor={(item) => item.id} isLoading={isLoading} />
+      <DataTable
+        columns={columns}
+        data={filteredGuides}
+        keyExtractor={(item) => item.id}
+        isLoading={isLoading}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search guide name, language, or specialization..."
+        entityName="guides"
+      />
 
       {/* ─── GUIDE DETAIL MODAL ────────────────────────────────────── */}
       {isDetailOpen && detailGuide && (

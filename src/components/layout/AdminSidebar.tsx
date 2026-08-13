@@ -6,9 +6,17 @@ import {
   Package,
   Users,
   ListOrdered,
-  AlertCircle,
-  FileText,
-  Copy,
+  Building2,
+  UserCheck,
+  Bus,
+  Car,
+  CreditCard,
+  Receipt,
+  BarChart3,
+  Settings,
+  Shield,
+  ShieldCheck,
+  Key,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -16,10 +24,6 @@ import {
   ArrowLeft,
   PlusCircle,
   List,
-  UserCheck,
-  Shield,
-  ShieldCheck,
-  Key,
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC = () => {
@@ -28,6 +32,27 @@ export const AdminSidebar: React.FC = () => {
   const location = useLocation();
 
   const isTourActive = location.pathname.startsWith('/admin/tours');
+
+  const navItems = [
+    { to: '/admin/dashboard', label: 'Dashboard', icon: <Gauge size={19} /> },
+    { to: '/admin/tours', label: 'Tours', icon: <Package size={19} />, isExpandable: true },
+    { to: '/admin/bookings', label: 'Bookings', icon: <ListOrdered size={19} /> },
+    { to: '/admin/users', label: 'Customers', icon: <Users size={19} /> },
+    { to: '/admin/suppliers', label: 'Suppliers', icon: <Building2 size={19} /> },
+    { to: '/admin/guides', label: 'Guides', icon: <UserCheck size={19} /> },
+    { to: '/admin/drivers', label: 'Drivers', icon: <Bus size={19} /> },
+    { to: '/admin/vehicles', label: 'Vehicles', icon: <Car size={19} /> },
+    { to: '/admin/payments', label: 'Payments', icon: <CreditCard size={19} /> },
+    { to: '/admin/expenses', label: 'Expenses', icon: <Receipt size={19} /> },
+    { to: '/admin/reports', label: 'Reports', icon: <BarChart3 size={19} /> },
+    { to: '/admin/settings', label: 'Settings', icon: <Settings size={19} /> },
+  ];
+
+  const rbacItems = [
+    { to: '/admin/roles', label: 'Role', icon: <Shield size={18} /> },
+    { to: '/admin/permission-resources', label: 'Permission Resource', icon: <ShieldCheck size={18} /> },
+    { to: '/admin/permission-actions', label: 'Permission Action', icon: <Key size={18} /> },
+  ];
 
   return (
     <aside
@@ -89,311 +114,159 @@ export const AdminSidebar: React.FC = () => {
         </button>
       </div>
 
-      {/* Navigation Links matching exact requested items */}
-      <nav style={{ flex: 1, padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.375rem', overflowY: 'auto' }}>
-        {/* 1. Dashboard */}
-        <NavLink
-          to="/admin/dashboard"
-          style={({ isActive }) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.875rem',
-            padding: '0.625rem 0.875rem',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--font-size-sm)',
-            fontWeight: isActive ? 600 : 500,
-            color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-            backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-            transition: 'all var(--transition-fast)',
-            textDecoration: 'none',
-          })}
-        >
-          <span style={{ display: 'flex', alignItems: 'center' }}><Gauge size={20} /></span>
-          {!sidebarCollapsed && <span>Dashboard</span>}
-        </NavLink>
+      {/* Navigation Links matching exact tree hierarchy */}
+      <nav style={{ flex: 1, padding: '0.75rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto' }}>
 
-        {/* 2. Tour Packages (Expandable Menu with >) */}
-        <div>
-          <div
-            onClick={() => setTourPackagesExpanded(!tourPackagesExpanded)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: sidebarCollapsed ? 'center' : 'space-between',
-              gap: '0.875rem',
-              padding: '0.625rem 0.875rem',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: 'var(--font-size-sm)',
-              fontWeight: isTourActive ? 600 : 500,
-              color: isTourActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-              backgroundColor: isTourActive ? 'var(--brand-primary-light)' : 'transparent',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><Package size={20} /></span>
-              {!sidebarCollapsed && <span>Tour Packages</span>}
-            </div>
-            {!sidebarCollapsed && (
-              <span style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>
-                {tourPackagesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </span>
-            )}
+        {!sidebarCollapsed && (
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.4rem 0.75rem 0.2rem 0.75rem' }}>
+            ADMIN PORTAL
           </div>
+        )}
 
-          {/* Submenu for Tour Packages */}
-          {!sidebarCollapsed && tourPackagesExpanded && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', paddingLeft: '2.5rem', marginTop: '0.25rem' }}>
-              <NavLink
-                to="/admin/tours"
-                end
-                style={() => {
-                  const isActive = location.pathname === '/admin/tours' && !location.search.includes('create=true');
-                  return {
+        {navItems.map((item) => {
+          if (item.isExpandable) {
+            return (
+              <div key={item.to}>
+                <div
+                  onClick={() => setTourPackagesExpanded(!tourPackagesExpanded)}
+                  style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.45rem 0.75rem',
+                    justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+                    gap: '0.75rem',
+                    padding: '0.5rem 0.75rem',
                     borderRadius: 'var(--radius-sm)',
-                    fontSize: 'var(--font-size-xs)',
-                    fontWeight: isActive ? 700 : 400,
-                    color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                    backgroundColor: isActive ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
-                    textDecoration: 'none',
-                  };
-                }}
-              >
-                <List size={14} />
-                <span>Manage Packages</span>
-              </NavLink>
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: isTourActive ? 700 : 500,
+                    color: isTourActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                    backgroundColor: isTourActive ? 'var(--brand-primary-light)' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-fast)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ display: 'flex', alignItems: 'center' }}>{item.icon}</span>
+                    {!sidebarCollapsed && <span>{item.label}</span>}
+                  </div>
+                  {!sidebarCollapsed && (
+                    <span style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>
+                      {tourPackagesExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </span>
+                  )}
+                </div>
 
-              <NavLink
-                to="/admin/tours?create=true"
-                style={() => {
-                  const isActive = location.pathname === '/admin/tours' && location.search.includes('create=true');
-                  return {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.45rem 0.75rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: 'var(--font-size-xs)',
-                    fontWeight: isActive ? 700 : 400,
-                    color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                    backgroundColor: isActive ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
-                    textDecoration: 'none',
-                  };
-                }}
-              >
-                <PlusCircle size={14} />
-                <span>Create Package</span>
-              </NavLink>
-            </div>
-          )}
-        </div>
+                {/* Submenu for Tours */}
+                {!sidebarCollapsed && tourPackagesExpanded && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', paddingLeft: '2.25rem', marginTop: '0.15rem' }}>
+                    <NavLink
+                      to="/admin/tours"
+                      end
+                      style={() => {
+                        const isActive = location.pathname === '/admin/tours' && !location.search.includes('create=true');
+                        return {
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: 'var(--radius-sm)',
+                          fontSize: 'var(--font-size-xs)',
+                          fontWeight: isActive ? 700 : 400,
+                          color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                          backgroundColor: isActive ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                          textDecoration: 'none',
+                        };
+                      }}
+                    >
+                      <List size={13} />
+                      <span>Manage Packages</span>
+                    </NavLink>
 
-        {/* 3. Manage Users */}
-        <NavLink
-          to="/admin/users"
-          style={({ isActive }) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.875rem',
-            padding: '0.625rem 0.875rem',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--font-size-sm)',
-            fontWeight: isActive ? 600 : 500,
-            color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-            backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-            transition: 'all var(--transition-fast)',
-            textDecoration: 'none',
-          })}
-        >
-          <span style={{ display: 'flex', alignItems: 'center' }}><Users size={20} /></span>
-          {!sidebarCollapsed && <span>Manage Users</span>}
-        </NavLink>
+                    <NavLink
+                      to="/admin/tours?create=true"
+                      style={() => {
+                        const isActive = location.pathname === '/admin/tours' && location.search.includes('create=true');
+                        return {
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: 'var(--radius-sm)',
+                          fontSize: 'var(--font-size-xs)',
+                          fontWeight: isActive ? 700 : 400,
+                          color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                          backgroundColor: isActive ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                          textDecoration: 'none',
+                        };
+                      }}
+                    >
+                      <PlusCircle size={13} />
+                      <span>Create Package</span>
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+            );
+          }
 
-        {/* 3b. Manage Guides */}
-        <NavLink
-          to="/admin/guides"
-          style={({ isActive }) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.875rem',
-            padding: '0.625rem 0.875rem',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--font-size-sm)',
-            fontWeight: isActive ? 600 : 500,
-            color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-            backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-            transition: 'all var(--transition-fast)',
-            textDecoration: 'none',
-          })}
-        >
-          <span style={{ display: 'flex', alignItems: 'center' }}><UserCheck size={20} /></span>
-          {!sidebarCollapsed && <span>Manage Guides</span>}
-        </NavLink>
-
-        {/* 4. Manage Booking */}
-        <NavLink
-          to="/admin/bookings"
-          style={({ isActive }) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.875rem',
-            padding: '0.625rem 0.875rem',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--font-size-sm)',
-            fontWeight: isActive ? 600 : 500,
-            color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-            backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-            transition: 'all var(--transition-fast)',
-            textDecoration: 'none',
-          })}
-        >
-          <span style={{ display: 'flex', alignItems: 'center' }}><ListOrdered size={20} /></span>
-          {!sidebarCollapsed && <span>Manage Booking</span>}
-        </NavLink>
-
-        {/* 5. Manage Issues */}
-        <NavLink
-          to="/admin/issues"
-          style={({ isActive }) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.875rem',
-            padding: '0.625rem 0.875rem',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--font-size-sm)',
-            fontWeight: isActive ? 600 : 500,
-            color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-            backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-            transition: 'all var(--transition-fast)',
-            textDecoration: 'none',
-          })}
-        >
-          <span style={{ display: 'flex', alignItems: 'center' }}><AlertCircle size={20} /></span>
-          {!sidebarCollapsed && <span>Manage Issues</span>}
-        </NavLink>
-
-        {/* 6. Manage Enquiries */}
-        <NavLink
-          to="/admin/enquiries"
-          style={({ isActive }) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.875rem',
-            padding: '0.625rem 0.875rem',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--font-size-sm)',
-            fontWeight: isActive ? 600 : 500,
-            color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-            backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-            transition: 'all var(--transition-fast)',
-            textDecoration: 'none',
-          })}
-        >
-          <span style={{ display: 'flex', alignItems: 'center' }}><FileText size={20} /></span>
-          {!sidebarCollapsed && <span>Manage Enquiries</span>}
-        </NavLink>
-
-        {/* 7. Manage Pages */}
-        <NavLink
-          to="/admin/pages"
-          style={({ isActive }) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.875rem',
-            padding: '0.625rem 0.875rem',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--font-size-sm)',
-            fontWeight: isActive ? 600 : 500,
-            color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-            backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-            transition: 'all var(--transition-fast)',
-            textDecoration: 'none',
-          })}
-        >
-          <span style={{ display: 'flex', alignItems: 'center' }}><Copy size={20} /></span>
-          {!sidebarCollapsed && <span>Manage Pages</span>}
-        </NavLink>
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.5rem 0.75rem',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
+                transition: 'all var(--transition-fast)',
+                textDecoration: 'none',
+              })}
+            >
+              <span style={{ display: 'flex', alignItems: 'center' }}>{item.icon}</span>
+              {!sidebarCollapsed && <span>{item.label}</span>}
+            </NavLink>
+          );
+        })}
 
         {/* ── RBAC Authorization Governance Section (Display at Bottom) ── */}
-        <div style={{ marginTop: 'auto', paddingTop: '0.875rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {/* Role */}
-          <NavLink
-            to="/admin/roles"
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.875rem',
-              padding: '0.55rem 0.875rem',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: 'var(--font-size-sm)',
-              fontWeight: isActive ? 700 : 500,
-              color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-              backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-              textDecoration: 'none',
-              transition: 'all var(--transition-fast)',
-            })}
-          >
-            <span style={{ display: 'flex', alignItems: 'center' }}><Shield size={18} /></span>
-            {!sidebarCollapsed && <span>Role</span>}
-          </NavLink>
-
-          {/* Permission Resource */}
-          <NavLink
-            to="/admin/permission-resources"
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.875rem',
-              padding: '0.55rem 0.875rem',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: 'var(--font-size-sm)',
-              fontWeight: isActive ? 700 : 500,
-              color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-              backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-              textDecoration: 'none',
-              transition: 'all var(--transition-fast)',
-            })}
-          >
-            <span style={{ display: 'flex', alignItems: 'center' }}><ShieldCheck size={18} /></span>
-            {!sidebarCollapsed && <span>Permission Resource</span>}
-          </NavLink>
-
-          {/* Permission Action */}
-          <NavLink
-            to="/admin/permission-actions"
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.875rem',
-              padding: '0.55rem 0.875rem',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: 'var(--font-size-sm)',
-              fontWeight: isActive ? 700 : 500,
-              color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-              backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-              textDecoration: 'none',
-              transition: 'all var(--transition-fast)',
-            })}
-          >
-            <span style={{ display: 'flex', alignItems: 'center' }}><Key size={18} /></span>
-            {!sidebarCollapsed && <span>Permission Action</span>}
-          </NavLink>
+        <div style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+          {rbacItems.map((r) => (
+            <NavLink
+              key={r.to}
+              to={r.to}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.45rem 0.75rem',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
+                textDecoration: 'none',
+                transition: 'all var(--transition-fast)',
+              })}
+            >
+              <span style={{ display: 'flex', alignItems: 'center' }}>{r.icon}</span>
+              {!sidebarCollapsed && <span>{r.label}</span>}
+            </NavLink>
+          ))}
         </div>
 
         {/* Back to Public Portal Link */}
-        <div style={{ paddingTop: '0.5rem' }}>
+        <div style={{ paddingTop: '0.35rem' }}>
           <NavLink
             to="/"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.875rem',
-              padding: '0.5rem 0.875rem',
+              gap: '0.75rem',
+              padding: '0.45rem 0.75rem',
               borderRadius: 'var(--radius-sm)',
               fontSize: 'var(--font-size-xs)',
               color: 'var(--text-muted)',
