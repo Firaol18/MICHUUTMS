@@ -3,7 +3,6 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUIStore } from '@/store/useUIStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { useNotificationStore } from '@/store/useNotificationStore';
 import type { LanguageCode } from '@/store/useLanguageStore';
 import {
   Compass,
@@ -21,11 +20,6 @@ import {
   PhoneCall,
   Sparkles,
   ChevronDown,
-  Bell,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Check,
   Lock,
   X,
 } from 'lucide-react';
@@ -33,6 +27,7 @@ import { Button } from '@/components/common/Button';
 import { RaiseIssueModal } from '@/components/common/RaiseIssueModal';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { useCartStore } from '@/store/useCartStore';
+import { NotificationPopover } from '@/components/common/NotificationPopover';
 
 const LANGUAGE_OPTIONS: { code: LanguageCode; label: string; shortCode: string }[] = [
   { code: 'am', label: 'Amharic', shortCode: 'AM' },
@@ -44,29 +39,20 @@ export const PublicNavbar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuthStore();
   const { theme, toggleTheme } = useUIStore();
   const { currentLanguage, setLanguage, t } = useLanguageStore();
-  const { notifications, markAsRead, markAllAsRead } = useNotificationStore();
 
   const navigate = useNavigate();
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
   const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
 
   const langMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const notifMenuRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user && (user.role === 'admin' || user.role === 'tour_operator' || user.role === 'finance_manager');
 
   const { items: cartItems, openCart } = useCartStore();
   const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-
-  // User specific notifications
-  const userNotifs = user
-    ? notifications.filter((n) => n.userEmail.toLowerCase() === user.email.toLowerCase())
-    : [];
-  const unreadCount = userNotifs.filter((n) => !n.isRead).length;
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -76,9 +62,6 @@ export const PublicNavbar: React.FC = () => {
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
-      }
-      if (notifMenuRef.current && !notifMenuRef.current.contains(event.target as Node)) {
-        setIsNotifMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -308,165 +291,7 @@ export const PublicNavbar: React.FC = () => {
 
             {/* In-App Notifications Dropdown (when authenticated) */}
             {isAuthenticated && user && (
-              <div ref={notifMenuRef} style={{ position: 'relative' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsNotifMenuOpen(!isNotifMenuOpen)}
-                  className="flex-center"
-                  style={{
-                    position: 'relative',
-                    width: 36,
-                    height: 36,
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--bg-tertiary)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-color)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                  title="In-App Notifications"
-                >
-                  <Bell size={16} />
-                  {unreadCount > 0 && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: -2,
-                        right: -2,
-                        backgroundColor: '#ef4444',
-                        color: '#ffffff',
-                        fontSize: '10px',
-                        fontWeight: 800,
-                        width: 17,
-                        height: 17,
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '2px solid var(--bg-secondary)',
-                      }}
-                    >
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-
-                {/* Notifications Popover */}
-                {isNotifMenuOpen && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 10px)',
-                      right: 0,
-                      width: '320px',
-                      backgroundColor: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      boxShadow: '0 12px 36px rgba(0,0,0,0.2)',
-                      overflow: 'hidden',
-                      zIndex: 200,
-                    }}
-                  >
-                    {/* Header */}
-                    <div
-                      className="flex-between"
-                      style={{
-                        padding: '0.875rem 1rem',
-                        borderBottom: '1px solid var(--border-color)',
-                        backgroundColor: 'var(--bg-tertiary)',
-                      }}
-                    >
-                      <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        Notifications ({userNotifs.length})
-                      </div>
-                      {unreadCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => markAllAsRead(user.email)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            fontSize: '11px',
-                            color: 'var(--brand-primary)',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.2rem',
-                          }}
-                        >
-                          <Check size={12} /> Mark all read
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Items List */}
-                    <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
-                      {userNotifs.length === 0 ? (
-                        <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
-                          No notifications yet.
-                        </div>
-                      ) : (
-                        userNotifs.map((n) => (
-                          <div
-                            key={n.id}
-                            onClick={() => {
-                              markAsRead(n.id);
-                              setIsNotifMenuOpen(false);
-                              if (n.link) navigate(n.link);
-                            }}
-                            style={{
-                              padding: '0.875rem 1rem',
-                              borderBottom: '1px solid var(--border-color)',
-                              backgroundColor: n.isRead ? 'transparent' : 'rgba(37,99,235,0.05)',
-                              cursor: 'pointer',
-                              transition: 'background-color 0.15s ease',
-                              display: 'flex',
-                              gap: '0.75rem',
-                              alignItems: 'flex-start',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = n.isRead ? 'transparent' : 'rgba(37,99,235,0.05)')}
-                          >
-                            <div style={{ marginTop: '2px', flexShrink: 0 }}>
-                              {n.type === 'issue_resolved' ? (
-                                <CheckCircle2 size={16} style={{ color: '#10b981' }} />
-                              ) : n.type === 'issue_rejected' ? (
-                                <XCircle size={16} style={{ color: '#ef4444' }} />
-                              ) : (
-                                <Clock size={16} style={{ color: 'var(--brand-primary)' }} />
-                              )}
-                            </div>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: n.isRead ? 600 : 700, color: 'var(--text-primary)' }}>
-                                {n.title}
-                              </div>
-                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.15rem', lineHeight: 1.4 }}>
-                                {n.message}
-                              </div>
-                              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                                {n.timestamp}
-                              </div>
-                            </div>
-                            {!n.isRead && (
-                              <div
-                                style={{
-                                  width: 7,
-                                  height: 7,
-                                  borderRadius: '50%',
-                                  backgroundColor: 'var(--brand-primary)',
-                                  flexShrink: 0,
-                                  marginTop: '5px',
-                                }}
-                              />
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <NotificationPopover role="customer" />
             )}
 
             {/* Shopping Cart — visible only when authenticated */}

@@ -213,6 +213,29 @@ class TourismService {
 
     this.bookings.unshift(newBooking);
     saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
+
+    // 🔔 Dispatch in-app notifications to Customer & Admin
+    try {
+      const notifStore = useNotificationStore.getState();
+      notifStore.notifyCustomer(
+        traveler.email,
+        'booking_confirmation',
+        'Reservation Confirmed! 🎟️',
+        `Your booking for ${newBooking.tourTitle} (Ref #${newBooking.bookingReference}) is confirmed for ${numberOfTravelers} guest(s).`,
+        newBooking.bookingReference,
+        '/my-bookings'
+      );
+      notifStore.notifyAdmin(
+        'admin_new_booking',
+        `NEW BOOKING: Ref #${newBooking.bookingReference} 🔔`,
+        `${traveler.name} booked ${newBooking.tourTitle} ($${newBooking.totalPrice.toLocaleString()}).`,
+        newBooking.bookingReference,
+        '/admin/bookings'
+      );
+    } catch (e) {
+      console.error('Failed to trigger notification', e);
+    }
+
     const res = await apiClient.post(newBooking);
     return res.data;
   }
@@ -233,6 +256,31 @@ class TourismService {
 
     this.bookings[idx] = { ...this.bookings[idx], paymentStatus };
     saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
+
+    const bkg = this.bookings[idx];
+    try {
+      const notifStore = useNotificationStore.getState();
+      if (paymentStatus === 'paid') {
+        notifStore.notifyCustomer(
+          bkg.traveler.email,
+          'payment_confirmation',
+          'Payment Confirmed! 💳',
+          `Payment of $${bkg.totalPrice.toLocaleString()} confirmed for Ref #${bkg.bookingReference}.`,
+          bkg.bookingReference,
+          '/my-bookings'
+        );
+        notifStore.notifyAdmin(
+          'admin_payment_received',
+          `PAYMENT RECEIVED: $${bkg.totalPrice.toLocaleString()} 💵`,
+          `${bkg.traveler.name} paid invoice for Ref #${bkg.bookingReference}.`,
+          bkg.bookingReference,
+          '/admin/bookings'
+        );
+      }
+    } catch (e) {
+      console.error('Failed to trigger payment notification', e);
+    }
+
     const res = await apiClient.update(this.bookings[idx]);
     return res.data;
   }
@@ -255,6 +303,29 @@ class TourismService {
       refundStatus: wasAlreadyPaid && requestRefund ? 'pending' : 'none',
     };
     saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
+
+    const bkg = this.bookings[idx];
+    try {
+      const notifStore = useNotificationStore.getState();
+      notifStore.notifyCustomer(
+        bkg.traveler.email,
+        'booking_cancellation',
+        'Booking Cancelled ❌',
+        `Booking Ref #${bkg.bookingReference} for ${bkg.tourTitle} has been cancelled.`,
+        bkg.bookingReference,
+        '/my-bookings'
+      );
+      notifStore.notifyAdmin(
+        'admin_cancellation_request',
+        `CANCELLATION REQUESTED 🚨`,
+        `${bkg.traveler.name} requested cancellation for Ref #${bkg.bookingReference}. Reason: ${reason}`,
+        bkg.bookingReference,
+        '/admin/bookings'
+      );
+    } catch (e) {
+      console.error('Failed to trigger cancellation notification', e);
+    }
+
     const res = await apiClient.update(this.bookings[idx]);
     return res.data;
   }
@@ -265,6 +336,22 @@ class TourismService {
 
     this.bookings[idx] = { ...this.bookings[idx], assignedGuideName: guideName };
     saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
+
+    const bkg = this.bookings[idx];
+    try {
+      const notifStore = useNotificationStore.getState();
+      notifStore.notifyCustomer(
+        bkg.traveler.email,
+        'schedule_change',
+        'Ranger Guide Assigned 📅',
+        `Senior Ranger Guide ${guideName} has been assigned to lead your expedition (Ref #${bkg.bookingReference}).`,
+        bkg.bookingReference,
+        '/my-bookings'
+      );
+    } catch (e) {
+      console.error('Failed to trigger guide assignment notification', e);
+    }
+
     const res = await apiClient.update(this.bookings[idx]);
     return res.data;
   }

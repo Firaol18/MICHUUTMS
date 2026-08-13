@@ -1,8 +1,9 @@
 import React from 'react';
 import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Sun, Moon, Bell, Search, LogOut } from 'lucide-react';
+import { Sun, Moon, Search, LogOut } from 'lucide-react';
 import { Button } from '@/components/common/Button';
+import { NotificationPopover } from '@/components/common/NotificationPopover';
 
 export const AdminNavbar: React.FC = () => {
   const { theme, toggleTheme } = useUIStore();
@@ -55,11 +56,8 @@ export const AdminNavbar: React.FC = () => {
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} style={{ color: '#f59e0b' }} />}
         </button>
 
-        {/* Notifications */}
-        <button className="tms-btn-ghost flex-center" style={{ width: 36, height: 36, borderRadius: '50%', color: 'var(--text-secondary)', position: 'relative' }}>
-          <Bell size={18} />
-          <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, backgroundColor: 'var(--status-danger)', borderRadius: '50%' }} />
-        </button>
+        {/* Admin Notifications Popover */}
+        <NotificationPopover role="admin" />
 
         {/* User Info */}
         {user && (
