@@ -10,6 +10,7 @@ import { tourismService } from '@/services/tourismService';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Virtual360Modal } from '@/components/common/Virtual360Modal';
+import { TourReviewsSection } from '@/components/reviews/TourReviewsSection';
 import type { TourPackage } from '@/types/tour';
 import type { Booking } from '@/types/booking';
 import {
@@ -427,6 +428,12 @@ export const TourDetailsPage: React.FC = () => {
               <ShieldCheck size={16} style={{ color: 'var(--status-success)' }} /> Instant confirmation & 100% money-back guarantee
             </div>
           </Card>
+          {/* Reviews & Ratings Section */}
+          <TourReviewsSection
+            tourId={tour.id}
+            tourTitle={tour.title}
+            assignedGuideName={tour.assignedGuideName}
+          />
         </div>
       </div>
 

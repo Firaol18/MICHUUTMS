@@ -102,6 +102,10 @@ export const UserDashboardPage: React.FC = () => {
       authorName: profileName,
       authorEmail: profileEmail,
       rating: reviewRating,
+      overallRating: reviewRating,
+      guideRating: 5,
+      transportRating: 5,
+      accommodationRating: 5,
       comment: reviewComment,
       category: 'tour',
       isVerifiedBooking: true,
@@ -515,7 +519,7 @@ export const UserDashboardPage: React.FC = () => {
                 <Card key={rev.id} glass style={{ padding: '1.25rem' }}>
                   <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#fbbf24' }}>
-                      {'★'.repeat(rev.rating)}
+                      {'★'.repeat(rev.overallRating || rev.rating || 5)}
                     </div>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{rev.date}</span>
                   </div>
