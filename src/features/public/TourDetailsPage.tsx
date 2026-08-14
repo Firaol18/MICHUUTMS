@@ -369,7 +369,12 @@ export const TourDetailsPage: React.FC = () => {
 
           {/* Interactive Expedition Location Map */}
           <div>
-            <InteractiveLocationMap title={`Interactive Location Map & Route — ${tour.title}`} isEditable={false} />
+            <InteractiveLocationMap
+              title={`Interactive Location Map & Route — ${tour.title}`}
+              tourTitle={tour.title}
+              tourId={tour.id}
+              isEditable={false}
+            />
           </div>
 
           {/* Reviews & Ratings Section */}
