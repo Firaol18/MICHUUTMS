@@ -232,7 +232,7 @@ export const useContentStore = create<ContentStoreState>()(
       },
     }),
     {
-      name: 'tms_content_storage_v1',
+      name: 'tms_content_storage_v2',
     }
   )
 );

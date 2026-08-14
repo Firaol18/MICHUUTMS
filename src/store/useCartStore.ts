@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type CartItemType = 'tour' | 'hotel' | 'transport';
+export type CartItemType = 'tour' | 'hotel' | 'transport' | 'event';
 
 export interface CartItem {
   id: string;
