@@ -57,6 +57,7 @@ export const AdminSidebar: React.FC = () => {
   ];
 
   const rbacItems = [
+    { to: '/admin/employees', label: 'Employee', icon: <Shield size={18} /> },
     { to: '/admin/roles', label: 'Role', icon: <Shield size={18} /> },
     { to: '/admin/permission-resources', label: 'Permission Resource', icon: <ShieldCheck size={18} /> },
     { to: '/admin/permission-actions', label: 'Permission Action', icon: <Key size={18} /> },
@@ -242,6 +243,11 @@ export const AdminSidebar: React.FC = () => {
 
         {/* ── RBAC Authorization Governance Section (Display at Bottom) ── */}
         <div style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+          {!sidebarCollapsed && (
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.25rem 0.75rem 0.25rem 0.75rem' }}>
+              RBAC & PERMISSIONS
+            </div>
+          )}
           {rbacItems.map((r) => (
             <NavLink
               key={r.to}
