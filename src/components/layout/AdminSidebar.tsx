@@ -24,6 +24,10 @@ import {
   ArrowLeft,
   PlusCircle,
   List,
+  CalendarDays,
+  BookOpen,
+  Sparkles,
+  FileText,
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC = () => {
@@ -37,6 +41,9 @@ export const AdminSidebar: React.FC = () => {
     { to: '/admin/dashboard', label: 'Dashboard', icon: <Gauge size={19} /> },
     { to: '/admin/tours', label: 'Tours', icon: <Package size={19} />, isExpandable: true },
     { to: '/admin/bookings', label: 'Bookings', icon: <ListOrdered size={19} /> },
+    { to: '/admin/custom-trips', label: 'Custom Trips', icon: <Sparkles size={19} /> },
+    { to: '/admin/events', label: 'Events & Festivals', icon: <CalendarDays size={19} /> },
+    { to: '/admin/blog', label: 'Travel Blog', icon: <BookOpen size={19} /> },
     { to: '/admin/users', label: 'Customers', icon: <Users size={19} /> },
     { to: '/admin/suppliers', label: 'Suppliers', icon: <Building2 size={19} /> },
     { to: '/admin/guides', label: 'Guides', icon: <UserCheck size={19} /> },
@@ -45,6 +52,7 @@ export const AdminSidebar: React.FC = () => {
     { to: '/admin/payments', label: 'Payments', icon: <CreditCard size={19} /> },
     { to: '/admin/expenses', label: 'Expenses', icon: <Receipt size={19} /> },
     { to: '/admin/reports', label: 'Reports', icon: <BarChart3 size={19} /> },
+    { to: '/admin/pages', label: 'CMS Pages', icon: <FileText size={19} /> },
     { to: '/admin/settings', label: 'Settings', icon: <Settings size={19} /> },
   ];
 

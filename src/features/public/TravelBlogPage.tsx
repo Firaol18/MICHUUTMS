@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
-import { BLOG_ARTICLES } from '@/services/mockEventsData';
+import { useContentStore } from '@/store/useContentStore';
 import type { BlogArticle } from '@/services/mockEventsData';
 import { BookOpen, Clock, Tag, ArrowRight, Search } from 'lucide-react';
 
@@ -16,17 +16,18 @@ const BLOG_CATEGORIES: { label: string; value: BlogArticle['category'] | 'all'; 
 ];
 
 export const TravelBlogPage: React.FC = () => {
+  const { articles } = useContentStore();
   const [selectedCat, setSelectedCat] = useState<BlogArticle['category'] | 'all'>('all');
   const [search, setSearch] = useState('');
   const [openArticle, setOpenArticle] = useState<BlogArticle | null>(null);
 
-  const filtered = BLOG_ARTICLES.filter((a) => {
+  const filtered = articles.filter((a) => {
     if (selectedCat !== 'all' && a.category !== selectedCat) return false;
     if (search && !a.title.toLowerCase().includes(search.toLowerCase()) && !a.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()))) return false;
     return true;
   });
 
-  const featuredArticle = BLOG_ARTICLES[0];
+  const featuredArticle = articles[0];
 
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>

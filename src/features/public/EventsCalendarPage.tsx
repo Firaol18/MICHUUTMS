@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/common/Card';
-import { ETHIOPIAN_EVENTS } from '@/services/mockEventsData';
+import { useContentStore } from '@/store/useContentStore';
 import type { EthiopianEvent } from '@/services/mockEventsData';
 import { CalendarDays, MapPin, Tag, ChevronRight, Info } from 'lucide-react';
 
@@ -25,10 +25,11 @@ const CATEGORY_COLORS: Record<EthiopianEvent['category'], string> = {
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export const EventsCalendarPage: React.FC = () => {
+  const { events } = useContentStore();
   const [selectedCategory, setSelectedCategory] = useState<EthiopianEvent['category'] | 'all'>('all');
   const [selected, setSelected] = useState<EthiopianEvent | null>(null);
 
-  const filtered = ETHIOPIAN_EVENTS.filter(
+  const filtered = events.filter(
     (e) => selectedCategory === 'all' || e.category === selectedCategory,
   );
 

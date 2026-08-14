@@ -5,6 +5,7 @@ import { Badge } from '@/components/common/Badge';
 import { Input } from '@/components/common/Input';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useContentStore } from '@/store/useContentStore';
 import {
   Compass,
   CheckCircle2,
@@ -13,24 +14,20 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const DESTINATION_OPTIONS = [
-  { id: 'wenchi', name: 'Wenchi Crater Lake', pricePerDay: 150, image: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=400' },
-  { id: 'lalibela', name: 'Lalibela Rock Churches', pricePerDay: 180, image: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=400' },
-  { id: 'simien', name: 'Simien Mountains Trekking', pricePerDay: 160, image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400' },
-  { id: 'danakil', name: 'Danakil & Erta Ale Volcano', pricePerDay: 220, image: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=400' },
-  { id: 'bale', name: 'Bale Mountains Safari', pricePerDay: 140, image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=400' },
-  { id: 'harar', name: 'Harar Jugol City', pricePerDay: 130, image: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400' },
-];
-
 export const CustomItineraryBuilderPage: React.FC = () => {
   const navigate = useNavigate();
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { user, isAuthenticated } = useAuthStore();
   const addItem = useCartStore((state) => state.addItem);
+  const { customDestinations, pricingConfig, addCustomTripInquiry } = useContentStore();
+
+  const activeDestinations = customDestinations.filter((d) => d.isActive);
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Form selections
-  const [selectedDestinations, setSelectedDestinations] = useState<string[]>(['wenchi', 'lalibela']);
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>(
+    activeDestinations.slice(0, 2).map((d) => d.id)
+  );
   const [tripDays, setTripDays] = useState(5);
   const [travelersCount, setTravelersCount] = useState(2);
   const [startDate, setStartDate] = useState('2026-10-15');
@@ -43,16 +40,25 @@ export const CustomItineraryBuilderPage: React.FC = () => {
     );
   };
 
-  // Price Calculation Engine
-  const baseRatePerDay = selectedDestinations.reduce((sum, id) => {
-    const dest = DESTINATION_OPTIONS.find((d) => d.id === id);
-    return sum + (dest?.pricePerDay || 150);
-  }, 0) / (selectedDestinations.length || 1);
+  // Price Calculation Engine using dynamic config from store
+  const baseRatePerDay =
+    selectedDestinations.reduce((sum, id) => {
+      const dest = activeDestinations.find((d) => d.id === id);
+      return sum + (dest?.pricePerDay || 150);
+    }, 0) / (selectedDestinations.length || 1);
 
-  const tierMultiplier = accommodationTier === 'luxury' ? 1.4 : accommodationTier === 'standard' ? 1.0 : 0.8;
-  const transportCost = transportType === 'landcruiser' ? 120 * tripDays : transportType === 'flight' ? 250 : 50;
+  const tierMultiplier =
+    pricingConfig.tierMultipliers[accommodationTier] ||
+    (accommodationTier === 'luxury' ? 1.4 : accommodationTier === 'standard' ? 1.0 : 0.8);
 
-  const estimatedPerPerson = Math.round(baseRatePerDay * tripDays * tierMultiplier + transportCost / travelersCount);
+  const transportCost =
+    transportType === 'landcruiser'
+      ? (pricingConfig.transportRates.landcruiserPerDay || 120) * tripDays
+      : transportType === 'flight'
+      ? pricingConfig.transportRates.flightFixedRate || 250
+      : pricingConfig.transportRates.busFixedRate || 50;
+
+  const estimatedPerPerson = Math.round(baseRatePerDay * tripDays * tierMultiplier + transportCost / (travelersCount || 1));
   const totalCustomPrice = estimatedPerPerson * travelersCount;
 
   const handleAddToCart = () => {
@@ -62,16 +68,33 @@ export const CustomItineraryBuilderPage: React.FC = () => {
     }
 
     const destNames = selectedDestinations
-      .map((id) => DESTINATION_OPTIONS.find((d) => d.id === id)?.name)
+      .map((id) => activeDestinations.find((d) => d.id === id)?.name)
       .filter(Boolean)
       .join(' + ');
 
+    // Register inquiry in Content Store
+    addCustomTripInquiry({
+      destinations: selectedDestinations,
+      destinationsNames: destNames,
+      tripDays,
+      travelersCount,
+      startDate,
+      accommodationTier,
+      transportType,
+      estimatedPerPerson,
+      totalEstimatedPrice: totalCustomPrice,
+      customerName: user?.fullName || 'Traveler',
+      customerEmail: user?.email,
+      customerPhone: user?.phone,
+    });
+
+    // Add to cart
     addItem({
       id: `custom-expedition-${Date.now()}`,
       type: 'tour',
       title: `Custom Expedition: ${destNames}`,
       subtitle: `${tripDays} Days • ${travelersCount} Guests • ${accommodationTier.toUpperCase()} Stay`,
-      imageUrl: DESTINATION_OPTIONS.find((d) => d.id === selectedDestinations[0])?.image || DESTINATION_OPTIONS[0].image,
+      imageUrl: activeDestinations.find((d) => d.id === selectedDestinations[0])?.image || activeDestinations[0]?.image || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=400',
       unitPrice: estimatedPerPerson,
       quantity: travelersCount,
       date: startDate,
@@ -144,7 +167,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-            {DESTINATION_OPTIONS.map((dest) => {
+            {activeDestinations.map((dest) => {
               const isSelected = selectedDestinations.includes(dest.id);
               return (
                 <div
@@ -163,7 +186,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
                   <div style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>{dest.name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Est. ${dest.pricePerDay}/day</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Est. ${dest.pricePerDay}/day ({dest.region})</div>
                     </div>
                     {isSelected && <CheckCircle2 size={20} style={{ color: 'var(--brand-primary)' }} />}
                   </div>
@@ -173,7 +196,13 @@ export const CustomItineraryBuilderPage: React.FC = () => {
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <Button variant="primary" size="lg" icon={<ArrowRight size={18} />} onClick={() => setStep(2)}>
+            <Button
+              variant="primary"
+              size="lg"
+              icon={<ArrowRight size={18} />}
+              onClick={() => setStep(2)}
+              disabled={selectedDestinations.length === 0}
+            >
               Continue to Dates & Guests
             </Button>
           </div>
@@ -298,10 +327,10 @@ export const CustomItineraryBuilderPage: React.FC = () => {
                 Summary of Selected Preferences
               </h4>
               <div style={{ fontSize: 'var(--font-size-xs)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div><strong>Destinations:</strong> {selectedDestinations.map((id) => DESTINATION_OPTIONS.find((d) => d.id === id)?.name).join(', ')}</div>
+                <div><strong>Destinations:</strong> {selectedDestinations.map((id) => activeDestinations.find((d) => d.id === id)?.name).join(', ')}</div>
                 <div><strong>Trip Duration:</strong> {tripDays} Days ({startDate})</div>
                 <div><strong>Group Size:</strong> {travelersCount} Guests</div>
-                <div><strong>Accommodation:</strong> {accommodationTier.toUpperCase()} Eco-Lodge</div>
+                <div><strong>Accommodation:</strong> {accommodationTier.toUpperCase()} Stay</div>
                 <div><strong>Transport:</strong> {transportType.toUpperCase()} Charter</div>
                 <div><strong>Certified Guide:</strong> Eco-Ranger (Amharic/Oromiffa/English)</div>
               </div>

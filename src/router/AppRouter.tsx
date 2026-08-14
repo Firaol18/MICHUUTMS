@@ -44,6 +44,9 @@ import { AdminVehiclesPage } from '@/features/admin/AdminVehiclesPage';
 import { AdminPaymentsPage } from '@/features/admin/AdminPaymentsPage';
 import { AdminExpensesPage } from '@/features/admin/AdminExpensesPage';
 import { AdminReportsPage } from '@/features/admin/AdminReportsPage';
+import { AdminEventsPage } from '@/features/admin/AdminEventsPage';
+import { AdminBlogPage } from '@/features/admin/AdminBlogPage';
+import { AdminCustomTripsPage } from '@/features/admin/AdminCustomTripsPage';
 
 // Guide Portal Features
 import { GuideDashboardPage } from '@/features/guide/GuideDashboardPage';
@@ -142,6 +145,9 @@ export const AppRouter: React.FC = () => {
             <Route path="/admin/reports" element={<AdminReportsPage />} />
             <Route path="/admin/issues" element={<AdminIssuesPage />} />
             <Route path="/admin/enquiries" element={<AdminEnquiriesPage />} />
+            <Route path="/admin/custom-trips" element={<AdminCustomTripsPage />} />
+            <Route path="/admin/events" element={<AdminEventsPage />} />
+            <Route path="/admin/blog" element={<AdminBlogPage />} />
             <Route path="/admin/pages" element={<AdminPagesPage />} />
             <Route path="/admin/roles" element={<AdminRolesPage />} />
             <Route path="/admin/permission-resources" element={<AdminPermissionResourcesPage />} />
