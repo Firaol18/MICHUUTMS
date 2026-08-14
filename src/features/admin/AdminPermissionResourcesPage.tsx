@@ -187,11 +187,8 @@ export const AdminPermissionResourcesPage: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       
-      {/* Header Bar matching Image 3 */}
+      {/* Header Bar */}
       <div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
-          / Auth / Permission Resources
-        </div>
         <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

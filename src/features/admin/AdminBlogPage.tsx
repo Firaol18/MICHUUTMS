@@ -151,18 +151,19 @@ export const AdminBlogPage: React.FC = () => {
   const columns: Column<BlogArticle>[] = [
     {
       header: 'Article Title & Author',
+      minWidth: '280px',
       cell: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 260 }}>
           <img
             src={row.coverImage}
             alt={row.title}
-            style={{ width: 50, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
+            style={{ width: 50, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover', flexShrink: 0 }}
           />
-          <div>
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)', maxWidth: '340px', lineHeight: 1.3 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3, marginBottom: '0.2rem' }}>
               {row.title}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span>✍️ {row.author}</span>
               <span>•</span>
               <span>📅 {row.publishedAt}</span>
@@ -173,6 +174,8 @@ export const AdminBlogPage: React.FC = () => {
     },
     {
       header: 'Category',
+      minWidth: '110px',
+      noWrap: true,
       cell: (row) => {
         const catObj = CATEGORIES.find((c) => c.value === row.category);
         return (
@@ -184,6 +187,8 @@ export const AdminBlogPage: React.FC = () => {
     },
     {
       header: 'Read Time',
+      minWidth: '100px',
+      noWrap: true,
       cell: (row) => (
         <span style={{ fontSize: 'var(--font-size-xs)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-secondary)' }}>
           <Clock size={12} /> {row.readMinutes} min
@@ -192,8 +197,9 @@ export const AdminBlogPage: React.FC = () => {
     },
     {
       header: 'Tags',
+      minWidth: '140px',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', maxWidth: '200px' }}>
+        <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
           {row.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
@@ -213,8 +219,11 @@ export const AdminBlogPage: React.FC = () => {
     },
     {
       header: 'Actions',
+      minWidth: '120px',
+      noWrap: true,
+      align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.375rem' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'center' }}>
           <Button variant="ghost" size="sm" icon={<Eye size={14} />} onClick={() => setPreviewArticle(row)} title="Preview Article" />
           <Button variant="ghost" size="sm" icon={<Edit2 size={14} />} onClick={() => openEditModal(row)} title="Edit Article" />
           <Button variant="ghost" size="sm" icon={<Trash2 size={14} style={{ color: 'var(--status-danger)' }} />} onClick={() => handleDelete(row.id, row.title)} title="Delete Article" />

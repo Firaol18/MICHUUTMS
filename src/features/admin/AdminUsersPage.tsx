@@ -212,36 +212,71 @@ export const AdminUsersPage: React.FC = () => {
   const columns: Column<CustomerProfile>[] = [
     {
       header: 'Customer',
+      minWidth: '220px',
       cell: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 200 }}>
           <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
             {row.name.charAt(0)}
           </div>
-          <div>
-            <div style={{ fontWeight: 700 }}>{row.name}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{row.email}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>{row.name}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{row.email}</div>
           </div>
         </div>
       ),
     },
-    { header: 'Mobile', accessorKey: 'mobile' },
-    { header: 'Role', cell: (row) => <Badge variant="info">{row.role}</Badge> },
-    { header: 'Loyalty', cell: (row) => <LoyaltyBadge tier={row.loyaltyTier} /> },
+    {
+      header: 'Mobile',
+      minWidth: '150px',
+      noWrap: true,
+      cell: (row) => (
+        <span style={{ fontWeight: 600, fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+          {row.mobile || '—'}
+        </span>
+      ),
+    },
+    {
+      header: 'Role',
+      minWidth: '110px',
+      noWrap: true,
+      cell: (row) => <Badge variant="info">{row.role}</Badge>,
+    },
+    {
+      header: 'Loyalty',
+      minWidth: '120px',
+      noWrap: true,
+      cell: (row) => <LoyaltyBadge tier={row.loyaltyTier} />,
+    },
     {
       header: 'Bookings / Spend',
+      minWidth: '140px',
+      noWrap: true,
       cell: (row) => (
         <div>
           <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)' }}>{row.totalBookings} trips</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>${row.totalSpend.toLocaleString()} total</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>${row.totalSpend.toLocaleString()} total</div>
         </div>
       ),
     },
-    { header: 'Joined', cell: (row) => <span style={{ fontSize: 'var(--font-size-xs)' }}>{row.regDate}</span> },
-    { header: 'Status', cell: (row) => <Badge variant={row.status === 'active' ? 'success' : 'danger'}>{row.status.toUpperCase()}</Badge> },
+    {
+      header: 'Joined',
+      minWidth: '110px',
+      noWrap: true,
+      cell: (row) => <span style={{ fontSize: 'var(--font-size-xs)', whiteSpace: 'nowrap' }}>{row.regDate}</span>,
+    },
+    {
+      header: 'Status',
+      minWidth: '100px',
+      noWrap: true,
+      cell: (row) => <Badge variant={row.status === 'active' ? 'success' : 'danger'}>{row.status.toUpperCase()}</Badge>,
+    },
     {
       header: 'Actions',
+      minWidth: '160px',
+      noWrap: true,
+      align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.35rem' }}>
+        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
           <Button variant="ghost" size="sm" icon={<Eye size={13} />} onClick={() => openDetail(row)}>View</Button>
           <PermissionGuard resource="users" action="update">
             <Button variant="outline" size="sm" icon={<Edit size={13} />} onClick={() => openEdit(row)}>Edit</Button>

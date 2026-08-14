@@ -106,9 +106,6 @@ export const AdminSuppliersPage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Header Bar */}
       <div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
-          / Auth / Suppliers
-        </div>
         <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -174,17 +171,17 @@ export const AdminSuppliersPage: React.FC = () => {
       </div>
 
       {/* Data Table */}
-      <Card glass style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
+      <Card glass style={{ padding: 0, overflowX: 'auto', border: '1px solid var(--border-color)' }}>
+        <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
           <thead>
-            <tr style={{ backgroundColor: '#034ea2', color: '#ffffff' }}>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50 }}># ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>SUPPLIER NAME ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>CATEGORY ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>CONTACT PERSON ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>LOCATION ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 100 }}>STATUS ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 160 }}>ACTIONS</th>
+            <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}># ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 200, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>SUPPLIER NAME ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 120, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>CATEGORY ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 180, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>CONTACT PERSON ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 140, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>LOCATION ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 100, minWidth: 100, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>STATUS ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 160, minWidth: 160, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
@@ -196,19 +193,21 @@ export const AdminSuppliersPage: React.FC = () => {
               </tr>
             ) : (
               currentSuppliersPage.map((sup, idx) => (
-                <tr key={sup.id} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--bg-tertiary)' }}>
-                  <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)' }}>{startIndex + idx + 1}</td>
+                <tr key={sup.id} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--bg-secondary)' }}>
+                  <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{startIndex + idx + 1}</td>
                   <td style={{ padding: '0.875rem 1rem' }}>
-                    <div style={{ fontWeight: 800, color: '#034ea2' }}>{sup.name}</div>
+                    <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{sup.name}</div>
                     <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700, marginTop: 2 }}>★ {sup.rating} Rating</div>
                   </td>
-                  <td style={{ padding: '0.875rem 1rem' }}><Badge variant="info">{sup.category}</Badge></td>
+                  <td style={{ padding: '0.875rem 1rem', whiteSpace: 'nowrap' }}><Badge variant="info">{sup.category}</Badge></td>
                   <td style={{ padding: '0.875rem 1rem' }}>
                     <div style={{ fontWeight: 700 }}>{sup.contactPerson}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{sup.phone} · {sup.email}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontWeight: 600 }}>{sup.phone}</span> · {sup.email}
+                    </div>
                   </td>
-                  <td style={{ padding: '0.875rem 1rem', color: 'var(--text-secondary)' }}>📍 {sup.city}</td>
-                  <td style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>
+                  <td style={{ padding: '0.875rem 1rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>📍 {sup.city}</td>
+                  <td style={{ padding: '0.875rem 1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <Badge variant={sup.status === 'Active' ? 'success' : 'danger'}>{sup.status}</Badge>
                   </td>
                   <td style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>

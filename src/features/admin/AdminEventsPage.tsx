@@ -139,23 +139,24 @@ export const AdminEventsPage: React.FC = () => {
   const columns: Column<EthiopianEvent>[] = [
     {
       header: 'Event / Festival',
+      minWidth: '260px',
       cell: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 240 }}>
           <img
             src={row.imageUrl}
             alt={row.title}
-            style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
+            style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover', flexShrink: 0 }}
           />
-          <div>
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', lineHeight: 1.35 }}>
               {row.title}
               {row.isFeatured && (
-                <span title="Featured Event" style={{ color: '#eab308' }}>
+                <span title="Featured Event" style={{ color: '#eab308', flexShrink: 0 }}>
                   <Star size={14} fill="#eab308" />
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
               <MapPin size={11} /> {row.location} ({row.region})
             </div>
           </div>
@@ -164,15 +165,19 @@ export const AdminEventsPage: React.FC = () => {
     },
     {
       header: 'Date(s)',
+      minWidth: '120px',
+      noWrap: true,
       cell: (row) => (
         <div style={{ fontSize: 'var(--font-size-xs)' }}>
           <div style={{ fontWeight: 600 }}>{row.date}</div>
-          {row.endDate && <div style={{ color: 'var(--text-muted)' }}>to {row.endDate}</div>}
+          {row.endDate && <div style={{ color: 'var(--text-muted)', fontSize: '11px' }}>to {row.endDate}</div>}
         </div>
       ),
     },
     {
       header: 'Category',
+      minWidth: '110px',
+      noWrap: true,
       cell: (row) => (
         <span
           style={{
@@ -192,6 +197,9 @@ export const AdminEventsPage: React.FC = () => {
     },
     {
       header: 'Featured',
+      minWidth: '90px',
+      noWrap: true,
+      align: 'center',
       cell: (row) => (
         <button
           onClick={() => toggleFeaturedEvent(row.id)}
@@ -210,8 +218,11 @@ export const AdminEventsPage: React.FC = () => {
     },
     {
       header: 'Actions',
+      minWidth: '100px',
+      noWrap: true,
+      align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.375rem' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'center' }}>
           <Button variant="ghost" size="sm" icon={<Edit2 size={14} />} onClick={() => openEditModal(row)} />
           <Button variant="ghost" size="sm" icon={<Trash2 size={14} style={{ color: 'var(--status-danger)' }} />} onClick={() => handleDelete(row.id, row.title)} />
         </div>

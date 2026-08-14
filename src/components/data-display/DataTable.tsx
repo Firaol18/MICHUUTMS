@@ -7,7 +7,10 @@ export interface Column<T> {
   accessorKey?: keyof T;
   cell?: (row: T) => React.ReactNode;
   width?: string;
+  minWidth?: string;
+  maxWidth?: string;
   align?: 'left' | 'center' | 'right';
+  noWrap?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -23,6 +26,7 @@ interface DataTableProps<T> {
   onSearchChange?: (query: string) => void;
   searchPlaceholder?: string;
   entityName?: string;
+  minTableWidth?: string;
 }
 
 export function DataTable<T>({
@@ -38,6 +42,7 @@ export function DataTable<T>({
   onSearchChange,
   searchPlaceholder = 'Search records...',
   entityName = 'entries',
+  minTableWidth = '1000px',
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
@@ -125,7 +130,7 @@ export function DataTable<T>({
             }}
           >
             {[5, 10, 25, 50].map((size) => (
-              <option key={size} value={`${size} Rows`}>
+              <option key={size} value={size}>
                 {size} Rows
               </option>
             ))}
@@ -138,20 +143,21 @@ export function DataTable<T>({
         className="tms-table-container"
         style={{
           padding: 0,
-          overflow: 'hidden',
+          overflowX: 'auto',
           border: '1px solid var(--border-color)',
           borderRadius: 'var(--radius-md)',
           backgroundColor: 'var(--bg-primary)',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
         <table
           className="tms-table"
-          style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}
+          style={{ width: '100%', minWidth: minTableWidth, borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}
         >
           <thead>
-            <tr style={{ backgroundColor: '#034ea2', color: '#ffffff' }}>
+            <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
               {showIndexColumn && (
-                <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50 }}>
+                <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>
                   # ↕
                 </th>
               )}
@@ -165,7 +171,15 @@ export function DataTable<T>({
                       padding: '0.875rem 1rem',
                       textAlign: col.align || (isActions ? 'center' : 'left'),
                       fontWeight: 800,
+                      fontSize: '11px',
+                      letterSpacing: '0.04em',
+                      color: 'var(--text-secondary)',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      borderBottom: '1px solid var(--border-color)',
                       width: col.width,
+                      minWidth: col.minWidth,
+                      maxWidth: col.maxWidth,
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {isActions ? col.header.toUpperCase() : headerText.toUpperCase()}
@@ -191,12 +205,13 @@ export function DataTable<T>({
                   onClick={() => onRowClick && onRowClick(row)}
                   style={{
                     borderBottom: '1px solid var(--border-color)',
-                    backgroundColor: rowIdx % 2 === 0 ? 'transparent' : 'var(--bg-tertiary)',
+                    backgroundColor: rowIdx % 2 === 0 ? 'transparent' : 'var(--bg-secondary)',
                     cursor: onRowClick ? 'pointer' : 'default',
+                    transition: 'background-color 0.15s ease',
                   }}
                 >
                   {showIndexColumn && (
-                    <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                    <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                       {startIndex + rowIdx + 1}
                     </td>
                   )}
@@ -207,7 +222,12 @@ export function DataTable<T>({
                         key={colIdx}
                         style={{
                           padding: '0.875rem 1rem',
+                          verticalAlign: 'middle',
                           textAlign: col.align || (isActions ? 'center' : 'left'),
+                          width: col.width,
+                          minWidth: col.minWidth,
+                          maxWidth: col.maxWidth,
+                          whiteSpace: col.noWrap ? 'nowrap' : 'normal',
                         }}
                       >
                         {col.cell

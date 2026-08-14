@@ -232,10 +232,11 @@ export const AdminGuidesPage: React.FC = () => {
   const columns: Column<TourGuide>[] = [
     {
       header: 'Guide Roster',
+      minWidth: '240px',
       cell: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src={row.avatarUrl} alt={row.name} style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color)' }} />
-          <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 220 }}>
+          <img src={row.avatarUrl} alt={row.name} style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color)', flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)' }}>{row.name}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{row.specializations.join(' • ')}</div>
           </div>
@@ -244,6 +245,7 @@ export const AdminGuidesPage: React.FC = () => {
     },
     {
       header: 'Languages',
+      minWidth: '150px',
       cell: (row) => (
         <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
           {row.languages.map((l) => <Badge key={l} variant="info">{l}</Badge>)}
@@ -252,6 +254,8 @@ export const AdminGuidesPage: React.FC = () => {
     },
     {
       header: 'Exp & Daily Fee',
+      minWidth: '130px',
+      noWrap: true,
       cell: (row) => (
         <div>
           <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)' }}>${row.tourFee || 100}/day</div>
@@ -261,6 +265,8 @@ export const AdminGuidesPage: React.FC = () => {
     },
     {
       header: 'Tours & Rating',
+      minWidth: '120px',
+      noWrap: true,
       cell: (row) => (
         <div>
           <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 'var(--font-size-sm)' }}>★ {row.rating} / 5.0</div>
@@ -270,6 +276,8 @@ export const AdminGuidesPage: React.FC = () => {
     },
     {
       header: 'Status',
+      minWidth: '110px',
+      noWrap: true,
       cell: (row) => (
         <Badge variant={statusVariant(row.status)}>
           {row.status.replace('_', ' ').toUpperCase()}
@@ -278,8 +286,11 @@ export const AdminGuidesPage: React.FC = () => {
     },
     {
       header: 'Actions',
+      minWidth: '150px',
+      noWrap: true,
+      align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.35rem' }}>
+        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
           <Button variant="ghost" size="sm" icon={<Eye size={13} />} onClick={() => openDetail(row)}>View</Button>
           <PermissionGuard resource="guides" action="update">
             <Button variant="outline" size="sm" icon={<Edit size={13} />} onClick={() => handleStartEdit(row)}>Edit</Button>

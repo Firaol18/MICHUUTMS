@@ -298,19 +298,35 @@ export const AdminToursPage: React.FC = () => {
   const columns: Column<TourPackage>[] = [
     {
       header: 'Tour Package Title',
+      minWidth: '280px',
       cell: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src={row.imageUrl} alt={row.title} style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }} />
-          <div>
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{row.title}</div>
-            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', fontWeight: 600 }}>{row.destination.name}, {row.destination.country}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 260 }}>
+          <img
+            src={row.imageUrl}
+            alt={row.title}
+            style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover', flexShrink: 0 }}
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35, marginBottom: '0.2rem' }}>
+              {row.title}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--brand-primary)', fontWeight: 600 }}>
+              📍 {row.destination.name}, {row.destination.country}
+            </div>
           </div>
         </div>
       ),
     },
-    { header: 'Category', cell: (row) => <Badge variant="info">{row.category.toUpperCase()}</Badge> },
+    {
+      header: 'Category',
+      minWidth: '100px',
+      noWrap: true,
+      cell: (row) => <Badge variant="info">{row.category.toUpperCase()}</Badge>,
+    },
     {
       header: 'Difficulty',
+      minWidth: '110px',
+      noWrap: true,
       cell: (row) => (
         <Badge variant={row.difficulty === 'easy' ? 'success' : row.difficulty === 'moderate' ? 'warning' : 'danger'}>
           {row.difficulty.toUpperCase()}
@@ -319,37 +335,79 @@ export const AdminToursPage: React.FC = () => {
     },
     {
       header: 'Special Offer',
-      cell: (row) => row.hasOffer ? (
-        <Badge variant="danger" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><Tag size={12} /> {row.offerTag || `${row.discountPercent}% OFF`}</Badge>
-      ) : (<span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>Standard Price</span>),
+      minWidth: '150px',
+      noWrap: true,
+      cell: (row) =>
+        row.hasOffer ? (
+          <Badge variant="danger" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <Tag size={12} /> {row.offerTag || `${row.discountPercent}% OFF`}
+          </Badge>
+        ) : (
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Standard Price</span>
+        ),
     },
     {
       header: 'Price / Person',
+      minWidth: '120px',
+      noWrap: true,
       cell: (row) => (
         <div>
-          {row.hasOffer && row.originalPrice && <span style={{ textDecoration: 'line-through', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginRight: '0.375rem' }}>${row.originalPrice}</span>}
-          <span style={{ fontWeight: 700, color: row.hasOffer ? '#16a34a' : 'var(--text-primary)' }}>${row.pricePerPerson.toLocaleString()}</span>
+          {row.hasOffer && row.originalPrice && (
+            <span style={{ textDecoration: 'line-through', fontSize: '11px', color: 'var(--text-muted)', marginRight: '0.375rem' }}>
+              ${row.originalPrice}
+            </span>
+          )}
+          <span style={{ fontWeight: 800, color: row.hasOffer ? '#16a34a' : 'var(--text-primary)', fontSize: '13px' }}>
+            ${row.pricePerPerson.toLocaleString()}
+          </span>
         </div>
       ),
     },
-    { header: 'Duration', cell: (row) => <span>{row.durationDays} Days</span> },
+    {
+      header: 'Duration',
+      minWidth: '90px',
+      noWrap: true,
+      cell: (row) => <span style={{ fontWeight: 600 }}>{row.durationDays} Days</span>,
+    },
     {
       header: 'Ranger Guide',
+      minWidth: '140px',
+      noWrap: true,
       cell: (row) => (
-        <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: row.assignedGuideName ? 'var(--brand-primary)' : 'var(--text-muted)' }}>
+        <span style={{ fontSize: '11px', fontWeight: 600, color: row.assignedGuideName ? 'var(--brand-primary)' : 'var(--text-muted)' }}>
           {row.assignedGuideName ? `👤 ${row.assignedGuideName}` : 'Unassigned'}
         </span>
       ),
     },
-    { header: 'Status', cell: (row) => <Badge variant={row.status === 'active' ? 'success' : 'warning'}>{row.status.toUpperCase()}</Badge> },
+    {
+      header: 'Status',
+      minWidth: '100px',
+      noWrap: true,
+      cell: (row) => <Badge variant={row.status === 'active' ? 'success' : 'warning'}>{row.status.toUpperCase()}</Badge>,
+    },
     {
       header: 'Actions',
+      minWidth: '140px',
+      noWrap: true,
+      align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-          <Button variant="outline" size="sm" icon={<Edit size={14} />} onClick={() => handleStartEdit(row)}>Edit</Button>
+        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', justifyContent: 'center' }}>
+          <Button variant="outline" size="sm" icon={<Edit size={13} />} onClick={() => handleStartEdit(row)}>
+            Edit
+          </Button>
           <PermissionGuard resource="tours" action="delete">
-            <Button variant="ghost" size="sm" style={{ color: '#ef4444' }} icon={<Trash2 size={14} />}
-              onClick={async () => { if (window.confirm(`Delete "${row.title}"?`)) { await tourismService.deleteTourPackage(row.id); fetchTours(); } }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              style={{ color: '#ef4444' }}
+              icon={<Trash2 size={13} />}
+              onClick={async () => {
+                if (window.confirm(`Delete "${row.title}"?`)) {
+                  await tourismService.deleteTourPackage(row.id);
+                  fetchTours();
+                }
+              }}
+            >
               Delete
             </Button>
           </PermissionGuard>

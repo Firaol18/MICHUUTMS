@@ -253,7 +253,6 @@ export const AdminDriversPage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Header */}
       <div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>/ Auth / Drivers</div>
         <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -303,17 +302,17 @@ export const AdminDriversPage: React.FC = () => {
       </div>
 
       {/* Data Table */}
-      <Card glass style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
+      <Card glass style={{ padding: 0, overflowX: 'auto', border: '1px solid var(--border-color)' }}>
+        <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
           <thead>
-            <tr style={{ backgroundColor: '#034ea2', color: '#ffffff' }}>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50 }}># ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>DRIVER NAME ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>LICENSE NO. & EXPIRY ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>CONNECTED VEHICLE ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>DRIVER SCHEDULE ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 120 }}>AVAILABILITY ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 160 }}>ACTIONS</th>
+            <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}># ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 200, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>DRIVER NAME ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 160, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>LICENSE NO. & EXPIRY ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 200, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>CONNECTED VEHICLE ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 150, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>DRIVER SCHEDULE ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 120, minWidth: 120, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>AVAILABILITY ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 160, minWidth: 160, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
@@ -325,20 +324,22 @@ export const AdminDriversPage: React.FC = () => {
               </tr>
             ) : (
               currentDriversPage.map((drv, idx) => (
-                <tr key={drv.id} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--bg-tertiary)' }}>
-                  <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)' }}>{startIndex + idx + 1}</td>
+                <tr key={drv.id} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--bg-secondary)' }}>
+                  <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{startIndex + idx + 1}</td>
                   <td style={{ padding: '0.875rem 1rem' }}>
-                    <div style={{ fontWeight: 800, color: '#034ea2' }}>{drv.name}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{drv.phone} · {drv.experienceYears} Yrs Exp · ${drv.dailyRate}/day</div>
+                    <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{drv.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: '0.15rem', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontWeight: 600 }}>{drv.phone}</span> · {drv.experienceYears} Yrs Exp · ${drv.dailyRate}/day
+                    </div>
                   </td>
-                  <td style={{ padding: '0.875rem 1rem' }}>
+                  <td style={{ padding: '0.875rem 1rem', whiteSpace: 'nowrap' }}>
                     <div style={{ fontFamily: 'monospace', fontWeight: 800 }}>{drv.licenseNumber}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Valid until {drv.licenseExpiry}</div>
                   </td>
                   <td style={{ padding: '0.875rem 1rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                     🚐 {drv.assignedVehicle}
                   </td>
-                  <td style={{ padding: '0.875rem 1rem' }}>
+                  <td style={{ padding: '0.875rem 1rem', whiteSpace: 'nowrap' }}>
                     <button
                       type="button"
                       onClick={() => setSelectedDriverSchedule(drv)}
@@ -359,7 +360,7 @@ export const AdminDriversPage: React.FC = () => {
                       <Calendar size={12} /> {drv.schedule.length} Trips Scheduled
                     </button>
                   </td>
-                  <td style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>
+                  <td style={{ padding: '0.875rem 1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <Badge variant={drv.availability === 'On Trip' ? 'info' : drv.availability === 'Available' ? 'success' : 'danger'}>
                       {drv.availability}
                     </Badge>

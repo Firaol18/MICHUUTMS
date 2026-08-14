@@ -275,7 +275,6 @@ export const AdminVehiclesPage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Header */}
       <div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>/ Auth / Vehicles</div>
         <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -302,7 +301,7 @@ export const AdminVehiclesPage: React.FC = () => {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Search plate number, vehicle model, assigned driver, or status..."
+            placeholder="Search plate #, model, vehicle name, or driver..."
             style={{ width: '100%', padding: '0.45rem 0.875rem 0.45rem 2.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-xs)', outline: 'none' }}
           />
         </div>
@@ -325,17 +324,17 @@ export const AdminVehiclesPage: React.FC = () => {
       </div>
 
       {/* Data Table */}
-      <Card glass style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
+      <Card glass style={{ padding: 0, overflowX: 'auto', border: '1px solid var(--border-color)' }}>
+        <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
           <thead>
-            <tr style={{ backgroundColor: '#034ea2', color: '#ffffff' }}>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50 }}># ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>REGISTRATION / PLATE ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>MODEL & CAPACITY ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>SERVICE & INSURANCE ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800 }}>ASSIGNED DRIVER ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 120 }}>STATUS ↕</th>
-              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 160 }}>ACTIONS</th>
+            <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, width: 50, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}># ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 200, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>REGISTRATION / PLATE ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 180, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>MODEL & CAPACITY ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 180, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>SERVICE & INSURANCE ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 180, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>ASSIGNED DRIVER ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 120, minWidth: 120, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>STATUS ↕</th>
+              <th style={{ padding: '0.875rem 1rem', textAlign: 'center', fontWeight: 800, width: 160, minWidth: 160, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>

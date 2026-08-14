@@ -132,14 +132,15 @@ export const AdminCustomTripsPage: React.FC = () => {
   const destinationColumns: Column<CustomDestinationOption>[] = [
     {
       header: 'Destination',
+      minWidth: '240px',
       cell: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 220 }}>
           <img
             src={row.image}
             alt={row.name}
-            style={{ width: 48, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
+            style={{ width: 48, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover', flexShrink: 0 }}
           />
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{row.name}</div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{row.region} Region</div>
           </div>
@@ -148,6 +149,8 @@ export const AdminCustomTripsPage: React.FC = () => {
     },
     {
       header: 'Base Rate / Day',
+      minWidth: '130px',
+      noWrap: true,
       cell: (row) => (
         <span style={{ fontWeight: 700, color: 'var(--brand-primary)' }}>
           ${row.pricePerDay} USD
@@ -156,14 +159,17 @@ export const AdminCustomTripsPage: React.FC = () => {
     },
     {
       header: 'Description',
+      minWidth: '220px',
       cell: (row) => (
-        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', maxWidth: '280px' }}>
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>
           {row.description || '—'}
         </div>
       ),
     },
     {
       header: 'Status in Wizard',
+      minWidth: '130px',
+      noWrap: true,
       cell: (row) => (
         <Badge variant={row.isActive ? 'success' : 'neutral'}>
           {row.isActive ? 'ACTIVE' : 'HIDDEN'}
@@ -172,8 +178,11 @@ export const AdminCustomTripsPage: React.FC = () => {
     },
     {
       header: 'Actions',
+      minWidth: '100px',
+      noWrap: true,
+      align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.375rem' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'center' }}>
           <Button variant="ghost" size="sm" icon={<Edit2 size={14} />} onClick={() => openEditDestModal(row)} />
           <Button variant="ghost" size="sm" icon={<Trash2 size={14} style={{ color: 'var(--status-danger)' }} />} onClick={() => handleDeleteDest(row.id, row.name)} />
         </div>
@@ -184,9 +193,10 @@ export const AdminCustomTripsPage: React.FC = () => {
   const inquiryColumns: Column<CustomTripInquiry>[] = [
     {
       header: 'Trip Itinerary & Destinations',
+      minWidth: '260px',
       cell: (row) => (
-        <div>
-          <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+        <div style={{ minWidth: 240 }}>
+          <div style={{ fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
             {row.destinationsNames}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', marginTop: '0.15rem' }}>
@@ -199,6 +209,8 @@ export const AdminCustomTripsPage: React.FC = () => {
     },
     {
       header: 'Tier & Transport',
+      minWidth: '140px',
+      noWrap: true,
       cell: (row) => (
         <div style={{ fontSize: 'var(--font-size-xs)' }}>
           <div style={{ textTransform: 'capitalize', fontWeight: 600 }}>Stay: {row.accommodationTier}</div>
@@ -208,6 +220,8 @@ export const AdminCustomTripsPage: React.FC = () => {
     },
     {
       header: 'Total Estimate',
+      minWidth: '130px',
+      noWrap: true,
       cell: (row) => (
         <div style={{ fontSize: 'var(--font-size-sm)' }}>
           <div style={{ fontWeight: 800, color: 'var(--brand-primary)' }}>${row.totalEstimatedPrice?.toLocaleString()} USD</div>
@@ -217,6 +231,8 @@ export const AdminCustomTripsPage: React.FC = () => {
     },
     {
       header: 'Customer',
+      minWidth: '160px',
+      noWrap: true,
       cell: (row) => (
         <div style={{ fontSize: 'var(--font-size-xs)' }}>
           <div style={{ fontWeight: 600 }}>{row.customerName || 'Online Guest'}</div>
@@ -226,6 +242,8 @@ export const AdminCustomTripsPage: React.FC = () => {
     },
     {
       header: 'Status',
+      minWidth: '120px',
+      noWrap: true,
       cell: (row) => (
         <select
           className="tms-input"

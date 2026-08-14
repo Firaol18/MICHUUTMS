@@ -81,6 +81,8 @@ export const AdminBookingsPage: React.FC = () => {
   const columns: Column<Booking>[] = [
     {
       header: 'Reference #',
+      minWidth: '130px',
+      noWrap: true,
       cell: (row) => (
         <span style={{ fontWeight: 700, color: 'var(--brand-primary)', fontFamily: 'monospace' }}>
           {row.bookingReference}
@@ -89,10 +91,11 @@ export const AdminBookingsPage: React.FC = () => {
     },
     {
       header: 'Tour & Traveler',
+      minWidth: '240px',
       cell: (row) => (
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', maxWidth: 200 }}>{row.tourTitle}</div>
-          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: 2 }}>
+        <div style={{ minWidth: 220 }}>
+          <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)', lineHeight: 1.3 }}>{row.tourTitle}</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
             {row.traveler.name} · {row.traveler.email}
           </div>
         </div>
@@ -100,15 +103,19 @@ export const AdminBookingsPage: React.FC = () => {
     },
     {
       header: 'Departure',
+      minWidth: '130px',
+      noWrap: true,
       cell: (row) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>{row.travelDate}</div>
-          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>Booked {row.bookingDate}</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Booked {row.bookingDate}</div>
         </div>
       ),
     },
     {
       header: 'Guests',
+      minWidth: '100px',
+      noWrap: true,
       cell: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
           <Users size={13} style={{ color: 'var(--brand-primary)' }} />
@@ -123,6 +130,8 @@ export const AdminBookingsPage: React.FC = () => {
     },
     {
       header: 'Total',
+      minWidth: '110px',
+      noWrap: true,
       cell: (row) => (
         <span style={{ fontWeight: 700, color: 'var(--status-success)' }}>
           ${row.totalPrice.toLocaleString()}
@@ -131,6 +140,8 @@ export const AdminBookingsPage: React.FC = () => {
     },
     {
       header: 'Payment',
+      minWidth: '120px',
+      noWrap: true,
       cell: (row) => (
         <PermissionGuard resource="bookings" action="update">
           <select
@@ -160,6 +171,8 @@ export const AdminBookingsPage: React.FC = () => {
     },
     {
       header: 'Guide',
+      minWidth: '140px',
+      noWrap: true,
       cell: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <UserCheck size={13} style={{ color: 'var(--brand-primary)' }} />
@@ -179,14 +192,19 @@ export const AdminBookingsPage: React.FC = () => {
     },
     {
       header: 'Status',
+      minWidth: '110px',
+      noWrap: true,
       cell: (row) => (
         <Badge variant={statusVariant(row.status)}>{row.status.toUpperCase()}</Badge>
       ),
     },
     {
       header: 'Actions',
+      minWidth: '180px',
+      noWrap: true,
+      align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', justifyContent: 'center' }}>
           <Button variant="ghost" size="sm" icon={<Eye size={13} />} onClick={() => openDetail(row)}>
             View
           </Button>
