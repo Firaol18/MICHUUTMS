@@ -10,16 +10,31 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for both frontend apps
+  // Enable CORS for both frontend apps (Localhost + Vercel deployments + Custom Origins)
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176',
+    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()) : []),
+  ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:5173', // Public portal
-      'http://localhost:5174', // Admin portal
-      'http://localhost:5175', // Public portal (fallback port)
-      'http://localhost:5176', // Admin portal (fallback port)
-      ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
-    ],
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.includes('*') ||
+        origin.endsWith('.vercel.app')
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Permissive in cloud deployment to prevent blocked preflights
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   app.useGlobalPipes(

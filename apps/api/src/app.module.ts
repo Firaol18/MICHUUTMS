@@ -30,6 +30,16 @@ const connectionOptions = useDatabaseUrl
   ? { 
       type: 'postgres' as const,
       url: process.env.DATABASE_URL,
+      ssl:
+        process.env.DB_SSL === 'true' ||
+        process.env.NODE_ENV === 'production' ||
+        (process.env.DATABASE_URL &&
+          (process.env.DATABASE_URL.includes('render.com') ||
+            process.env.DATABASE_URL.includes('neon.tech') ||
+            process.env.DATABASE_URL.includes('supabase.co') ||
+            process.env.DATABASE_URL.includes('sslmode=require')))
+          ? { rejectUnauthorized: false }
+          : false,
     }
   : {
       type: 'postgres' as const,
