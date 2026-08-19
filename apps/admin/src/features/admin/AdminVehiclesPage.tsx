@@ -1,10 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
 import { Badge } from '@tms/shared/components/common/Badge';
+import { http } from '@tms/shared/services/apiClient';
 import { Car, Plus, Search, Edit2, Trash2, Wrench, ChevronLeft, ChevronRight } from 'lucide-react';
+
 
 export type VehicleStatus = 'Available' | 'Assigned' | 'In Maintenance' | 'Unavailable';
 
@@ -143,7 +145,9 @@ const DRIVER_OPTIONS = [
 ];
 
 export const AdminVehiclesPage: React.FC = () => {
-  const [vehicles, setVehicles] = useState<VehicleItem[]>(INITIAL_VEHICLES);
+  const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Pagination State
@@ -169,6 +173,44 @@ export const AdminVehiclesPage: React.FC = () => {
 
   // Maintenance Log Inspector Modal State
   const [selectedVehicleLog, setSelectedVehicleLog] = useState<VehicleItem | null>(null);
+
+  const fetchVehicles = async () => {
+    setIsLoading(true);
+    setApiError('');
+    try {
+      const res = await http.get('/vehicles');
+      setVehicles(
+        Array.isArray(res.data)
+          ? res.data.map((v: any) => ({
+              id: String(v.id),
+              vehicleName: v.vehicleName || v.model || '',
+              plateNumber: v.plateNumber || '',
+              model: v.model || '',
+              year: Number(v.year) || 2024,
+              type: (v.type as any) || '4x4 Cruiser',
+              capacity: Number(v.capacity) || 7,
+              assignedDriver: v.assignedDriver || 'Unassigned',
+              status: (v.status as any) || 'Available',
+              nextServiceKm: Number(v.nextServiceKm) || 0,
+              currentMileageKm: Number(v.currentMileageKm) || 0,
+              lastServiceCostUsd: Number(v.lastServiceCostUsd) || 0,
+              insuranceExpiry: v.insuranceExpiry || '',
+              inspectionExpiry: v.inspectionExpiry || '',
+              maintenanceHistory: v.maintenanceHistory || [],
+            }))
+          : []
+      );
+    } catch (err: any) {
+      setApiError('Failed to load vehicles from server.');
+      setVehicles([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
 
   const handleOpenAddModal = () => {
     setEditingId(null);
@@ -202,58 +244,39 @@ export const AdminVehiclesPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!plateNumber.trim()) return;
 
+    const payload = {
+      vehicleName: vehicleName || model,
+      plateNumber,
+      model,
+      year,
+      type,
+      capacity,
+      assignedDriver,
+      status,
+      nextServiceKm,
+      currentMileageKm,
+      lastServiceCostUsd: 300,
+      insuranceExpiry,
+      inspectionExpiry: 'Valid until Nov 2026',
+      maintenanceHistory: [],
+    };
+
     if (editingId) {
-      setVehicles((prev) =>
-        prev.map((v) =>
-          v.id === editingId
-            ? {
-                ...v,
-                vehicleName: vehicleName || model,
-                plateNumber,
-                model,
-                year,
-                type,
-                capacity,
-                assignedDriver,
-                status,
-                nextServiceKm,
-                currentMileageKm,
-                insuranceExpiry,
-              }
-            : v
-        )
-      );
+      await http.patch(`/vehicles/${editingId}`, payload);
     } else {
-      const newVeh: VehicleItem = {
-        id: `veh-${Date.now()}`,
-        vehicleName: vehicleName || model || 'Expedition Fleet Vehicle',
-        plateNumber,
-        model: model || 'Toyota Land Cruiser 4x4',
-        year,
-        type,
-        capacity,
-        assignedDriver: assignedDriver || 'Unassigned',
-        status,
-        nextServiceKm,
-        currentMileageKm,
-        lastServiceCostUsd: 250,
-        insuranceExpiry: insuranceExpiry || 'Valid until Dec 2026',
-        inspectionExpiry: '2027-01-01',
-        maintenanceHistory: [
-          { date: new Date().toISOString().split('T')[0], serviceType: 'Pre-Dispatch Fleet Safety Inspection', mileageKm: currentMileageKm, costUsd: 150, technician: 'Addis Fleet HQ' },
-        ],
-      };
-      setVehicles([newVeh, ...vehicles]);
+      await http.post('/vehicles', payload);
     }
+    await fetchVehicles();
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
+  const handleDelete = async (id: string) => {
+    await http.delete(`/vehicles/${id}`);
+    await fetchVehicles();
   };
 
   // Filtered & Paginated List

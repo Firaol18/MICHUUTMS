@@ -476,10 +476,54 @@ class TourismService {
   }
 
   async getGuides(): Promise<TourGuide[]> {
+    try {
+      const res = await http.get('/guides');
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        return res.data.map((g: any) => ({
+          id: String(g.id),
+          name: g.name,
+          email: g.email,
+          phone: g.phone || '',
+          avatarUrl: g.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+          rating: Number(g.rating) || 5.0,
+          toursGuidedCount: Number(g.toursGuidedCount) || 0,
+          languages: g.languages || ['English', 'Amharic'],
+          specializations: g.specializations || ['Mountain Trekking'],
+          certifications: g.certifications || [],
+          availability: g.availability || [],
+          paymentHistory: g.paymentHistory || [],
+          tourFee: Number(g.tourFee || g.dailyRate) || 50,
+          status: ((g.availabilityStatus || g.status || 'available') as any),
+        }));
+      }
+    } catch {}
     return this.guides;
   }
 
   async createGuide(data: Omit<TourGuide, 'id'>): Promise<TourGuide> {
+    try {
+      const res = await http.post('/guides', {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        avatarUrl: data.avatarUrl,
+        rating: data.rating,
+        toursGuidedCount: data.toursGuidedCount,
+        languages: data.languages,
+        specializations: data.specializations,
+        certifications: data.certifications,
+        availability: data.availability,
+        paymentHistory: data.paymentHistory,
+        tourFee: data.tourFee,
+      });
+      if (res.data) {
+        const item: TourGuide = { ...data, id: String(res.data.id) };
+        this.guides.unshift(item);
+        saveStoredData(STORAGE_KEYS.GUIDES, this.guides);
+        return item;
+      }
+    } catch {}
+
     const newGuide: TourGuide = {
       ...data,
       id: `gd-${Date.now()}`,
@@ -495,6 +539,13 @@ class TourismService {
   }
 
   async updateGuide(id: string, updates: Partial<TourGuide>): Promise<TourGuide | null> {
+    try {
+      const numId = Number(id);
+      if (!isNaN(numId)) {
+        await http.patch(`/guides/${numId}`, updates);
+      }
+    } catch {}
+
     const idx = this.guides.findIndex((g) => g.id === id);
     if (idx === -1) return null;
     this.guides[idx] = { ...this.guides[idx], ...updates };
@@ -503,10 +554,17 @@ class TourismService {
   }
 
   async deleteGuide(id: string): Promise<boolean> {
+    try {
+      const numId = Number(id);
+      if (!isNaN(numId)) {
+        await http.delete(`/guides/${numId}`);
+      }
+    } catch {}
     this.guides = this.guides.filter((g) => g.id !== id);
     saveStoredData(STORAGE_KEYS.GUIDES, this.guides);
     return true;
   }
+
 
   async addGuideCertification(guideId: string, cert: Omit<GuideCertification, 'id'>): Promise<TourGuide | null> {
     const idx = this.guides.findIndex((g) => g.id === guideId);

@@ -1,10 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
 import { Badge } from '@tms/shared/components/common/Badge';
+import { http } from '@tms/shared/services/apiClient';
 import { Plus, Search, Receipt, Filter, Trash2, Edit2 } from 'lucide-react';
+
 
 export type ExpenseCategory =
   | 'Transportation'
@@ -194,7 +196,9 @@ const CATEGORIES_LIST: ExpenseCategory[] = [
 ];
 
 export const AdminExpensesPage: React.FC = () => {
-  const [expenses, setExpenses] = useState<ExpenseItem[]>(INITIAL_EXPENSES);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [selectedTourId, setSelectedTourId] = useState<string>('tour-101');
@@ -211,6 +215,45 @@ export const AdminExpensesPage: React.FC = () => {
   const [relatedTourId, setRelatedTourId] = useState<string>('tour-101');
   const [paymentMethod, setPaymentMethod] = useState<ExpenseItem['paymentMethod']>('Bank Transfer');
   const [receiptNo, setReceiptNo] = useState('');
+
+  const fetchExpenses = async () => {
+    setIsLoading(true);
+    setApiError('');
+    try {
+      const res = await http.get('/expenses');
+      setExpenses(
+        Array.isArray(res.data)
+          ? res.data.map((e: any) => ({
+              id: String(e.id),
+              voucherNo: e.expenseNumber || e.voucherNo || `VCH-${e.id}`,
+              category: (e.category as any) || 'Transportation',
+              description: e.description || '',
+              amount: Number(e.amount) || 0,
+              date: e.expenseDate
+                ? String(e.expenseDate).split('T')[0]
+                : e.date
+                ? String(e.date).split('T')[0]
+                : new Date().toISOString().split('T')[0],
+              supplier: e.supplier || e.department || '',
+              relatedTourId: e.relatedTourId || '',
+              relatedTourTitle: e.relatedTourTitle || '',
+              paymentMethod: (e.paymentMethod as any) || 'Bank Transfer',
+              receiptNo: e.receiptUrl || e.receiptNo || '',
+              approvalStatus: (e.status || e.approvalStatus || 'Approved') as any,
+            }))
+          : []
+      );
+    } catch (err: any) {
+      setApiError('Failed to load expenses from server.');
+      setExpenses([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
 
   // Selected Tour Profitability Analysis
   const activeTourObj = INITIAL_TOURS_PROFIT.find((t) => t.id === selectedTourId) || INITIAL_TOURS_PROFIT[0];
@@ -243,58 +286,40 @@ export const AdminExpensesPage: React.FC = () => {
     setDescription(exp.description);
     setAmount(exp.amount);
     setSupplier(exp.supplier);
-    setRelatedTourId(exp.relatedTourId || '');
+    setRelatedTourId(exp.relatedTourId || 'tour-101');
     setPaymentMethod(exp.paymentMethod);
     setReceiptNo(exp.receiptNo);
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
 
-    const tourMatch = INITIAL_TOURS_PROFIT.find((t) => t.id === relatedTourId);
+    const payload = {
+      category,
+      description,
+      amount,
+      currency: 'USD',
+      expenseDate: new Date().toISOString().split('T')[0],
+      department: supplier || 'General Operations',
+      recordedBy: 'Admin',
+      status: 'approved',
+      receiptUrl: receiptNo || '',
+    };
 
     if (editingId) {
-      setExpenses((prev) =>
-        prev.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                category,
-                description,
-                amount,
-                supplier: supplier || 'Vendor Partner',
-                relatedTourId: relatedTourId || undefined,
-                relatedTourTitle: tourMatch ? tourMatch.title : undefined,
-                paymentMethod,
-                receiptNo,
-              }
-            : item
-        )
-      );
+      await http.patch(`/expenses/${editingId}`, payload);
     } else {
-      const newExp: ExpenseItem = {
-        id: `exp-${Date.now()}`,
-        voucherNo: `EXP-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        category,
-        description,
-        amount,
-        date: new Date().toISOString().split('T')[0],
-        supplier: supplier || 'Vendor Partner',
-        relatedTourId: relatedTourId || undefined,
-        relatedTourTitle: tourMatch ? tourMatch.title : undefined,
-        paymentMethod,
-        receiptNo: receiptNo || `RCP-${Math.floor(10000 + Math.random() * 90000)}`,
-        approvalStatus: 'Approved',
-      };
-      setExpenses([newExp, ...expenses]);
+      await http.post('/expenses', payload);
     }
+    await fetchExpenses();
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setExpenses((prev) => prev.filter((item) => item.id !== id));
+  const handleDelete = async (id: string) => {
+    await http.delete(`/expenses/${id}`);
+    await fetchExpenses();
   };
 
   const filteredExpenses = expenses.filter((e) => {

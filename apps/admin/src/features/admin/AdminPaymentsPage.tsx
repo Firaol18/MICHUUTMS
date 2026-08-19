@@ -1,10 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
 import { Badge } from '@tms/shared/components/common/Badge';
+import { http } from '@tms/shared/services/apiClient';
 import { CreditCard, Search, Download, Plus, Filter, Clock, Trash2, Edit2 } from 'lucide-react';
+
 
 export type PaymentMethod = 'Cash' | 'Bank Transfer' | 'Credit/Debit Card' | 'Mobile Money' | 'Online Payment';
 
@@ -194,7 +196,9 @@ const METHODS_LIST: PaymentMethod[] = ['Cash', 'Bank Transfer', 'Credit/Debit Ca
 const STATUSES_LIST: PaymentStatus[] = ['Pending', 'Paid', 'Partially Paid', 'Failed', 'Refunded', 'Partially Refunded'];
 
 export const AdminPaymentsPage: React.FC = () => {
-  const [transactions, setTransactions] = useState<PaymentTransaction[]>(INITIAL_TRANSACTIONS);
+  const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [methodFilter, setMethodFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -213,6 +217,45 @@ export const AdminPaymentsPage: React.FC = () => {
   const [status, setStatus] = useState<PaymentStatus>('Paid');
   const [receiptNo, setReceiptNo] = useState('');
   const [notes, setNotes] = useState('');
+
+  const fetchPayments = async () => {
+    setIsLoading(true);
+    setApiError('');
+    try {
+      const res = await http.get('/payments');
+      setTransactions(
+        Array.isArray(res.data)
+          ? res.data.map((p: any) => ({
+              id: String(p.id),
+              txRef: p.transactionRef || p.txRef || `TX-${p.id}`,
+              receiptNo: p.receiptNo || `RCP-${p.id}`,
+              bookingRef: p.bookingRef || '',
+              customerName: p.customerName || '',
+              type: (p.type || 'Full Payment') as any,
+              amount: Number(p.amount) || 0,
+              currency: p.currency || 'USD',
+              method: (p.paymentMethod || p.method || 'Credit/Debit Card') as any,
+              status: (p.status || 'Paid') as any,
+              date: p.paymentDate
+                ? new Date(p.paymentDate).toISOString().split('T')[0]
+                : p.date
+                ? String(p.date).split('T')[0]
+                : new Date().toISOString().split('T')[0],
+              notes: p.description || p.notes || '',
+            }))
+          : []
+      );
+    } catch (err: any) {
+      setApiError('Failed to load payments from server.');
+      setTransactions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPayments();
+  }, []);
 
   // Selected Booking Ledger Calculation
   const activeBooking = INITIAL_BOOKING_LEDGERS.find((b) => b.bookingRef === selectedBookingRef) || INITIAL_BOOKING_LEDGERS[0];
@@ -238,15 +281,17 @@ export const AdminPaymentsPage: React.FC = () => {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const grandTotalRefunds = transactions
-    .filter((t) => t.type === 'Refund' || t.status === 'Refunded' || t.status === 'Partially Refunded')
+    .filter((t) => t.type === 'Refund' || t.status === 'Refunded')
     .reduce((sum, t) => sum + t.amount, 0);
+
+  const netCollected = grandTotalInflow - grandTotalRefunds;
 
   const handleOpenAddModal = () => {
     setEditingId(null);
-    setBookingRef('BK-00125');
-    setCustomerName('John Smith');
+    setBookingRef(selectedBookingRef);
+    setCustomerName(activeBooking.customerName);
     setType('Partial Payment');
-    setAmount(900);
+    setAmount(remainingBalance > 0 ? remainingBalance : 500);
     setMethod('Credit/Debit Card');
     setStatus('Paid');
     setReceiptNo(`RCP-${Math.floor(10000 + Math.random() * 90000)}`);
@@ -254,63 +299,47 @@ export const AdminPaymentsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (tx: PaymentTransaction) => {
-    setEditingId(tx.id);
-    setBookingRef(tx.bookingRef);
-    setCustomerName(tx.customerName);
-    setType(tx.type);
-    setAmount(tx.amount);
-    setMethod(tx.method);
-    setStatus(tx.status);
-    setReceiptNo(tx.receiptNo);
-    setNotes(tx.notes || '');
+  const handleOpenEditModal = (item: PaymentTransaction) => {
+    setEditingId(item.id);
+    setBookingRef(item.bookingRef);
+    setCustomerName(item.customerName);
+    setType(item.type);
+    setAmount(item.amount);
+    setMethod(item.method);
+    setStatus(item.status);
+    setReceiptNo(item.receiptNo);
+    setNotes(item.notes || '');
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName.trim()) return;
 
+    const payload = {
+      transactionRef: `TX-${Math.floor(1000 + Math.random() * 9000)}`,
+      bookingRef,
+      customerName,
+      type,
+      amount,
+      currency: 'USD',
+      paymentMethod: method,
+      status,
+      description: notes || `${type} — ${bookingRef}`,
+    };
+
     if (editingId) {
-      setTransactions((prev) =>
-        prev.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                bookingRef,
-                customerName,
-                type,
-                amount,
-                method,
-                status,
-                receiptNo,
-                notes,
-              }
-            : item
-        )
-      );
+      await http.patch(`/payments/${editingId}`, payload);
     } else {
-      const newTx: PaymentTransaction = {
-        id: `tx-${Date.now()}`,
-        txRef: `TX-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        receiptNo: receiptNo || `RCP-${Math.floor(10000 + Math.random() * 90000)}`,
-        bookingRef,
-        customerName,
-        type,
-        amount,
-        currency: 'USD',
-        method,
-        status,
-        date: new Date().toISOString().split('T')[0],
-        notes,
-      };
-      setTransactions([newTx, ...transactions]);
+      await http.post('/payments', payload);
     }
+    await fetchPayments();
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setTransactions((prev) => prev.filter((item) => item.id !== id));
+  const handleDelete = async (id: string) => {
+    await http.delete(`/payments/${id}`);
+    await fetchPayments();
   };
 
   const filteredTransactions = transactions.filter((t) => {

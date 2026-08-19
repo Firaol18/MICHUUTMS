@@ -1,10 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
 import { Badge } from '@tms/shared/components/common/Badge';
+import { http } from '@tms/shared/services/apiClient';
 import { Bus, Plus, Search, Edit2, Trash2, Calendar, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+
 
 export interface DriverScheduleItem {
   date: string;
@@ -127,7 +129,9 @@ const VEHICLE_OPTIONS = [
 ];
 
 export const AdminDriversPage: React.FC = () => {
-  const [drivers, setDrivers] = useState<DriverItem[]>(INITIAL_DRIVERS);
+  const [drivers, setDrivers] = useState<DriverItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Pagination State
@@ -152,6 +156,42 @@ export const AdminDriversPage: React.FC = () => {
 
   // Schedule Inspector Modal State
   const [selectedDriverSchedule, setSelectedDriverSchedule] = useState<DriverItem | null>(null);
+
+  const fetchDrivers = async () => {
+    setIsLoading(true);
+    setApiError('');
+    try {
+      const res = await http.get('/drivers');
+      setDrivers(
+        Array.isArray(res.data)
+          ? res.data.map((d: any) => ({
+              id: String(d.id),
+              name: d.name,
+              licenseNumber: d.licenseNumber || '',
+              licenseExpiry: typeof d.licenseExpiry === 'string' ? d.licenseExpiry.split('T')[0] : '',
+              licenseCategory: d.licenseCategory || '',
+              assignedVehicle: d.assignedVehicle || 'Unassigned',
+              phone: d.phone || '',
+              email: d.email || '',
+              experienceYears: Number(d.experienceYears) || 0,
+              dailyRate: Number(d.dailyRate) || 0,
+              availability: (d.availability as any) || 'Available',
+              status: (d.status as any) || 'Active',
+              schedule: d.schedule || [],
+            }))
+          : []
+      );
+    } catch (err: any) {
+      setApiError('Failed to load drivers from server.');
+      setDrivers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
 
   const handleOpenAddModal = () => {
     setEditingId(null);
@@ -183,56 +223,39 @@ export const AdminDriversPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
+    const driverEmail = email || `${name.toLowerCase().replace(/\s+/g, '.')}@michuutours.et`;
+    const payload = {
+      name,
+      licenseNumber: licenseNumber || 'ETH-DRV-90000',
+      licenseExpiry: licenseExpiry || '2028-12-31',
+      licenseCategory: licenseCategory || 'Heavy Commercial Grade A',
+      assignedVehicle: assignedVehicle || VEHICLE_OPTIONS[0],
+      phone: phone || '+251 911 000 000',
+      email: driverEmail,
+      experienceYears,
+      dailyRate,
+      availability,
+      status: 'Active',
+    };
+
     if (editingId) {
-      setDrivers((prev) =>
-        prev.map((d) =>
-          d.id === editingId
-            ? {
-                ...d,
-                name,
-                licenseNumber,
-                licenseExpiry,
-                licenseCategory,
-                assignedVehicle,
-                phone,
-                email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@michuutours.et`,
-                experienceYears,
-                dailyRate,
-                availability,
-              }
-            : d
-        )
-      );
+      await http.patch(`/drivers/${editingId}`, payload);
     } else {
-      const newDrv: DriverItem = {
-        id: `drv-${Date.now()}`,
-        name,
-        licenseNumber: licenseNumber || 'ETH-DRV-90000',
-        licenseExpiry: licenseExpiry || '2028-12-31',
-        licenseCategory: licenseCategory || 'Heavy Commercial Grade A',
-        assignedVehicle: assignedVehicle || VEHICLE_OPTIONS[0],
-        phone: phone || '+251 911 000 000',
-        email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@michuutours.et`,
-        experienceYears,
-        dailyRate,
-        availability,
-        status: 'Active',
-        schedule: [
-          { date: 'Upcoming', time: '08:00', route: 'HQ Dispatch → Assigned Expedition Route' },
-        ],
-      };
-      setDrivers([newDrv, ...drivers]);
+      await http.post('/drivers', payload);
     }
+    await fetchDrivers();
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setDrivers((prev) => prev.filter((d) => d.id !== id));
+  const handleDelete = async (id: string) => {
+    await http.delete(`/drivers/${id}`);
+    await fetchDrivers();
   };
+
 
   // Filtered & Paginated List
   const filteredDrivers = drivers.filter(

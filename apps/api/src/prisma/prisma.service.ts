@@ -1,18 +1,14 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
+// NOTE: PrismaService is kept for backwards compatibility but this app uses TypeORM as the primary ORM.
+// Prisma client types may not be fully generated in this environment.
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  constructor() {
-    // NO arguments here for Prisma 7
-    super();
-  }
-
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
-    await this.$connect();
+    // No-op: TypeORM handles DB connections
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    // No-op: TypeORM handles DB disconnections
   }
 }

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -8,7 +8,9 @@ import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
 import { PermissionGuard } from '@tms/shared/components/common/PermissionGuard';
 import { tourismService } from '@tms/shared/services/tourismService';
+import { http } from '@tms/shared/services/apiClient';
 import type { Booking } from '@tms/shared/types/booking';
+
 import type { CustomerProfile, CommunicationEntry, LoyaltyTier } from '@tms/shared/types/customer';
 import { getLoyaltyTier, getNextTierThreshold, LOYALTY_META } from '@tms/shared/types/customer';
 import {
@@ -16,65 +18,6 @@ import {
   ShieldAlert, User, FileText, Heart, MessageSquare, Award,
   PlusCircle, Phone, Plane,
 } from 'lucide-react';
-
-const INITIAL_CUSTOMERS: CustomerProfile[] = [
-  {
-    id: 'usr-1', name: 'Eleanor Vance', email: 'eleanor.vance@example.com',
-    mobile: '+1 (555) 321-7890', role: 'Tourist', regDate: '2026-07-15',
-    status: 'active', totalBookings: 4, totalSpend: 3600, loyaltyTier: 'silver',
-    passport: { documentType: 'passport', documentNumber: 'US-7712341', issuingCountry: 'United States', expiryDate: '2029-04-20', nationality: 'American' },
-    emergencyContact: { name: 'Robert Vance', relationship: 'Spouse', phone: '+1 (555) 987-6543', email: 'robert.vance@example.com' },
-    travelPreferences: { preferredTourTypes: ['cultural', 'luxury'], dietaryNeeds: 'Vegetarian, no shellfish', languages: ['English', 'French'], accessibilityNeeds: '', preferredCurrency: 'USD ($)', accommodationPreference: 'Luxury Lodge' },
-    communicationHistory: [
-      { id: 'cm-1', date: '2026-08-01', channel: 'email', subject: 'Booking Confirmation', summary: 'Sent booking confirmation for Wenchi Crater Lake tour.', staffName: 'Alex Morgan' },
-      { id: 'cm-2', date: '2026-08-05', channel: 'phone', subject: 'Dietary Query', summary: 'Customer called about vegetarian meal options. Confirmed with kitchen.', staffName: 'Tigist Assefa' },
-    ],
-  },
-  {
-    id: 'usr-4', name: 'Sophia Rossi', email: 'sophia.r@example.it',
-    mobile: '+39 06 6987 1234', role: 'Tourist', regDate: '2026-08-01',
-    status: 'active', totalBookings: 2, totalSpend: 2500, loyaltyTier: 'bronze',
-    passport: { documentType: 'passport', documentNumber: 'IT-AA1234567', issuingCountry: 'Italy', expiryDate: '2028-11-30', nationality: 'Italian' },
-    emergencyContact: { name: 'Marco Rossi', relationship: 'Brother', phone: '+39 06 1111 2222' },
-    travelPreferences: { preferredTourTypes: ['cultural', 'mountain'], dietaryNeeds: '', languages: ['Italian', 'English'], accessibilityNeeds: '', preferredCurrency: 'EUR (€)', accommodationPreference: 'Luxury Lodge' },
-    communicationHistory: [
-      { id: 'cm-3', date: '2026-08-08', channel: 'email', subject: 'Danakil Tour Details', summary: 'Emailed safety briefing for Erta Ale expedition.', staffName: 'Alex Morgan' },
-    ],
-  },
-  {
-    id: 'usr-6', name: 'Liam Hemsworth', email: 'liam.h@example.co.uk',
-    mobile: '+44 20 7946 0912', role: 'Tourist', regDate: '2026-08-03',
-    status: 'active', totalBookings: 9, totalSpend: 11400, loyaltyTier: 'gold',
-    passport: { documentType: 'passport', documentNumber: 'GB-500219631', issuingCountry: 'United Kingdom', expiryDate: '2031-06-15', nationality: 'British' },
-    emergencyContact: { name: 'Anna Hemsworth', relationship: 'Wife', phone: '+44 20 7946 1111', email: 'anna.h@example.co.uk' },
-    travelPreferences: { preferredTourTypes: ['safari', 'mountain', 'cultural'], dietaryNeeds: 'No pork', languages: ['English'], accessibilityNeeds: 'Mild altitude sensitivity', preferredCurrency: 'GBP (£)', accommodationPreference: 'Luxury Lodge' },
-    communicationHistory: [
-      { id: 'cm-4', date: '2026-07-20', channel: 'whatsapp', subject: 'Gold Tier Welcome', summary: 'Sent Gold member welcome and exclusive offer brochure.', staffName: 'Tigist Assefa' },
-    ],
-  },
-  {
-    id: 'usr-5', name: 'Alex Morgan', email: 'alex.m@tmslogistics.com',
-    mobile: '+1 (555) 998-1122', role: 'Administrator', regDate: '2026-05-01',
-    status: 'active', totalBookings: 0, totalSpend: 0, loyaltyTier: 'bronze',
-    communicationHistory: [],
-  },
-  {
-    id: 'usr-2', name: 'Juma Mwangi', email: 'juma.m@tourismsystem.com',
-    mobile: '+255 712 345 678', role: 'Tour Guide', regDate: '2026-06-10',
-    status: 'active', totalBookings: 0, totalSpend: 0, loyaltyTier: 'bronze',
-    emergencyContact: { name: 'Aisha Mwangi', relationship: 'Sister', phone: '+255 713 000 111' },
-    travelPreferences: { preferredTourTypes: ['safari', 'mountain'], dietaryNeeds: 'Halal', languages: ['English', 'Swahili', 'Amharic'], accessibilityNeeds: '', preferredCurrency: 'USD ($)', accommodationPreference: 'Mid-range Hotel' },
-    communicationHistory: [],
-  },
-];
-
-const STORAGE_KEY = 'michuu_customers_v2';
-function loadCustomers(): CustomerProfile[] {
-  try { const d = localStorage.getItem(STORAGE_KEY); return d ? JSON.parse(d) : INITIAL_CUSTOMERS; } catch { return INITIAL_CUSTOMERS; }
-}
-function saveCustomers(data: CustomerProfile[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
-}
 
 const Section: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginTop: '0.5rem' }}>
@@ -96,9 +39,9 @@ const CHANNEL_LABELS: Record<CommunicationEntry['channel'], string> = {
 };
 
 export const AdminUsersPage: React.FC = () => {
-  const [customers, setCustomers] = React.useState<CustomerProfile[]>(loadCustomers);
+  const [customers, setCustomers] = React.useState<CustomerProfile[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const [detailCustomer, setDetailCustomer] = React.useState<CustomerProfile | null>(null);
   const [isDetailOpen, setIsDetailOpen] = React.useState(false);
@@ -137,7 +80,32 @@ export const AdminUsersPage: React.FC = () => {
   const [editCurrency, setEditCurrency] = React.useState('USD ($)');
   const [editAccomm, setEditAccomm] = React.useState('');
 
-  const save = (list: CustomerProfile[]) => { setCustomers(list); saveCustomers(list); };
+  const fetchUsers = async () => {
+    try {
+      const res = await http.get('/users');
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setCustomers(res.data.map((u: any) => ({
+          id: String(u.id),
+          name: u.name,
+          email: u.email,
+          mobile: u.phone || '+251 911 000 000',
+          role: u.role?.name || 'Tourist',
+          regDate: typeof u.createdAt === 'string' ? u.createdAt.split('T')[0] : '2026-08-19',
+          status: u.isActive !== false ? 'active' : 'blocked',
+          totalBookings: 1,
+          totalSpend: 1200,
+          loyaltyTier: 'bronze',
+          communicationHistory: [],
+        })));
+      }
+    } catch {}
+  };
+
+  React.useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const save = (list: CustomerProfile[]) => { setCustomers(list); };
 
   const filtered = customers.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -165,7 +133,7 @@ export const AdminUsersPage: React.FC = () => {
     setEditEcPhone(c.emergencyContact?.phone || '');
     setEditEcEmail(c.emergencyContact?.email || '');
     setEditDietary(c.travelPreferences?.dietaryNeeds || '');
-    setEditLanguages(c.travelPreferences?.languages?.join(', ') || '');
+    setEditLanguages((c.travelPreferences?.languages || []).join(', '));
     setEditAccessibility(c.travelPreferences?.accessibilityNeeds || '');
     setEditCurrency(c.travelPreferences?.preferredCurrency || 'USD ($)');
     setEditAccomm(c.travelPreferences?.accommodationPreference || '');
@@ -175,7 +143,7 @@ export const AdminUsersPage: React.FC = () => {
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editCustomer) return;
-    const tier = getLoyaltyTier(editCustomer.totalBookings);
+    const tier = getLoyaltyTier(editCustomer.totalSpend);
     const updated = customers.map((c) => c.id === editCustomer.id ? {
       ...c, name: editName, email: editEmail, mobile: editMobile, role: editRole, status: editStatus, loyaltyTier: tier,
       passport: { documentType: editPassportType, documentNumber: editPassportNum, issuingCountry: editPassportCountry, expiryDate: editPassportExpiry, nationality: editPassportNat },
@@ -185,14 +153,17 @@ export const AdminUsersPage: React.FC = () => {
     save(updated); setIsEditOpen(false); setEditCustomer(null);
   };
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newC: CustomerProfile = {
-      id: `usr-${Date.now()}`, name: newName, email: newEmail, mobile: newMobile,
-      role: newRole, regDate: new Date().toISOString().split('T')[0],
-      status: 'active', totalBookings: 0, totalSpend: 0, loyaltyTier: 'bronze', communicationHistory: [],
-    };
-    save([newC, ...customers]);
+    try {
+      await http.post('/users', {
+        name: newName,
+        email: newEmail,
+        password: 'password123',
+        isActive: true,
+      });
+      await fetchUsers();
+    } catch {}
     setIsAddOpen(false); setNewName(''); setNewEmail(''); setNewMobile('');
   };
 

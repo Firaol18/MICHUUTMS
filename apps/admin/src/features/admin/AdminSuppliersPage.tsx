@@ -1,9 +1,10 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
 import { Badge } from '@tms/shared/components/common/Badge';
+import { http } from '@tms/shared/services/apiClient';
 import { Building2, Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface SupplierItem {
@@ -18,16 +19,10 @@ export interface SupplierItem {
   rating: number;
 }
 
-const INITIAL_SUPPLIERS: SupplierItem[] = [
-  { id: 'sup-1', name: 'Kuriftu Resorts & Spa', category: 'Hotel & Lodge', contactPerson: 'Tigist Bekele', phone: '+251 911 223 344', email: 'info@kuriftu.et', city: 'Bishoftu / Bahir Dar', status: 'Active', rating: 4.9 },
-  { id: 'sup-2', name: 'SkyBus Expedition Fleet', category: 'Transport & 4x4', contactPerson: 'Dawit Yohannes', phone: '+251 911 556 677', email: 'dispatch@skybus.et', city: 'Addis Ababa', status: 'Active', rating: 4.8 },
-  { id: 'sup-3', name: 'Simien Eco-Lodge Catering', category: 'Catering', contactPerson: 'Almaz Tadesse', phone: '+251 918 334 455', email: 'catering@simienlodge.com', city: 'Gondar', status: 'Active', rating: 4.7 },
-  { id: 'sup-4', name: 'Ethiopian Helicopters Charters', category: 'Aviation', contactPerson: 'Capt. Solomon Worku', phone: '+251 911 889 900', email: 'charters@ethiopianheli.et', city: 'Bole Airport', status: 'Active', rating: 5.0 },
-  { id: 'sup-5', name: 'Rift Valley Outdoor Equipment', category: 'Equipment', contactPerson: 'Ephrem Assefa', phone: '+251 912 445 566', email: 'gear@riftvalleygear.et', city: 'Addis Ababa', status: 'Active', rating: 4.6 },
-];
-
 export const AdminSuppliersPage: React.FC = () => {
-  const [suppliers, setSuppliers] = useState<SupplierItem[]>(INITIAL_SUPPLIERS);
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Pagination state
@@ -44,6 +39,38 @@ export const AdminSuppliersPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [city, setCity] = useState('');
 
+  const fetchSuppliers = async () => {
+    setIsLoading(true);
+    setApiError('');
+    try {
+      const res = await http.get('/suppliers');
+      setSuppliers(
+        Array.isArray(res.data)
+          ? res.data.map((s: any) => ({
+              id: String(s.id),
+              name: s.name,
+              category: s.category || 'Hotel & Lodge',
+              contactPerson: s.contactPerson || '',
+              phone: s.phone || '',
+              email: s.email || '',
+              city: s.location || s.city || '',
+              status: s.status || 'Active',
+              rating: Number(s.rating) || 5.0,
+            }))
+          : []
+      );
+    } catch (err: any) {
+      setApiError('Failed to load suppliers from server.');
+      setSuppliers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
+
   const handleOpenAdd = () => {
     setEditingId(null);
     setName('');
@@ -55,38 +82,33 @@ export const AdminSuppliersPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     if (editingId) {
-      setSuppliers((prev) =>
-        prev.map((s) =>
-          s.id === editingId
-            ? { ...s, name, category, contactPerson, phone, email, city }
-            : s
-        )
-      );
+      await http.patch(`/suppliers/${editingId}`, { name, category, contactPerson, phone, email, location: city });
     } else {
-      const newSup: SupplierItem = {
-        id: `sup-${Date.now()}`,
+      await http.post('/suppliers', {
         name,
         category,
         contactPerson: contactPerson || 'Operations Contact',
         phone: phone || '+251 911 000 000',
         email: email || 'contact@supplier.et',
-        city: city || 'Addis Ababa',
+        location: city || 'Addis Ababa',
         status: 'Active',
-        rating: 4.8,
-      };
-      setSuppliers([newSup, ...suppliers]);
+        rating: 5.0,
+      });
     }
+    await fetchSuppliers();
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setSuppliers((prev) => prev.filter((s) => s.id !== id));
+  const handleDelete = async (id: string) => {
+    await http.delete(`/suppliers/${id}`);
+    await fetchSuppliers();
   };
+
 
   const filtered = suppliers.filter(
     (s) =>
