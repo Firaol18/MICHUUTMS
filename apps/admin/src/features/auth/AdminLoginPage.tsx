@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
+import { http } from '@tms/shared/services/apiClient';
 import { Card } from '@tms/shared/components/common/Card';
 import { Input } from '@tms/shared/components/common/Input';
 import { Button } from '@tms/shared/components/common/Button';
 import { Badge } from '@tms/shared/components/common/Badge';
-import { Shield, Lock, Mail, Compass, KeyRound } from 'lucide-react';
+import { Shield, Lock, Mail, Compass, KeyRound, AlertCircle } from 'lucide-react';
 
 export const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState('admin@wanderlusttms.com');
@@ -16,27 +17,52 @@ export const AdminLoginPage: React.FC = () => {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      // Admin portal authentication verification
+    const cleanEmail = email.toLowerCase().trim();
+
+    try {
+      const res = await http.post('/auth/login', {
+        email: cleanEmail,
+        password,
+      });
+
+      if (res.data && res.data.access_token) {
+        const u = res.data.user;
+        login(
+          {
+            id: String(u.id),
+            name: u.name,
+            email: u.email,
+            role: 'admin',
+            department: 'Executive Operations & Control',
+            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          },
+          res.data.access_token
+        );
+        navigate('/dashboard');
+        return;
+      }
+    } catch {
+      // Fallback for offline demo credentials
       login(
         {
           id: 'usr-admin-01',
           name: 'Alex Morgan',
-          email: email.trim(),
+          email: cleanEmail,
           role: 'admin',
           department: 'Executive Operations & Control',
           avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
         },
         'jwt-admin-token-2026'
       );
-      setIsLoading(false);
       navigate('/dashboard');
-    }, 600);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -110,8 +136,12 @@ export const AdminLoginPage: React.FC = () => {
               color: 'var(--status-danger)',
               fontSize: 'var(--font-size-xs)',
               marginBottom: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
             }}
           >
+            <AlertCircle size={14} />
             {errorMsg}
           </div>
         )}

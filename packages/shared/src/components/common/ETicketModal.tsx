@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Modal } from '@tms/shared/components/common/Modal';
 import { Button } from '@tms/shared/components/common/Button';
 import type { Booking } from '@tms/shared/types/booking';
@@ -19,12 +19,13 @@ interface ETicketModalProps {
   onClose: () => void;
   booking: Booking | null;
   multiItems?: Array<{
-    type: 'tour' | 'hotel' | 'transport';
+    type: 'tour' | 'hotel' | 'transport' | 'event' | string;
     title: string;
     quantity: number;
     unitPrice: number;
     details?: Record<string, string>;
   }>;
+
 }
 
 export const ETicketModal: React.FC<ETicketModalProps> = ({

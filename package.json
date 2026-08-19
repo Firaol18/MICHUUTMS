@@ -8,16 +8,21 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=apps/public\" \"npm run dev --workspace=apps/admin\"",
+    "dev": "concurrently \"npm run dev --workspace=apps/public\" \"npm run dev --workspace=apps/admin\" \"npm run dev --workspace=apps/api\"",
     "dev:public": "npm run dev --workspace=apps/public",
     "dev:admin": "npm run dev --workspace=apps/admin",
-    "build": "npm run build --workspace=apps/public && npm run build --workspace=apps/admin",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "build": "npm run build --workspace=apps/public && npm run build --workspace=apps/admin && npm run build --workspace=apps/api",
     "build:public": "npm run build --workspace=apps/public",
     "build:admin": "npm run build --workspace=apps/admin",
+    "build:api": "npm run build --workspace=apps/api",
     "lint": "oxlint"
   },
   "devDependencies": {
     "concurrently": "^9.2.4",
     "oxlint": "^1.75.0"
+  },
+  "dependencies": {
+    "axios": "^1.19.0"
   }
 }

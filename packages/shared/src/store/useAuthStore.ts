@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AuthState, User, Role } from '@tms/shared/types/auth';
 
@@ -8,8 +8,18 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       token: null,
-      login: (user: User, token: string) => set({ user, isAuthenticated: true, token }),
-      logout: () => set({ user: null, isAuthenticated: false, token: null }),
+      login: (user: User, token: string) => {
+        try {
+          localStorage.setItem('tms_token', token);
+        } catch {}
+        set({ user, isAuthenticated: true, token });
+      },
+      logout: () => {
+        try {
+          localStorage.removeItem('tms_token');
+        } catch {}
+        set({ user: null, isAuthenticated: false, token: null });
+      },
       switchRole: (role: Role) =>
         set((state) => ({
           user: state.user ? { ...state.user, role } : null,

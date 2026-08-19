@@ -8,6 +8,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AccountManagementModule } from './account-management/account-management.module';
+import { ToursModule } from './tours/tours.module';
+import { BookingsModule } from './bookings/bookings.module';
+import { EventsModule } from './events/events.module';
+import { BlogModule } from './blog/blog.module';
+import { EnquiriesModule } from './enquiries/enquiries.module';
+import { IssuesModule } from './issues/issues.module';
+import { CustomTripsModule } from './custom-trips/custom-trips.module';
+import { SeedModule } from './seed/seed.module';
 
 const useDatabaseUrl = !!process.env.DATABASE_URL;
 
@@ -45,9 +53,18 @@ if (!useDatabaseUrl && !process.env.DB_PASSWORD) {
     MessagesModule,
     AuthModule,
     AccountManagementModule,
+    ToursModule,
+    BookingsModule,
+    EventsModule,
+    BlogModule,
+    EnquiriesModule,
+    IssuesModule,
+    CustomTripsModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+
 

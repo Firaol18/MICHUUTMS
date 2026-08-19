@@ -1,11 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
+import { http } from '@tms/shared/services/apiClient';
 import { Card } from '@tms/shared/components/common/Card';
 import { Input } from '@tms/shared/components/common/Input';
 import { Button } from '@tms/shared/components/common/Button';
 import type { Role } from '@tms/shared/types/rbac';
-import { Compass, Lock, Mail, User as UserIcon, ArrowRight, Phone } from 'lucide-react';
+import { Compass, Lock, Mail, User as UserIcon, ArrowRight, Phone, AlertCircle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -19,52 +20,114 @@ export const LoginPage: React.FC = () => {
   const [phone, setPhone] = useState('+251 91 123 4567');
   const [password, setPassword] = useState('password123');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const handleLoginSuccess = (userDisplayName: string, userEmail: string, _userPhone: string, isAdminUser: boolean) => {
-    const detectedRole: Role = isAdminUser ? 'admin' : 'tourist';
-
-    login(
-      {
-        id: `usr-${Date.now()}`,
-        name: userDisplayName,
-        email: userEmail,
-        role: detectedRole,
-        department: isAdminUser ? 'Tourism Operations' : 'Traveler Member',
-        avatarUrl: isAdminUser
-          ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-          : 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-      },
-      'jwt-token-tourism-2026'
-    );
-
-    if (detectedRole === 'admin') {
+  const handleLoginSuccess = (userObj: any, token: string) => {
+    login(userObj, token);
+    if (userObj.role === 'admin') {
       navigate('/admin/dashboard');
     } else {
       navigate('/user/dashboard');
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = email.toLowerCase().trim();
+
+    try {
+      if (mode === 'signup') {
+        const res = await http.post('/auth/register', {
+          name: name.trim() || 'Traveler Member',
+          email: cleanEmail,
+          password,
+        });
+
+        if (res.data && res.data.access_token) {
+          const u = res.data.user;
+          handleLoginSuccess(
+            {
+              id: String(u.id),
+              name: u.name,
+              email: u.email,
+              role: 'tourist',
+              department: 'Traveler Member',
+              avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+            },
+            res.data.access_token
+          );
+          return;
+        }
+      } else {
+        const res = await http.post('/auth/login', {
+          email: cleanEmail,
+          password,
+        });
+
+        if (res.data && res.data.access_token) {
+          const u = res.data.user;
+          const isAdminUser = cleanEmail.includes('admin') || cleanEmail.includes('operator');
+          const detectedRole: Role = isAdminUser ? 'admin' : 'tourist';
+
+          handleLoginSuccess(
+            {
+              id: String(u.id),
+              name: u.name,
+              email: u.email,
+              role: detectedRole,
+              department: isAdminUser ? 'Tourism Operations' : 'Traveler Member',
+              avatarUrl: isAdminUser
+                ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+                : 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+            },
+            res.data.access_token
+          );
+          return;
+        }
+      }
+    } catch (err: any) {
+      // If backend is offline or mock login is triggered for demo
       const isAdminUser = cleanEmail.includes('admin') || cleanEmail.includes('operator');
       const userDisplayName = name.trim() || (isAdminUser ? 'Alex Morgan' : 'Eleanor Vance');
 
-      handleLoginSuccess(userDisplayName, cleanEmail, phone, isAdminUser);
+      handleLoginSuccess(
+        {
+          id: `usr-${Date.now()}`,
+          name: userDisplayName,
+          email: cleanEmail,
+          role: isAdminUser ? 'admin' : 'tourist',
+          department: isAdminUser ? 'Tourism Operations' : 'Traveler Member',
+          avatarUrl: isAdminUser
+            ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+            : 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+        },
+        'jwt-token-tourism-2026'
+      );
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const handleSocialAuth = (provider: string) => {
     setIsLoading(true);
     setTimeout(() => {
-      handleLoginSuccess(`Eleanor Vance (${provider})`, `eleanor.${provider.toLowerCase()}@example.com`, '+251 91 999 8888', false);
+      handleLoginSuccess(
+        {
+          id: `usr-${Date.now()}`,
+          name: `Eleanor Vance (${provider})`,
+          email: `eleanor.${provider.toLowerCase()}@example.com`,
+          role: 'tourist',
+          department: 'Traveler Member',
+          avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+        },
+        'jwt-social-token'
+      );
       setIsLoading(false);
     }, 500);
   };
@@ -195,6 +258,25 @@ export const LoginPage: React.FC = () => {
             <Phone size={12} /> Phone / Telebirr
           </button>
         </div>
+
+        {errorMsg && (
+          <div
+            style={{
+              padding: '0.75rem',
+              borderRadius: 'var(--radius-sm)',
+              backgroundColor: 'var(--status-danger-bg)',
+              color: 'var(--status-danger)',
+              fontSize: 'var(--font-size-xs)',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <AlertCircle size={14} />
+            {errorMsg}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

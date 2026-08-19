@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Badge } from '@tms/shared/components/common/Badge';
@@ -83,10 +83,11 @@ export const CustomItineraryBuilderPage: React.FC = () => {
       transportType,
       estimatedPerPerson,
       totalEstimatedPrice: totalCustomPrice,
-      customerName: user?.fullName || 'Traveler',
+      customerName: user?.name || 'Traveler',
       customerEmail: user?.email,
-      customerPhone: user?.phone,
+      customerPhone: (user as any)?.phone,
     });
+
 
     // Add to cart
     addItem({

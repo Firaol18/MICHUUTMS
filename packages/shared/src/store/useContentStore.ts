@@ -1,5 +1,6 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { http } from '@tms/shared/services/apiClient';
 import { ETHIOPIAN_EVENTS, BLOG_ARTICLES, type EthiopianEvent, type BlogArticle } from '@tms/shared/services/mockEventsData';
 
 export interface CustomDestinationOption {
@@ -106,16 +107,18 @@ const DEFAULT_INQUIRIES: CustomTripInquiry[] = [
 interface ContentStoreState {
   // Events
   events: EthiopianEvent[];
-  addEvent: (event: Omit<EthiopianEvent, 'id'>) => EthiopianEvent;
-  updateEvent: (id: string, updates: Partial<EthiopianEvent>) => void;
-  deleteEvent: (id: string) => void;
+  fetchEvents: () => Promise<void>;
+  addEvent: (event: Omit<EthiopianEvent, 'id'>) => Promise<EthiopianEvent>;
+  updateEvent: (id: string, updates: Partial<EthiopianEvent>) => Promise<void>;
+  deleteEvent: (id: string) => Promise<void>;
   toggleFeaturedEvent: (id: string) => void;
 
   // Blog Articles
   articles: BlogArticle[];
-  addArticle: (article: Omit<BlogArticle, 'id'>) => BlogArticle;
-  updateArticle: (id: string, updates: Partial<BlogArticle>) => void;
-  deleteArticle: (id: string) => void;
+  fetchArticles: () => Promise<void>;
+  addArticle: (article: Omit<BlogArticle, 'id'>) => Promise<BlogArticle>;
+  updateArticle: (id: string, updates: Partial<BlogArticle>) => Promise<void>;
+  deleteArticle: (id: string) => Promise<void>;
 
   // Custom Trip Destinations & Settings
   customDestinations: CustomDestinationOption[];
@@ -128,16 +131,61 @@ interface ContentStoreState {
 
   // Custom Trip Inquiries
   customTripInquiries: CustomTripInquiry[];
-  addCustomTripInquiry: (inquiry: Omit<CustomTripInquiry, 'id' | 'createdAt' | 'status'>) => CustomTripInquiry;
-  updateInquiryStatus: (id: string, status: CustomTripInquiry['status']) => void;
+  fetchCustomTripInquiries: () => Promise<void>;
+  addCustomTripInquiry: (inquiry: Omit<CustomTripInquiry, 'id' | 'createdAt' | 'status'>) => Promise<CustomTripInquiry>;
+  updateInquiryStatus: (id: string, status: CustomTripInquiry['status']) => Promise<void>;
 }
 
 export const useContentStore = create<ContentStoreState>()(
   persist(
-    (set, get) => ({
-      // Events initial
+    (set) => ({
+      // Events
       events: ETHIOPIAN_EVENTS,
-      addEvent: (eventData) => {
+
+      fetchEvents: async () => {
+        try {
+          const res = await http.get('/events');
+          if (Array.isArray(res.data) && res.data.length > 0) {
+            const mapped: EthiopianEvent[] = res.data.map((e: any) => ({
+              id: String(e.id),
+              title: e.title,
+              date: e.eventDate,
+              endDate: e.endDate,
+              location: e.location,
+              region: 'Oromia',
+              category: e.category || 'cultural',
+              description: e.description,
+              imageUrl: e.imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
+              isFeatured: Boolean(e.isActive),
+            }));
+            set({ events: mapped });
+          }
+        } catch {
+          // fallback to local
+        }
+      },
+
+      addEvent: async (eventData) => {
+        try {
+          const res = await http.post('/events', {
+            title: eventData.title,
+            description: eventData.description,
+            eventDate: eventData.date,
+            endDate: eventData.endDate,
+            location: eventData.location,
+            category: eventData.category,
+            imageUrl: eventData.imageUrl,
+          });
+          if (res.data) {
+            const newEvent: EthiopianEvent = {
+              ...eventData,
+              id: String(res.data.id),
+            };
+            set((state) => ({ events: [newEvent, ...state.events] }));
+            return newEvent;
+          }
+        } catch {}
+
         const newEvent: EthiopianEvent = {
           ...eventData,
           id: `evt-${Date.now()}`,
@@ -145,39 +193,117 @@ export const useContentStore = create<ContentStoreState>()(
         set((state) => ({ events: [newEvent, ...state.events] }));
         return newEvent;
       },
-      updateEvent: (id, updates) => {
+
+      updateEvent: async (id, updates) => {
+        try {
+          const numId = Number(id);
+          if (!isNaN(numId)) {
+            await http.patch(`/events/${numId}`, updates);
+          }
+        } catch {}
         set((state) => ({
           events: state.events.map((e) => (e.id === id ? { ...e, ...updates } : e)),
         }));
       },
-      deleteEvent: (id) => {
+
+      deleteEvent: async (id) => {
+        try {
+          const numId = Number(id);
+          if (!isNaN(numId)) {
+            await http.delete(`/events/${numId}`);
+          }
+        } catch {}
         set((state) => ({
           events: state.events.filter((e) => e.id !== id),
         }));
       },
+
       toggleFeaturedEvent: (id) => {
         set((state) => ({
           events: state.events.map((e) => (e.id === id ? { ...e, isFeatured: !e.isFeatured } : e)),
         }));
       },
 
-      // Blog Articles initial
+      // Blog Articles
       articles: BLOG_ARTICLES,
-      addArticle: (articleData) => {
+
+      fetchArticles: async () => {
+        try {
+          const res = await http.get('/blog');
+          if (Array.isArray(res.data) && res.data.length > 0) {
+            const mapped: BlogArticle[] = res.data.map((b: any) => ({
+              id: String(b.id),
+              slug: b.slug,
+              title: b.title,
+              excerpt: b.excerpt,
+              content: b.content,
+              author: b.authorName,
+              authorAvatar: b.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
+              publishedAt: typeof b.publishedAt === 'string' ? b.publishedAt : new Date(b.publishedAt).toISOString().split('T')[0],
+              readMinutes: Number(b.readTimeMinutes) || 5,
+              coverImage: b.coverImageUrl || 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=1200',
+              tags: b.tags || [],
+              category: b.category || 'culture',
+            }));
+            set({ articles: mapped });
+          }
+        } catch {}
+      },
+
+      addArticle: async (articleData) => {
+        const slug = articleData.slug || articleData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        try {
+          const res = await http.post('/blog', {
+            title: articleData.title,
+            slug,
+            excerpt: articleData.excerpt,
+            content: articleData.content,
+            authorName: articleData.author,
+            authorAvatarUrl: articleData.authorAvatar,
+            coverImageUrl: articleData.coverImage,
+            category: articleData.category,
+            tags: articleData.tags,
+            readTimeMinutes: articleData.readMinutes,
+          });
+          if (res.data) {
+            const newArticle: BlogArticle = {
+              ...articleData,
+              id: String(res.data.id),
+              slug,
+            };
+            set((state) => ({ articles: [newArticle, ...state.articles] }));
+            return newArticle;
+          }
+        } catch {}
+
         const newArticle: BlogArticle = {
           ...articleData,
           id: `blog-${Date.now()}`,
-          slug: articleData.slug || articleData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+          slug,
         };
         set((state) => ({ articles: [newArticle, ...state.articles] }));
         return newArticle;
       },
-      updateArticle: (id, updates) => {
+
+      updateArticle: async (id, updates) => {
+        try {
+          const numId = Number(id);
+          if (!isNaN(numId)) {
+            await http.patch(`/blog/${numId}`, updates);
+          }
+        } catch {}
         set((state) => ({
           articles: state.articles.map((a) => (a.id === id ? { ...a, ...updates } : a)),
         }));
       },
-      deleteArticle: (id) => {
+
+      deleteArticle: async (id) => {
+        try {
+          const numId = Number(id);
+          if (!isNaN(numId)) {
+            await http.delete(`/blog/${numId}`);
+          }
+        } catch {}
         set((state) => ({
           articles: state.articles.filter((a) => a.id !== id),
         }));
@@ -185,13 +311,10 @@ export const useContentStore = create<ContentStoreState>()(
 
       // Custom Destinations
       customDestinations: DEFAULT_DESTINATIONS,
-      addCustomDestination: (destData) => {
-        const newDest: CustomDestinationOption = {
-          ...destData,
-          id: `dest-${Date.now()}`,
-        };
-        set((state) => ({ customDestinations: [...state.customDestinations, newDest] }));
-        return newDest;
+      addCustomDestination: (dest) => {
+        const item = { ...dest, id: `dest-${Date.now()}` };
+        set((state) => ({ customDestinations: [...state.customDestinations, item] }));
+        return item;
       },
       updateCustomDestination: (id, updates) => {
         set((state) => ({
@@ -206,24 +329,80 @@ export const useContentStore = create<ContentStoreState>()(
 
       pricingConfig: DEFAULT_PRICING_CONFIG,
       updatePricingConfig: (updates) => {
-        set((state) => ({
-          pricingConfig: { ...state.pricingConfig, ...updates },
-        }));
+        set((state) => ({ pricingConfig: { ...state.pricingConfig, ...updates } }));
       },
 
-      // Inquiries
+      // Custom Trip Inquiries
       customTripInquiries: DEFAULT_INQUIRIES,
-      addCustomTripInquiry: (inquiryData) => {
-        const newInquiry: CustomTripInquiry = {
-          ...inquiryData,
+
+      fetchCustomTripInquiries: async () => {
+        try {
+          const res = await http.get('/custom-trips');
+          if (Array.isArray(res.data)) {
+            const mapped: CustomTripInquiry[] = res.data.map((c: any) => ({
+              id: String(c.id),
+              destinations: [],
+              destinationsNames: c.destination,
+              tripDays: c.durationDays,
+              travelersCount: c.groupSize,
+              startDate: c.preferredStartDate,
+              accommodationTier: 'standard',
+              transportType: 'landcruiser',
+              estimatedPerPerson: 1200,
+              totalEstimatedPrice: 1200 * c.groupSize,
+              customerName: c.name,
+              customerEmail: c.email,
+              customerPhone: c.phone,
+              createdAt: typeof c.createdAt === 'string' ? c.createdAt : new Date(c.createdAt).toISOString().split('T')[0],
+              status: c.status,
+            }));
+            set({ customTripInquiries: mapped });
+          }
+        } catch {}
+      },
+
+      addCustomTripInquiry: async (inquiry) => {
+        try {
+          const res = await http.post('/custom-trips', {
+            name: inquiry.customerName || 'Traveler',
+            email: inquiry.customerEmail || 'traveler@example.com',
+            phone: inquiry.customerPhone || '',
+            destination: inquiry.destinationsNames,
+            durationDays: inquiry.tripDays,
+            groupSize: inquiry.travelersCount,
+            preferredStartDate: inquiry.startDate || new Date().toISOString().split('T')[0],
+            budget: inquiry.accommodationTier,
+            interests: inquiry.destinations,
+          });
+          if (res.data) {
+            const newInq: CustomTripInquiry = {
+              ...inquiry,
+              id: String(res.data.id),
+              createdAt: new Date().toISOString().split('T')[0],
+              status: 'pending',
+            };
+            set((state) => ({ customTripInquiries: [newInq, ...state.customTripInquiries] }));
+            return newInq;
+          }
+        } catch {}
+
+        const newInq: CustomTripInquiry = {
+          ...inquiry,
           id: `ct-${Date.now()}`,
           createdAt: new Date().toISOString().split('T')[0],
           status: 'pending',
         };
-        set((state) => ({ customTripInquiries: [newInquiry, ...state.customTripInquiries] }));
-        return newInquiry;
+        set((state) => ({ customTripInquiries: [newInq, ...state.customTripInquiries] }));
+        return newInq;
       },
-      updateInquiryStatus: (id, status) => {
+
+      updateInquiryStatus: async (id, status) => {
+        try {
+          const numId = Number(id);
+          if (!isNaN(numId)) {
+            await http.patch(`/custom-trips/${numId}/status`, { status });
+          }
+        } catch {}
         set((state) => ({
           customTripInquiries: state.customTripInquiries.map((inq) =>
             inq.id === id ? { ...inq, status } : inq
@@ -232,7 +411,7 @@ export const useContentStore = create<ContentStoreState>()(
       },
     }),
     {
-      name: 'tms_content_storage_v2',
+      name: 'michuu-tms-content',
     }
   )
 );

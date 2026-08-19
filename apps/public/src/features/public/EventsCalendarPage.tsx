@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -308,9 +308,10 @@ export const EventsCalendarPage: React.FC = () => {
   // Open Booking Modal for an Event
   const handleOpenBooking = (evt: EthiopianEvent) => {
     setBookingEvent(evt);
-    setTravelerName(user?.fullName || '');
+    setTravelerName(user?.name || '');
     setTravelerEmail(user?.email || '');
-    setTravelerPhone(user?.phone || '');
+    setTravelerPhone((user as any)?.phone || '');
+
     setTravelersCount(2);
     setSelectedPackageId('standard');
     setBookingSuccessMsg(null);
