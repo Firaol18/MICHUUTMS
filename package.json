@@ -16,6 +16,8 @@
     "build:public": "npm run build --workspace=apps/public",
     "build:admin": "npm run build --workspace=apps/admin",
     "build:api": "npm run build --workspace=apps/api",
+    "start:api": "node apps/api/dist/src/main",
+    "start:prod": "node apps/api/dist/src/main",
     "lint": "oxlint"
   },
   "devDependencies": {
