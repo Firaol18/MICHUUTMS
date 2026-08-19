@@ -376,7 +376,7 @@ export const EventsCalendarPage: React.FC = () => {
             color: '#ffffff',
           }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '2.5rem', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '2.5rem', alignItems: 'center' }}>
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.875rem', borderRadius: 'var(--radius-full)', backgroundColor: '#f59e0b', color: '#000000', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '1.25rem' }}>
                 <Sparkles size={13} /> NEXT UPCOMING SPOTLIGHT FESTIVAL

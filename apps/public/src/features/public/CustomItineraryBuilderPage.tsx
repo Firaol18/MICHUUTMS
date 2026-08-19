@@ -124,7 +124,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
       </div>
 
       {/* Progress Steps Header */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '2.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', marginBottom: '2.5rem' }}>
         {[
           { num: 1, label: 'Destinations' },
           { num: 2, label: 'Dates & Guests' },

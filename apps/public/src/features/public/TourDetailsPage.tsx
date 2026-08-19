@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
@@ -224,8 +224,18 @@ export const TourDetailsPage: React.FC = () => {
       )}
 
       {/* Image Gallery Hero Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '2.5rem', height: '420px', position: 'relative' }}>
-        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div
+        className="tour-gallery-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '1rem',
+          marginBottom: '2.5rem',
+          minHeight: '340px',
+          position: 'relative',
+        }}
+      >
+        <div style={{ position: 'relative', width: '100%', height: '340px' }}>
           <img
             src={tour.imageUrl}
             alt={tour.title}
@@ -257,22 +267,22 @@ export const TourDetailsPage: React.FC = () => {
             <RotateCw size={16} /> 360° Virtual Panorama View
           </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '340px' }}>
           {tour.galleryImages.slice(0, 2).map((img, idx) => (
             <img
               key={idx}
               src={img}
               alt={`Gallery ${idx}`}
-              style={{ width: '100%', height: '50%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
+              style={{ width: '100%', height: 'calc(50% - 0.5rem)', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
             />
           ))}
         </div>
       </div>
 
       {/* Page Body Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2.5rem' }}>
+      <div className="tour-details-layout" style={{ display: 'flex', gap: '2.5rem', alignItems: 'flex-start' }}>
         {/* Main Content Area */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           {/* Summary */}
           <Card glass>
             <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, marginBottom: '0.75rem' }}>Expedition Overview</h3>
@@ -337,7 +347,7 @@ export const TourDetailsPage: React.FC = () => {
           </div>
 
           {/* Inclusions & Exclusions */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
             <Card glass>
               <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: '1rem', color: 'var(--status-success)' }}>
                 ✓ What's Included
@@ -388,7 +398,7 @@ export const TourDetailsPage: React.FC = () => {
         </div>
 
         {/* Sidebar Sticky Booking Card */}
-        <div>
+        <div className="tour-details-sidebar" style={{ width: '360px', flexShrink: 0 }}>
           <Card
             glass
             style={{

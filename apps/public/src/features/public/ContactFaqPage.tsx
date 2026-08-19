@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
@@ -135,7 +135,7 @@ export const ContactFaqPage: React.FC = () => {
       </div>
 
       {/* Main Grid: Contact Form & Info on Left, FAQ Accordion on Right */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '2.5rem', marginBottom: '3.5rem' }}>
+      <div className="contact-layout" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2.5rem', marginBottom: '3.5rem' }}>
         {/* Left Column: Contact Form & Office Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <Card glass style={{ padding: '2rem' }}>
@@ -171,7 +171,7 @@ export const ContactFaqPage: React.FC = () => {
                 required
               />
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
                 <Input
                   label="Email Address"
                   type="email"

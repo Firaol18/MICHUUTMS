@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { Card } from '@tms/shared/components/common/Card';
@@ -56,7 +56,7 @@ export const UserAccountLayout: React.FC = () => {
       <Card
         glass
         style={{
-          padding: '1.5rem 2rem',
+          padding: '1.25rem 1.5rem',
           marginBottom: '1.5rem',
           display: 'flex',
           justifyContent: 'space-between',
@@ -102,12 +102,13 @@ export const UserAccountLayout: React.FC = () => {
       </Card>
 
       {/* ── Body: Sidebar + Content ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="user-account-layout" style={{ display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
 
         {/* Sidebar Nav */}
         <Card
+          className="user-account-sidebar"
           glass
-          style={{ padding: '0.6rem', position: 'sticky', top: '80px' }}
+          style={{ padding: '0.6rem', position: 'sticky', top: '80px', minWidth: '200px' }}
         >
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
             {NAV_ITEMS.map((item) => (
@@ -115,6 +116,7 @@ export const UserAccountLayout: React.FC = () => {
                 key={item.to}
                 to={item.to}
                 end
+                className="sidebar-link"
                 style={({ isActive }) => ({
                   ...navLinkBase,
                   backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
@@ -133,6 +135,7 @@ export const UserAccountLayout: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSignOut}
+                className="sidebar-link"
                 style={{
                   ...navLinkBase,
                   width: '100%',

@@ -12,7 +12,8 @@ export const PublicFooter: React.FC = () => {
       }}
     >
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2.5rem', marginBottom: '3rem' }}>
+        <div className="public-footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2.5rem', marginBottom: '3rem' }}>
+
           {/* Brand Col */}
           <div>
             <div className="flex-center" style={{ gap: '0.75rem', justifyContent: 'flex-start', marginBottom: '1rem' }}>

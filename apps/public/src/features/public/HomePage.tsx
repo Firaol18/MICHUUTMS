@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TourCard } from '@tms/shared/components/data-display/TourCard';
 import { Card } from '@tms/shared/components/common/Card';
@@ -64,6 +64,7 @@ export const HomePage: React.FC = () => {
     <div>
       {/* Hero Section */}
       <section
+        className="hero-section"
         style={{
           position: 'relative',
           padding: '6rem 0 7rem 0',
@@ -163,7 +164,7 @@ export const HomePage: React.FC = () => {
             <Sparkles size={14} /> {t('hero_badge')}
           </div>
 
-          <h1 style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '1.25rem', color: '#ffffff', textShadow: '0 2px 16px rgba(0,0,0,0.4)' }}>
+          <h1 className="hero-title" style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '1.25rem', color: '#ffffff', textShadow: '0 2px 16px rgba(0,0,0,0.4)' }}>
             {t('hero_title_pre')}<span style={{ color: '#60a5fa' }}>{t('hero_title_brand')}</span>{t('hero_title_post')}
           </h1>
 
@@ -174,6 +175,7 @@ export const HomePage: React.FC = () => {
           {/* Hero Floating Search Widget */}
           <Card
             glass
+            className="hero-search-card"
             style={{
               maxWidth: '750px',
               margin: '0 auto',
@@ -184,10 +186,10 @@ export const HomePage: React.FC = () => {
               backdropFilter: 'blur(12px)',
             }}
           >
-            <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <form className="hero-search-form" onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div style={{ flex: 1 }}>
                 <Input
-                  placeholder="Search local Ethiopian destinations (e.g. Wenchi Crater Lake, Lalibela, Simien)..."
+                  placeholder="Search local destinations (e.g. Wenchi, Lalibela)..."
                   icon={<Search size={18} />}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -214,6 +216,7 @@ export const HomePage: React.FC = () => {
         }}
       >
         <div
+          className="promo-strip-grid"
           style={{
             maxWidth: '1280px',
             margin: '0 auto',
@@ -343,7 +346,7 @@ export const HomePage: React.FC = () => {
 
       {/* Featured Destinations Section */}
       <section style={{ maxWidth: '1280px', margin: '3rem auto 4rem auto', padding: '0 1.5rem' }}>
-        <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
+        <div className="flex-between section-header-between" style={{ marginBottom: '1.5rem' }}>
           <div>
             <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>Top Ethiopian Tourist Destinations</h2>
             <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>Explore Ethiopia's premier natural wonders and UNESCO World Heritage locations</p>
@@ -399,7 +402,7 @@ export const HomePage: React.FC = () => {
 
       {/* Featured Tour Packages Grid */}
       <section style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem 4rem 1.5rem' }}>
-        <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
+        <div className="flex-between section-header-between" style={{ marginBottom: '1.5rem' }}>
           <div>
             <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>Featured Ethiopian Tour Packages</h2>
             <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>Handcrafted daily itineraries led by certified local Ethiopian rangers</p>

@@ -1,5 +1,5 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { useUIStore } from '@tms/shared/store/useUIStore';
 import { useLanguageStore } from '@tms/shared/store/useLanguageStore';
@@ -22,12 +22,17 @@ import {
   ChevronDown,
   Lock,
   X,
+  Menu,
+  Home,
+  UserCircle,
+  Star,
 } from 'lucide-react';
 import { Button } from '@tms/shared/components/common/Button';
 import { RaiseIssueModal } from '@tms/shared/components/common/RaiseIssueModal';
 import { CartDrawer } from '@tms/shared/components/cart/CartDrawer';
 import { useCartStore } from '@tms/shared/store/useCartStore';
 import { NotificationPopover } from '@tms/shared/components/common/NotificationPopover';
+
 
 const LANGUAGE_OPTIONS: { code: LanguageCode; label: string; shortCode: string }[] = [
   { code: 'am', label: 'Amharic', shortCode: 'AM' },
@@ -41,10 +46,12 @@ export const PublicNavbar: React.FC = () => {
   const { currentLanguage, setLanguage, t } = useLanguageStore();
 
   const navigate = useNavigate();
+  const location = useLocation();
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
   const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const langMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -53,6 +60,17 @@ export const PublicNavbar: React.FC = () => {
 
   const { items: cartItems, openCart } = useCartStore();
   const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileMenuOpen]);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -153,10 +171,10 @@ export const PublicNavbar: React.FC = () => {
             </div>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Navigation Links — desktop only */}
           <nav
+            className="pub-nav-desktop"
             style={{
-              display: 'flex',
               alignItems: 'center',
               gap: '0.25rem',
               overflowX: 'auto',
@@ -218,6 +236,22 @@ export const PublicNavbar: React.FC = () => {
 
           {/* Right Side Actions */}
           <div className="flex-center" style={{ gap: '0.5rem', flexShrink: 0 }}>
+            {/* ── Hamburger toggle (mobile only) ── */}
+            <button
+              type="button"
+              className="pub-nav-mobile-toggle tms-btn-ghost"
+              onClick={() => setIsMobileMenuOpen((v) => !v)}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 'var(--radius-sm)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+              }}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
             {/* Language Popover */}
             <div ref={langMenuRef} style={{ position: 'relative' }}>
               <button
@@ -665,6 +699,171 @@ export const PublicNavbar: React.FC = () => {
 
       {/* Multi-Item Shopping Cart Drawer */}
       <CartDrawer />
+
+      {/* ── Mobile Full-Screen Menu ── */}
+      <div className={`pub-nav-mobile-menu${isMobileMenuOpen ? ' open' : ''}`}>
+
+        {/* Nav Links */}
+        <NavLink to="/" className={({ isActive }) => `pub-nav-mobile-link${isActive ? ' active' : ''}`}>
+          <Home size={18} /> {t('home')}
+        </NavLink>
+        <NavLink to="/tours" className={({ isActive }) => `pub-nav-mobile-link${isActive ? ' active' : ''}`}>
+          <Compass size={18} /> {t('explore_tours')}
+        </NavLink>
+        <NavLink to="/events" className={({ isActive }) => `pub-nav-mobile-link${isActive ? ' active' : ''}`}>
+          <Calendar size={18} /> {t('events')}
+        </NavLink>
+        <NavLink to="/blog" className={({ isActive }) => `pub-nav-mobile-link${isActive ? ' active' : ''}`}>
+          <BookOpen size={18} /> {t('blog')}
+        </NavLink>
+        <NavLink to="/plan-trip" className={({ isActive }) => `pub-nav-mobile-link${isActive ? ' active' : ''}`}>
+          <Sparkles size={18} style={{ color: 'var(--brand-primary)' }} /> Plan Custom Trip
+        </NavLink>
+        <NavLink to="/contact" className={({ isActive }) => `pub-nav-mobile-link${isActive ? ' active' : ''}`}>
+          <PhoneCall size={18} /> Contact & FAQ
+        </NavLink>
+        {isAuthenticated && (
+          <button
+            type="button"
+            className="pub-nav-mobile-link"
+            onClick={() => { setIsMobileMenuOpen(false); handleIssueClick(); }}
+          >
+            <HelpCircle size={18} /> {t('issue_tickets')}
+          </button>
+        )}
+
+        <div className="pub-nav-mobile-divider" />
+
+        {/* Language selector */}
+        <div style={{ padding: '0.5rem 1rem' }}>
+          <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>Language</div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {LANGUAGE_OPTIONS.map((l) => (
+              <button
+                key={l.code}
+                type="button"
+                onClick={() => { setLanguage(l.code); setIsMobileMenuOpen(false); }}
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: 700,
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: l.code === currentLanguage ? 'var(--brand-primary)' : 'var(--bg-tertiary)',
+                  color: l.code === currentLanguage ? '#fff' : 'var(--text-primary)',
+                  cursor: 'pointer',
+                }}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Theme toggle */}
+        <button
+          type="button"
+          className="pub-nav-mobile-link"
+          onClick={() => { toggleTheme(); }}
+        >
+          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} style={{ color: '#f59e0b' }} />}
+          {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+        </button>
+
+        {/* Cart (authenticated) */}
+        {isAuthenticated && (
+          <button
+            type="button"
+            className="pub-nav-mobile-link"
+            onClick={() => { setIsMobileMenuOpen(false); openCart(); }}
+          >
+            <ShoppingBag size={18} />
+            Cart{cartItemCount > 0 && (
+              <span style={{ backgroundColor: '#ef4444', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '0.1rem 0.4rem', borderRadius: 'var(--radius-full)', marginLeft: '0.25rem' }}>
+                {cartItemCount}
+              </span>
+            )}
+          </button>
+        )}
+
+        <div className="pub-nav-mobile-divider" />
+
+        {/* Auth section */}
+        {isAuthenticated && user ? (
+          <>
+            {/* User info */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', marginBottom: '0.25rem' }}>
+              <img
+                src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563eb&color=fff&size=64`}
+                alt={user.name}
+                style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brand-primary)' }}
+              />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>{user.name}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{user.email}</div>
+              </div>
+            </div>
+
+            {isAdmin && (
+              <button
+                type="button"
+                className="pub-nav-mobile-link"
+                onClick={() => { setIsMobileMenuOpen(false); navigate('/admin/dashboard'); }}
+              >
+                <LayoutDashboard size={18} style={{ color: 'var(--brand-primary)' }} /> Admin Portal
+              </button>
+            )}
+            <button
+              type="button"
+              className="pub-nav-mobile-link"
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/user/dashboard'); }}
+            >
+              <UserCircle size={18} style={{ color: 'var(--brand-primary)' }} /> My Dashboard
+            </button>
+            <button
+              type="button"
+              className="pub-nav-mobile-link"
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/my-bookings'); }}
+            >
+              <Ticket size={18} style={{ color: 'var(--brand-primary)' }} /> My Bookings
+            </button>
+            <button
+              type="button"
+              className="pub-nav-mobile-link"
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/user/reviews'); }}
+            >
+              <Star size={18} style={{ color: 'var(--brand-primary)' }} /> My Reviews
+            </button>
+
+            <div className="pub-nav-mobile-divider" />
+
+            <button
+              type="button"
+              className="pub-nav-mobile-link"
+              onClick={() => { setIsMobileMenuOpen(false); logout(); navigate('/'); }}
+              style={{ color: '#ef4444' }}
+            >
+              <LogOut size={18} /> Sign Out
+            </button>
+          </>
+        ) : (
+          <div className="pub-nav-mobile-auth">
+            <Button
+              variant="outline"
+              icon={<LogIn size={16} />}
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/login?mode=signin'); }}
+            >
+              {t('sign_in')}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/login?mode=signup'); }}
+            >
+              {t('sign_up')}
+            </Button>
+          </div>
+        )}
+      </div>
     </>
   );
 };

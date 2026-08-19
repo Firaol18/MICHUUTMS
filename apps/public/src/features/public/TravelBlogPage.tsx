@@ -105,9 +105,9 @@ export const TravelBlogPage: React.FC = () => {
         <>
           {/* Featured Article */}
           <Card glass style={{ padding: 0, overflow: 'hidden', marginBottom: '2.5rem', cursor: 'pointer' }} onClick={() => setOpenArticle(featuredArticle)}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-              <div style={{ height: '320px', backgroundImage: `url(${featuredArticle.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-              <div style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+              <div style={{ minHeight: '260px', height: '100%', backgroundImage: `url(${featuredArticle.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+              <div style={{ padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '11px', fontWeight: 700, color: '#f59e0b', backgroundColor: '#fffbeb', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', marginBottom: '1rem', width: 'fit-content' }}>
                   ⭐ FEATURED ARTICLE
                 </div>
@@ -138,30 +138,29 @@ export const TravelBlogPage: React.FC = () => {
                     borderRadius: 'var(--radius-full)',
                     fontSize: 'var(--font-size-xs)',
                     fontWeight: selectedCat === c.value ? 700 : 500,
-                    color: selectedCat === c.value ? '#fff' : 'var(--text-secondary)',
                     backgroundColor: selectedCat === c.value ? 'var(--brand-primary)' : 'var(--bg-secondary)',
-                    border: `1px solid ${selectedCat === c.value ? 'var(--brand-primary)' : 'var(--border-color)'}`,
+                    color: selectedCat === c.value ? '#ffffff' : 'var(--text-secondary)',
+                    border: '1px solid var(--border-color)',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
                   }}
                 >
                   {c.emoji} {c.label}
                 </button>
               ))}
             </div>
-            <div style={{ position: 'relative', marginLeft: 'auto' }}>
+            <div style={{ position: 'relative', marginLeft: 'auto', width: '100%', maxWidth: '240px' }}>
               <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search articles..."
-                style={{ paddingLeft: '2.25rem', paddingRight: '1rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-full)', fontSize: 'var(--font-size-xs)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', width: '220px' }}
+                style={{ paddingLeft: '2.25rem', paddingRight: '1rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-full)', fontSize: 'var(--font-size-xs)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', width: '100%' }}
               />
             </div>
           </div>
 
           {/* Articles Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
             {filtered.map((article) => (
               <Card key={article.id} glass style={{ padding: 0, overflow: 'hidden', cursor: 'pointer' }} onClick={() => setOpenArticle(article)}>
                 <div style={{ height: '200px', backgroundImage: `url(${article.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
