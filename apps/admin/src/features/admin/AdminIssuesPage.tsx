@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -239,9 +239,9 @@ export const AdminIssuesPage: React.FC = () => {
             size="sm"
             icon={<Eye size={14} />}
             onClick={() => openDetailModal(row, 'resolved')}
-          >
-            View
-          </Button>
+            title="View Ticket Details"
+            style={{ padding: '0.35rem' }}
+          />
 
           {/* Quick Resolve / Reject Buttons if not finalized */}
           {row.status !== 'resolved' && row.status !== 'rejected' && (
@@ -249,22 +249,20 @@ export const AdminIssuesPage: React.FC = () => {
               <Button
                 variant="primary"
                 size="sm"
-                style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: '#ffffff', padding: '0.25rem 0.5rem', fontSize: '11px' }}
+                style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: '#ffffff', padding: '0.35rem' }}
                 onClick={() => openDetailModal(row, 'resolved')}
                 title="Resolve ticket with explanation"
-              >
-                <CheckCircle2 size={13} /> Resolve
-              </Button>
+                icon={<CheckCircle2 size={14} />}
+              />
 
               <Button
                 variant="outline"
                 size="sm"
-                style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', padding: '0.25rem 0.5rem', fontSize: '11px' }}
+                style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', padding: '0.35rem' }}
                 onClick={() => openDetailModal(row, 'rejected')}
                 title="Reject ticket with reason"
-              >
-                <XCircle size={13} /> Reject
-              </Button>
+                icon={<XCircle size={14} />}
+              />
             </>
           )}
         </div>

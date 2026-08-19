@@ -1,10 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
-import { Plus, Edit2, Trash2, Zap } from 'lucide-react';
+import { Plus, Edit2, Trash2, Zap, Eye, AlertTriangle } from 'lucide-react';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
+
+import { http } from '@tms/shared/services/apiClient';
 
 interface PermissionActionItem {
   id: string;
@@ -15,33 +17,65 @@ interface PermissionActionItem {
   createdDate: string;
 }
 
-const INITIAL_ACTIONS: PermissionActionItem[] = [
-  { id: 'act-1', key: 'approve', name: 'Approve', description: 'N/A', status: 'Active', createdDate: '9/9/2025' },
-  { id: 'act-2', key: 'validate', name: 'Validate', description: 'N/A', status: 'Active', createdDate: '9/9/2025' },
-  { id: 'act-3', key: 'archive', name: 'Archive', description: 'N/A', status: 'Active', createdDate: '10/14/2025' },
-  { id: 'act-4', key: 'create', name: 'Create', description: 'N/A', status: 'Active', createdDate: '9/9/2025' },
-  { id: 'act-5', key: 'verify', name: 'Verify', description: 'N/A', status: 'Active', createdDate: '9/9/2025' },
-  { id: 'act-6', key: 'delete', name: 'Delete', description: 'N/A', status: 'Active', createdDate: '9/9/2025' },
-  { id: 'act-7', key: 'reject', name: 'Reject', description: 'N/A', status: 'Active', createdDate: '9/9/2025' },
-  { id: 'act-8', key: 'authorize', name: 'Authorize', description: 'N/A', status: 'Active', createdDate: '9/9/2025' },
-  { id: 'act-9', key: 'dispatch', name: 'Dispatch', description: 'Dispatch', status: 'Active', createdDate: '10/3/2025' },
-  { id: 'act-10', key: 'refund', name: 'Refund', description: 'Refund authorizing & ledger reversals', status: 'Active', createdDate: '11/1/2025' },
-];
-
 export const AdminPermissionActionsPage: React.FC = () => {
-  const [actions, setActions] = useState<PermissionActionItem[]>(INITIAL_ACTIONS);
+  const [actions, setActions] = useState<PermissionActionItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Create / Edit Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+
+  // View Detail Modal
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewingAction, setViewingAction] = useState<PermissionActionItem | null>(null);
+
+  // Delete Reason Modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingAction, setDeletingAction] = useState<PermissionActionItem | null>(null);
+  const [deleteReason, setDeleteReason] = useState('Deprecated Action');
+  const [deleteCustomNote, setDeleteCustomNote] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const fetchActions = async () => {
+    setIsLoading(true);
+    try {
+      const res = await http.get('/permissions/actions');
+      if (Array.isArray(res.data)) {
+        setActions(
+          res.data.map((a: any) => ({
+            id: String(a.id),
+            key: a.action,
+            name: a.action,
+            description: a.description || 'N/A',
+            status: a.draft ? 'Inactive' : 'Active',
+            createdDate: a.createdAt ? new Date(a.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+          }))
+        );
+      }
+    } catch {
+      setActions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchActions();
+  }, []);
 
   const handleOpenAdd = () => {
     setEditingId(null);
     setName('');
     setDescription('');
     setIsModalOpen(true);
+  };
+
+  const handleOpenView = (act: PermissionActionItem) => {
+    setViewingAction(act);
+    setIsViewModalOpen(true);
   };
 
   const handleOpenEdit = (act: PermissionActionItem) => {
@@ -51,33 +85,47 @@ export const AdminPermissionActionsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setActions((prev) => prev.filter((a) => a.id !== id));
+  const handleOpenDelete = (act: PermissionActionItem) => {
+    setDeletingAction(act);
+    setDeleteReason('Deprecated Action');
+    setDeleteCustomNote('');
+    setIsDeleteModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleConfirmDelete = async () => {
+    if (!deletingAction) return;
+    setIsDeleting(true);
+    try {
+      await http.delete(`/permissions/actions/${deletingAction.id}`);
+      await fetchActions();
+      setIsDeleteModalOpen(false);
+      setDeletingAction(null);
+    } catch {
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    if (editingId) {
-      setActions((prev) =>
-        prev.map((a) =>
-          a.id === editingId
-            ? { ...a, name: name.trim(), description: description || 'N/A' }
-            : a
-        )
-      );
-    } else {
-      const newAct: PermissionActionItem = {
-        id: `act-${Date.now()}`,
-        key: name.trim().toLowerCase(),
-        name: name.trim(),
-        description: description || 'N/A',
-        status: 'Active',
-        createdDate: new Date().toLocaleDateString(),
-      };
-      setActions([newAct, ...actions]);
-    }
+    try {
+      if (editingId) {
+        await http.put(`/permissions/actions/${editingId}`, {
+          action: name.trim(),
+          description: description || 'N/A',
+          draft: false,
+        });
+      } else {
+        await http.post('/permissions/actions', {
+          action: name.trim(),
+          description: description || 'N/A',
+          draft: false,
+        });
+      }
+      await fetchActions();
+    } catch {}
 
     setIsModalOpen(false);
   };
@@ -140,49 +188,29 @@ export const AdminPermissionActionsPage: React.FC = () => {
     },
     {
       header: 'Actions',
-      width: '160px',
+      width: '120px',
       align: 'center',
       cell: (act) => (
-        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', alignItems: 'center' }}>
           <button
             type="button"
-            onClick={() => handleOpenEdit(act)}
-            style={{
-              padding: '0.3rem 0.65rem',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid rgba(37,99,235,0.3)',
-              backgroundColor: 'rgba(37,99,235,0.08)',
-              color: 'var(--brand-primary)',
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
+            onClick={() => handleOpenView(act)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0284c7', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="View Details"
           >
-            <Edit2 size={12} /> Edit
+            <Eye size={16} />
           </button>
 
           <button
             type="button"
-            onClick={() => handleDelete(act.id)}
-            style={{
-              padding: '0.3rem 0.65rem',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              backgroundColor: 'rgba(239,68,68,0.08)',
-              color: '#ef4444',
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
+            onClick={() => handleOpenEdit(act)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="Edit Action"
           >
-            <Trash2 size={12} /> Delete
+            <Edit2 size={16} />
           </button>
+
+          <button type="button" onClick={() => handleOpenDelete(act)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="Delete"><Trash2 size={16} /></button>
         </div>
       ),
     },
@@ -199,7 +227,7 @@ export const AdminPermissionActionsPage: React.FC = () => {
               <Zap style={{ color: '#034ea2' }} /> Permission Actions
             </h1>
             <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              Manage and configure permission actions for access control
+              Define CRUD operations and execution verbs for permission control
             </p>
           </div>
 
@@ -225,7 +253,7 @@ export const AdminPermissionActionsPage: React.FC = () => {
         entityName="actions"
       />
 
-      {/* Modal matching Image 4 creation */}
+      {/* ── MODAL 1: CREATE / EDIT ACTION MODAL ── */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -240,36 +268,167 @@ export const AdminPermissionActionsPage: React.FC = () => {
         }
       >
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Input
-            label="Action Verb (e.g. Approve, Create, Delete)"
-            placeholder="e.g. Approve"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <div>
-            <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
-              Description
+          <div className="tms-input-group">
+            <label className="tms-input-label">
+              Action Name (Verb) <span style={{ color: '#ef4444' }}>*</span>
             </label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Create, Read, Update, Delete, Approve, Authorize"
+              required
+            />
+          </div>
+
+          <div className="tms-input-group">
+            <label className="tms-input-label">Description</label>
             <textarea
+              className="tms-input"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter action description..."
-              style={{
-                width: '100%',
-                padding: '0.625rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-                fontFamily: 'inherit',
-                fontSize: 'var(--font-size-xs)',
-              }}
+              placeholder="Explain the scope and effect of this permission verb..."
             />
           </div>
         </form>
       </Modal>
+
+      {/* ── MODAL 2: VIEW ACTION DETAIL MODAL ── */}
+      {isViewModalOpen && viewingAction && (
+        <Modal
+          isOpen={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
+          title={`Action Details: ${viewingAction.name}`}
+          size="md"
+          footer={
+            <div className="flex-between" style={{ width: '100%' }}>
+              <Button variant="ghost" size="sm" onClick={() => setIsViewModalOpen(false)}>
+                Close
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Edit2 size={14} />}
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  handleOpenEdit(viewingAction);
+                }}
+                style={{ backgroundColor: '#034ea2', borderColor: '#034ea2' }}
+              >
+                Edit Action
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: 'rgba(3,78,162,0.1)', color: '#034ea2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Zap size={20} />
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Permission Verb ID #{viewingAction.id}
+                </div>
+                <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {viewingAction.name}
+                </div>
+              </div>
+              <span
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  backgroundColor: 'rgba(22, 163, 74, 0.12)',
+                  color: '#16a34a',
+                }}
+              >
+                {viewingAction.status}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: 'var(--font-size-xs)' }}>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Created Date</div>
+                <div style={{ fontWeight: 700, marginTop: 4 }}>{viewingAction.createdDate}</div>
+              </div>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Operation Type</div>
+                <div style={{ fontWeight: 700, marginTop: 4 }}>REST / API Verb</div>
+              </div>
+            </div>
+
+            <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: 'var(--font-size-xs)' }}>Verb Description</div>
+              <div style={{ marginTop: 4, fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                {viewingAction.description || 'No description provided.'}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── MODAL 3: DELETE CONFIRMATION WITH REASON MODAL ── */}
+      {isDeleteModalOpen && deletingAction && (
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Confirm Action Deletion"
+          size="md"
+          footer={
+            <div className="flex-between" style={{ width: '100%' }}>
+              <Button variant="ghost" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                isLoading={isDeleting}
+                icon={<Trash2 size={14} />}
+                onClick={handleConfirmDelete}
+              >
+                Confirm & Permanently Delete
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ padding: '0.875rem', backgroundColor: 'rgba(239,68,68,0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+              <AlertTriangle size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)' }}>
+                You are about to delete permission action verb <strong>"{deletingAction.name}"</strong> (ID: {deletingAction.id}). Any roles using this action will lose this authorization rule.
+              </div>
+            </div>
+
+            <div className="tms-input-group">
+              <label className="tms-input-label">
+                Reason for Deletion <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <select
+                className="tms-input"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+              >
+                <option value="Deprecated Action">Deprecated / Unused Action Verb</option>
+                <option value="Security Consolidation">Security Policy Consolidation</option>
+                <option value="Accidental Duplicate">Accidental Duplicate / Typo</option>
+                <option value="Other">Other (Specify below)</option>
+              </select>
+            </div>
+
+            <div className="tms-input-group">
+              <label className="tms-input-label">Additional Deletion Notes / Audit Log</label>
+              <textarea
+                className="tms-input"
+                rows={2}
+                value={deleteCustomNote}
+                onChange={(e) => setDeleteCustomNote(e.target.value)}
+                placeholder="Enter reason for deletion audit..."
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
 
     </div>
   );

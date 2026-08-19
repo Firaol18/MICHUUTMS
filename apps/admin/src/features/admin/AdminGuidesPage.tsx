@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -290,13 +290,34 @@ export const AdminGuidesPage: React.FC = () => {
       noWrap: true,
       align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-          <Button variant="ghost" size="sm" icon={<Eye size={13} />} onClick={() => openDetail(row)}>View</Button>
+        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => openDetail(row)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0284c7', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="View Details"
+          >
+            <Eye size={16} />
+          </button>
           <PermissionGuard resource="guides" action="update">
-            <Button variant="outline" size="sm" icon={<Edit size={13} />} onClick={() => handleStartEdit(row)}>Edit</Button>
+            <button
+              type="button"
+              onClick={() => handleStartEdit(row)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+              title="Edit Guide"
+            >
+              <Edit size={16} />
+            </button>
           </PermissionGuard>
           <PermissionGuard resource="guides" action="delete">
-            <Button variant="ghost" size="sm" style={{ color: '#ef4444' }} icon={<Trash2 size={13} />} onClick={() => handleDelete(row.id, row.name)} />
+            <button
+              type="button"
+              onClick={() => handleDelete(row.id, row.name)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+              title="Delete Guide"
+            >
+              <Trash2 size={16} />
+            </button>
           </PermissionGuard>
         </div>
       ),

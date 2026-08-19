@@ -1,10 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
-import { ShieldCheck, Plus, Edit2, Trash2 } from 'lucide-react';
+import { ShieldCheck, Plus, Edit2, Trash2, Eye, AlertTriangle, Key } from 'lucide-react';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
+
+import { http } from '@tms/shared/services/apiClient';
 
 interface PermissionResourceItem {
   id: string;
@@ -15,34 +17,65 @@ interface PermissionResourceItem {
   createdDate: string;
 }
 
-const INITIAL_RESOURCES: PermissionResourceItem[] = [
-  { id: 'res-1', key: 'title-deed-application-lease-payment', name: 'title-deed-application-lease-payment', description: 'N/A', status: 'Active', createdDate: '3/27/2026' },
-  { id: 'res-2', key: 'land-auction', name: 'land-auction', description: 'land-auction and auction complaint', status: 'Active', createdDate: '4/24/2026' },
-  { id: 'res-3', key: 'title-deed-deactivation-application', name: 'title-deed-deactivation-application', description: 'N/A', status: 'Active', createdDate: '12/4/2025' },
-  { id: 'res-4', key: 'manual-title-deed-application', name: 'manual-title-deed-application', description: 'N/A', status: 'Active', createdDate: '4/21/2026' },
-  { id: 'res-5', key: 'bank-restriction-application', name: 'bank-restriction-application', description: 'bank restriction-application', status: 'Active', createdDate: '9/28/2025' },
-  { id: 'res-6', key: 'land-bank-plot', name: 'land-bank-plot', description: 'N/A', status: 'Active', createdDate: '3/1/2026' },
-  { id: 'res-7', key: 'complaint-appointment', name: 'complaint-appointment', description: 'complaint appointment', status: 'Active', createdDate: '2/16/2026' },
-  { id: 'res-8', key: 'land_bank_deposit_application', name: 'land_bank_deposit_application', description: 'LAND_BANK_DEPOSIT_APPLICATION', status: 'Active', createdDate: '2/28/2026' },
-  { id: 'res-9', key: 'boundary-demarcation-review', name: 'boundary-demarcation-review', description: 'boundary-demarcation-review', status: 'Active', createdDate: '11/14/2025' },
-  { id: 'res-10', key: 'tour-expedition-package', name: 'tour-expedition-package', description: 'Tour packages & custom itinerary builder', status: 'Active', createdDate: '1/10/2026' },
-  { id: 'res-11', key: 'booking-reservation-engine', name: 'booking-reservation-engine', description: 'Online customer booking reservations & guest manifests', status: 'Active', createdDate: '1/15/2026' },
-];
-
 export const AdminPermissionResourcesPage: React.FC = () => {
-  const [resources, setResources] = useState<PermissionResourceItem[]>(INITIAL_RESOURCES);
+  const [resources, setResources] = useState<PermissionResourceItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Create / Edit Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+
+  // View Detail Modal
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewingResource, setViewingResource] = useState<PermissionResourceItem | null>(null);
+
+  // Delete Reason Modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingResource, setDeletingResource] = useState<PermissionResourceItem | null>(null);
+  const [deleteReason, setDeleteReason] = useState('Deprecated Resource');
+  const [deleteCustomNote, setDeleteCustomNote] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const fetchResources = async () => {
+    setIsLoading(true);
+    try {
+      const res = await http.get('/permissions/resources');
+      if (Array.isArray(res.data)) {
+        setResources(
+          res.data.map((r: any) => ({
+            id: String(r.id),
+            key: r.name,
+            name: r.name,
+            description: r.description || 'N/A',
+            status: r.draft ? 'Inactive' : 'Active',
+            createdDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+          }))
+        );
+      }
+    } catch {
+      setResources([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchResources();
+  }, []);
 
   const handleOpenAdd = () => {
     setEditingId(null);
     setName('');
     setDescription('');
     setIsModalOpen(true);
+  };
+
+  const handleOpenView = (res: PermissionResourceItem) => {
+    setViewingResource(res);
+    setIsViewModalOpen(true);
   };
 
   const handleOpenEdit = (res: PermissionResourceItem) => {
@@ -52,33 +85,47 @@ export const AdminPermissionResourcesPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setResources((prev) => prev.filter((r) => r.id !== id));
+  const handleOpenDelete = (res: PermissionResourceItem) => {
+    setDeletingResource(res);
+    setDeleteReason('Deprecated Resource');
+    setDeleteCustomNote('');
+    setIsDeleteModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleConfirmDelete = async () => {
+    if (!deletingResource) return;
+    setIsDeleting(true);
+    try {
+      await http.delete(`/permissions/resources/${deletingResource.id}`);
+      await fetchResources();
+      setIsDeleteModalOpen(false);
+      setDeletingResource(null);
+    } catch {
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    if (editingId) {
-      setResources((prev) =>
-        prev.map((r) =>
-          r.id === editingId
-            ? { ...r, name: name.trim().toLowerCase().replace(/\s+/g, '-'), description: description || 'N/A' }
-            : r
-        )
-      );
-    } else {
-      const newRes: PermissionResourceItem = {
-        id: `res-${Date.now()}`,
-        key: name.trim().toLowerCase().replace(/\s+/g, '-'),
-        name: name.trim().toLowerCase().replace(/\s+/g, '-'),
-        description: description || 'N/A',
-        status: 'Active',
-        createdDate: new Date().toLocaleDateString(),
-      };
-      setResources([newRes, ...resources]);
-    }
+    try {
+      if (editingId) {
+        await http.put(`/permissions/resources/${editingId}`, {
+          name: name.trim(),
+          description: description || 'N/A',
+          draft: false,
+        });
+      } else {
+        await http.post('/permissions/resources', {
+          name: name.trim(),
+          description: description || 'N/A',
+          draft: false,
+        });
+      }
+      await fetchResources();
+    } catch {}
 
     setIsModalOpen(false);
   };
@@ -136,49 +183,29 @@ export const AdminPermissionResourcesPage: React.FC = () => {
     },
     {
       header: 'Actions',
-      width: '160px',
+      width: '120px',
       align: 'center',
       cell: (res) => (
-        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', alignItems: 'center' }}>
           <button
             type="button"
-            onClick={() => handleOpenEdit(res)}
-            style={{
-              padding: '0.3rem 0.65rem',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid rgba(37,99,235,0.3)',
-              backgroundColor: 'rgba(37,99,235,0.08)',
-              color: 'var(--brand-primary)',
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
+            onClick={() => handleOpenView(res)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0284c7', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="View Details"
           >
-            <Edit2 size={12} /> Edit
+            <Eye size={16} />
           </button>
 
           <button
             type="button"
-            onClick={() => handleDelete(res.id)}
-            style={{
-              padding: '0.3rem 0.65rem',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              backgroundColor: 'rgba(239,68,68,0.08)',
-              color: '#ef4444',
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
+            onClick={() => handleOpenEdit(res)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="Edit Resource"
           >
-            <Trash2 size={12} /> Delete
+            <Edit2 size={16} />
           </button>
+
+          <button type="button" onClick={() => handleOpenDelete(res)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="Delete"><Trash2 size={16} /></button>
         </div>
       ),
     },
@@ -221,7 +248,7 @@ export const AdminPermissionResourcesPage: React.FC = () => {
         entityName="resources"
       />
 
-      {/* Modal matching Image 3 creation */}
+      {/* ── MODAL 1: CREATE / EDIT RESOURCE MODAL ── */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -236,22 +263,29 @@ export const AdminPermissionResourcesPage: React.FC = () => {
         }
       >
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Input
-            label="Resource Name (Key)"
-            placeholder="e.g. land-auction, title-deed"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <div>
-            <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
-              Description
+          <div className="tms-input-group">
+            <label className="tms-input-label">
+              Resource Name <span style={{ color: '#ef4444' }}>*</span>
             </label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. tour-packages, customer-profiles, booking-engine"
+              required
+            />
+            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+              Unique alphanumeric slug for backend route authorization matching.
+            </span>
+          </div>
+
+          <div className="tms-input-group">
+            <label className="tms-input-label">Description</label>
             <textarea
+              className="tms-input"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter resource description..."
+              placeholder="Describe which module or features this permission resource covers..."
               style={{
                 width: '100%',
                 padding: '0.625rem',
@@ -266,6 +300,144 @@ export const AdminPermissionResourcesPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* ── MODAL 2: VIEW RESOURCE DETAIL MODAL ── */}
+      {isViewModalOpen && viewingResource && (
+        <Modal
+          isOpen={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
+          title={`Resource Details: ${viewingResource.name}`}
+          size="md"
+          footer={
+            <div className="flex-between" style={{ width: '100%' }}>
+              <Button variant="ghost" size="sm" onClick={() => setIsViewModalOpen(false)}>
+                Close
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Edit2 size={14} />}
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  handleOpenEdit(viewingResource);
+                }}
+                style={{ backgroundColor: '#034ea2', borderColor: '#034ea2' }}
+              >
+                Edit Resource
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: 'rgba(3,78,162,0.1)', color: '#034ea2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Key size={20} />
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Resource Slug ID #{viewingResource.id}
+                </div>
+                <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
+                  {viewingResource.name}
+                </div>
+              </div>
+              <span
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  backgroundColor: 'rgba(22, 163, 74, 0.12)',
+                  color: '#16a34a',
+                }}
+              >
+                {viewingResource.status}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: 'var(--font-size-xs)' }}>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Created Date</div>
+                <div style={{ fontWeight: 700, marginTop: 4 }}>{viewingResource.createdDate}</div>
+              </div>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Access Scope</div>
+                <div style={{ fontWeight: 700, marginTop: 4 }}>Enterprise Platform RBAC</div>
+              </div>
+            </div>
+
+            <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: 'var(--font-size-xs)' }}>Resource Description</div>
+              <div style={{ marginTop: 4, fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                {viewingResource.description || 'No specific description provided for this permission resource.'}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── MODAL 3: DELETE CONFIRMATION WITH REASON MODAL ── */}
+      {isDeleteModalOpen && deletingResource && (
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Confirm Resource Deletion"
+          size="md"
+          footer={
+            <div className="flex-between" style={{ width: '100%' }}>
+              <Button variant="ghost" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                isLoading={isDeleting}
+                icon={<Trash2 size={14} />}
+                onClick={handleConfirmDelete}
+              >
+                Confirm & Permanently Delete
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ padding: '0.875rem', backgroundColor: 'rgba(239,68,68,0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+              <AlertTriangle size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)' }}>
+                You are about to delete resource <strong>"{deletingResource.name}"</strong> (ID: {deletingResource.id}). This may affect roles utilizing this resource for authorization.
+              </div>
+            </div>
+
+            <div className="tms-input-group">
+              <label className="tms-input-label">
+                Reason for Deletion <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <select
+                className="tms-input"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+              >
+                <option value="Deprecated Resource">Deprecated / Outdated Resource</option>
+                <option value="Security Policy Cleanup">Security & Compliance Policy Cleanup</option>
+                <option value="Accidental Duplicate">Accidental Duplicate / Mistake</option>
+                <option value="Refactoring Permissions Structure">Refactoring Permissions Structure</option>
+                <option value="Other">Other (Specify below)</option>
+              </select>
+            </div>
+
+            <div className="tms-input-group">
+              <label className="tms-input-label">Additional Deletion Notes / Audit Log</label>
+              <textarea
+                className="tms-input"
+                rows={2}
+                value={deleteCustomNote}
+                onChange={(e) => setDeleteCustomNote(e.target.value)}
+                placeholder="Enter audit explanation for this deletion..."
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
 
     </div>
   );

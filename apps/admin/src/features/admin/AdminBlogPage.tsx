@@ -224,8 +224,8 @@ export const AdminBlogPage: React.FC = () => {
       align: 'center',
       cell: (row) => (
         <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'center' }}>
-          <Button variant="ghost" size="sm" icon={<Eye size={14} />} onClick={() => setPreviewArticle(row)} title="Preview Article" />
-          <Button variant="ghost" size="sm" icon={<Edit2 size={14} />} onClick={() => openEditModal(row)} title="Edit Article" />
+          <button type="button" onClick={() => setPreviewArticle(row)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0284c7', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="View Details"><Eye size={16} /></button>
+          <button type="button" onClick={() => openEditModal(row)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="Edit"><Edit2 size={16} /></button>
           <Button variant="ghost" size="sm" icon={<Trash2 size={14} style={{ color: 'var(--status-danger)' }} />} onClick={() => handleDelete(row.id, row.title)} title="Delete Article" />
         </div>
       ),

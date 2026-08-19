@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -204,21 +204,26 @@ export const AdminBookingsPage: React.FC = () => {
       noWrap: true,
       align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <Button variant="ghost" size="sm" icon={<Eye size={13} />} onClick={() => openDetail(row)}>
-            View
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<FileText size={13} />}
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={() => openDetail(row)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0284c7', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="View Booking Details"
+          >
+            <Eye size={16} />
+          </button>
+          <button
+            type="button"
             onClick={() => {
               setSelectedManifestBooking(row);
               setIsManifestOpen(true);
             }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="Passenger Manifest"
           >
-            Manifest
-          </Button>
+            <FileText size={16} />
+          </button>
           <PermissionGuard resource="bookings" action="update">
             {/* Advance status button */}
             {row.status !== 'completed' && row.status !== 'cancelled' && (() => {
@@ -226,33 +231,34 @@ export const AdminBookingsPage: React.FC = () => {
               const nextStatus = STATUS_FLOW[currentIdx + 1];
               if (!nextStatus) return null;
               const labels: Record<string, string> = {
-                confirmed: 'Confirm', paid: 'Mark Paid', completed: 'Complete',
+                confirmed: 'Confirm Booking', paid: 'Mark Paid', completed: 'Mark Completed',
               };
               return (
-                <Button
-                  variant="outline" size="sm"
-                  icon={<ChevronRight size={13} />}
+                <button
+                  type="button"
                   onClick={() => handleStatusChange(row.id, nextStatus)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+                  title={labels[nextStatus] ?? `Advance to ${nextStatus}`}
                 >
-                  {labels[nextStatus] ?? nextStatus}
-                </Button>
+                  <ChevronRight size={16} />
+                </button>
               );
             })()}
             {/* Cancel button */}
             {row.status !== 'cancelled' && row.status !== 'completed' && (
-              <Button
-                variant="ghost" size="sm"
-                style={{ color: '#ef4444' }}
-                icon={<XCircle size={13} />}
+              <button
+                type="button"
                 onClick={async () => {
                   const reason = window.prompt('Enter cancellation reason:');
                   if (reason === null) return;
                   await tourismService.cancelBookingWithRefund(row.id, reason || 'Cancelled by admin', false);
                   fetchBookings();
                 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+                title="Cancel Booking"
               >
-                Cancel
-              </Button>
+                <XCircle size={16} />
+              </button>
             )}
           </PermissionGuard>
         </div>

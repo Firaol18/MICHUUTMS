@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -29,6 +29,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+import { http } from '@tms/shared/services/apiClient';
+
 export interface EmployeeItem {
   id: string;
   name: string;
@@ -42,7 +44,7 @@ export interface EmployeeItem {
   status: 'Active' | 'Inactive';
 }
 
-const AVAILABLE_ROLES = [
+const DEFAULT_ROLES = [
   { key: 'SUPER_ADMIN', label: 'Super Administrator', badge: 'SA' },
   { key: 'ADMIN', label: 'Tourism Administrator', badge: 'A+' },
   { key: 'BAS', label: 'Basic Operations Admin', badge: 'BAS' },
@@ -61,86 +63,12 @@ const AVAILABLE_BRANCHES = [
   'Lalibela Cultural Office',
 ];
 
-const INITIAL_EMPLOYEES: EmployeeItem[] = [
-  {
-    id: 'emp-1',
-    name: 'Melat Tadesse',
-    username: '5845943782549061',
-    phoneNumber: '+251911690229',
-    email: 'melat.t@michuutms.et',
-    branch: 'Bishoftu Regional Hub',
-    roles: ['BAS', 'A+'],
-    organizationUnit: 'Land Development & Tourism Bureau',
-    registrationDate: '6/15/2026',
-    status: 'Active',
-  },
-  {
-    id: 'emp-2',
-    name: 'Tenbit Bekele',
-    username: '0912774222',
-    phoneNumber: '+251912774222',
-    email: 'tenbit.b@michuutms.et',
-    branch: 'Bahir Dar Regional Bureau',
-    roles: ['BAS', 'A+'],
-    organizationUnit: 'Lake Tana Expeditions & Operations',
-    registrationDate: '6/15/2026',
-    status: 'Active',
-  },
-  {
-    id: 'emp-3',
-    name: 'Amaz Kebede',
-    username: '2632735720693810',
-    phoneNumber: '+251911419707',
-    email: 'amaz.k@michuutms.et',
-    branch: 'Bale Mountains Operations Hub',
-    roles: ['BAS'],
-    organizationUnit: 'Alpine Wilderness & Ranger Coordination',
-    registrationDate: '6/15/2026',
-    status: 'Active',
-  },
-  {
-    id: 'emp-4',
-    name: 'Tena Mengistu',
-    username: '2952098461086251',
-    phoneNumber: '+251911063662',
-    email: 'tena.m@michuutms.et',
-    branch: 'Bishoftu Regional Hub',
-    roles: ['BAS', 'A+'],
-    organizationUnit: 'Crater Lakes Tourism Bureau',
-    registrationDate: '6/15/2026',
-    status: 'Active',
-  },
-  {
-    id: 'emp-5',
-    name: 'Alex Morgan',
-    username: 'alex.m',
-    phoneNumber: '+251911998776',
-    email: 'alex.m@michuutms.et',
-    branch: 'Addis Ababa Headquarters Hub',
-    roles: ['SUPER_ADMIN', 'A+'],
-    organizationUnit: 'Executive Tourism Directorate',
-    registrationDate: '5/01/2026',
-    status: 'Active',
-  },
-  {
-    id: 'emp-6',
-    name: 'Dawit Yohannes',
-    username: 'dawit.y',
-    phoneNumber: '+251913445566',
-    email: 'dawit.y@michuutms.et',
-    branch: 'Hawassa Lakeside Hub',
-    roles: ['FINANCE', 'BAS'],
-    organizationUnit: 'Finance & Payment Settlements',
-    registrationDate: '7/10/2026',
-    status: 'Active',
-  },
-];
-
 const ROLE_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
   BAS: { bg: '#e0f2fe', text: '#0284c7' },
   'A+': { bg: '#dcfce7', text: '#16a34a' },
   SA: { bg: '#fef3c7', text: '#d97706' },
   SUPER_ADMIN: { bg: '#fef3c7', text: '#d97706' },
+  ADMIN: { bg: '#dcfce7', text: '#16a34a' },
   FIN: { bg: '#f3e8ff', text: '#7c3aed' },
   FINANCE: { bg: '#f3e8ff', text: '#7c3aed' },
   DIS: { bg: '#ffedd5', text: '#ea580c' },
@@ -148,7 +76,9 @@ const ROLE_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 export const AdminEmployeesPage: React.FC = () => {
-  const [employees, setEmployees] = useState<EmployeeItem[]>(INITIAL_EMPLOYEES);
+  const [employees, setEmployees] = useState<EmployeeItem[]>([]);
+  const [availableRoles, setAvailableRoles] = useState(DEFAULT_ROLES);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBranchFilter, setSelectedBranchFilter] = useState('all');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('all');
@@ -172,8 +102,53 @@ export const AdminEmployeesPage: React.FC = () => {
   const [formEmail, setFormEmail] = useState('');
   const [formBranch, setFormBranch] = useState(AVAILABLE_BRANCHES[0]);
   const [formOrgUnit, setFormOrgUnit] = useState('Land Development and Administration Bureau');
-  const [formRoles, setFormRoles] = useState<string[]>(['BAS', 'A+']);
+  const [formRoles, setFormRoles] = useState<string[]>(['ADMIN']);
   const [formStatus, setFormStatus] = useState<'Active' | 'Inactive'>('Active');
+
+  const fetchEmployeesData = async () => {
+    setIsLoading(true);
+    try {
+      const [usersRes, rolesRes] = await Promise.all([
+        http.get('/users'),
+        http.get('/roles'),
+      ]);
+
+      if (Array.isArray(rolesRes.data) && rolesRes.data.length > 0) {
+        setAvailableRoles(
+          rolesRes.data.map((r: any) => ({
+            key: r.name.toUpperCase().replace(/\s+/g, '_'),
+            label: r.name,
+            badge: r.name.substring(0, 3).toUpperCase(),
+          }))
+        );
+      }
+
+      if (Array.isArray(usersRes.data)) {
+        setEmployees(
+          usersRes.data.map((u: any) => ({
+            id: String(u.id),
+            name: u.name,
+            username: u.email ? u.email.split('@')[0] : `user-${u.id}`,
+            phoneNumber: u.phone || '+251 911 000 000',
+            email: u.email,
+            branch: u.branch || 'Addis Ababa Headquarters Hub',
+            roles: u.role?.name ? [u.role.name] : ['ADMIN'],
+            organizationUnit: u.organizationUnit || 'Operations & Logistics Department',
+            registrationDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A',
+            status: u.isActive !== false ? 'Active' : 'Inactive',
+          }))
+        );
+      }
+    } catch {
+      setEmployees([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchEmployeesData();
+  }, []);
 
   // Open Create Modal
   const handleOpenCreate = () => {
@@ -204,58 +179,52 @@ export const AdminEmployeesPage: React.FC = () => {
   };
 
   // Save Employee Form
-  const handleSaveEmployee = (e: React.FormEvent) => {
+  const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formUsername.trim()) return;
 
-    if (editingEmployee) {
-      setEmployees((prev) =>
-        prev.map((item) =>
-          item.id === editingEmployee.id
-            ? {
-                ...item,
-                name: formName,
-                username: formUsername,
-                phoneNumber: formPhone,
-                email: formEmail || `${formUsername.toLowerCase()}@michuutms.et`,
-                branch: formBranch,
-                organizationUnit: formOrgUnit,
-                roles: formRoles.length > 0 ? formRoles : ['BAS'],
-                status: formStatus,
-              }
-            : item
-        )
-      );
-    } else {
-      const newEmp: EmployeeItem = {
-        id: `emp-${Date.now()}`,
-        name: formName,
-        username: formUsername,
-        phoneNumber: formPhone,
-        email: formEmail || `${formUsername.toLowerCase()}@michuutms.et`,
-        branch: formBranch,
-        organizationUnit: formOrgUnit,
-        roles: formRoles.length > 0 ? formRoles : ['BAS'],
-        registrationDate: new Date().toLocaleDateString('en-US'),
-        status: formStatus,
-      };
-      setEmployees([newEmp, ...employees]);
-    }
+    try {
+      if (editingEmployee) {
+        await http.patch(`/users/${editingEmployee.id}`, {
+          name: formName,
+          email: formEmail || `${formUsername.toLowerCase()}@michuutms.et`,
+          phone: formPhone,
+          isActive: formStatus === 'Active',
+        });
+      } else {
+        await http.post('/users', {
+          name: formName,
+          email: formEmail || `${formUsername.toLowerCase()}@michuutms.et`,
+          phone: formPhone,
+          password: 'password123',
+          isActive: formStatus === 'Active',
+        });
+      }
+      await fetchEmployeesData();
+    } catch {}
 
     setIsAddEditModalOpen(false);
   };
 
   // Toggle Status
-  const handleToggleStatus = (id: string) => {
-    setEmployees((prev) =>
-      prev.map((emp) => (emp.id === id ? { ...emp, status: emp.status === 'Active' ? 'Inactive' : 'Active' } : emp))
-    );
+  const handleToggleStatus = async (id: string) => {
+    const target = employees.find((e) => e.id === id);
+    if (!target) return;
+    try {
+      await http.patch(`/users/${id}`, {
+        isActive: target.status !== 'Active',
+      });
+      await fetchEmployeesData();
+    } catch {}
   };
 
   // Delete Employee
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (window.confirm(`Are you sure you want to delete employee "${name}"?`)) {
-      setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+      try {
+        await http.delete(`/users/${id}`);
+        await fetchEmployeesData();
+      } catch {}
     }
   };
 
@@ -452,14 +421,7 @@ export const AdminEmployeesPage: React.FC = () => {
           >
             <Lock size={15} />
           </button>
-          <button
-            type="button"
-            onClick={() => handleDelete(row.id, row.name)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2 }}
-            title="Delete Employee"
-          >
-            <Trash2 size={15} />
-          </button>
+          <button type="button" onClick={() => handleDelete(row.id, row.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="Delete"><Trash2 size={16} /></button>
         </div>
       ),
     },
@@ -689,7 +651,7 @@ export const AdminEmployeesPage: React.FC = () => {
                 Assigned RBAC Roles
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
-                {AVAILABLE_ROLES.map((r) => {
+                {availableRoles.map((r) => {
                   const isChecked = formRoles.includes(r.badge) || formRoles.includes(r.key);
                   return (
                     <label

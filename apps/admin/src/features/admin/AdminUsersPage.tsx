@@ -247,20 +247,42 @@ export const AdminUsersPage: React.FC = () => {
       noWrap: true,
       align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-          <Button variant="ghost" size="sm" icon={<Eye size={13} />} onClick={() => openDetail(row)}>View</Button>
+        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => openDetail(row)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0284c7', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="View Details"
+          >
+            <Eye size={16} />
+          </button>
           <PermissionGuard resource="users" action="update">
-            <Button variant="outline" size="sm" icon={<Edit size={13} />} onClick={() => openEdit(row)}>Edit</Button>
-            <Button variant={row.status === 'active' ? 'ghost' : 'outline'} size="sm"
-              style={row.status === 'active' ? { color: '#ef4444' } : {}}
-              icon={<ShieldAlert size={13} />}
-              onClick={() => save(customers.map((c) => c.id === row.id ? { ...c, status: c.status === 'active' ? 'blocked' : 'active' } : c))}>
-              {row.status === 'active' ? 'Block' : 'Unblock'}
-            </Button>
+            <button
+              type="button"
+              onClick={() => openEdit(row)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+              title="Edit Customer"
+            >
+              <Edit size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => save(customers.map((c) => c.id === row.id ? { ...c, status: c.status === 'active' ? 'blocked' : 'active' } : c))}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: row.status === 'active' ? '#ef4444' : '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+              title={row.status === 'active' ? 'Block Customer' : 'Unblock Customer'}
+            >
+              <ShieldAlert size={16} />
+            </button>
           </PermissionGuard>
           <PermissionGuard resource="users" action="delete">
-            <Button variant="ghost" size="sm" style={{ color: '#ef4444' }} icon={<Trash2 size={13} />}
-              onClick={() => { if (window.confirm(`Delete ${row.name}?`)) save(customers.filter((c) => c.id !== row.id)); }} />
+            <button
+              type="button"
+              onClick={() => { if (window.confirm(`Delete ${row.name}?`)) save(customers.filter((c) => c.id !== row.id)); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+              title="Delete Customer"
+            >
+              <Trash2 size={16} />
+            </button>
           </PermissionGuard>
         </div>
       ),

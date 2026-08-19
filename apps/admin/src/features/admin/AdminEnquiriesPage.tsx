@@ -23,6 +23,8 @@ import {
   User,
   AlertCircle,
   Inbox,
+  BookOpen,
+  CheckCircle,
 } from 'lucide-react';
 
 export const AdminEnquiriesPage: React.FC = () => {
@@ -196,9 +198,10 @@ export const AdminEnquiriesPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => handleUpdateStatus(row.id, 'read')}
-              style={{ fontSize: '11px', padding: '0.2rem 0.5rem' }}
+              title="Mark as Read"
+              style={{ padding: '0.35rem', color: 'var(--text-secondary)' }}
             >
-              Mark Read
+              <BookOpen size={14} />
             </Button>
           )}
 
@@ -207,9 +210,10 @@ export const AdminEnquiriesPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => handleUpdateStatus(row.id, 'replied')}
-              style={{ fontSize: '11px', padding: '0.2rem 0.5rem', color: '#16a34a', borderColor: 'rgba(22,163,74,0.3)' }}
+              title="Mark as Replied"
+              style={{ padding: '0.35rem', color: '#16a34a', borderColor: 'rgba(22,163,74,0.3)' }}
             >
-              Mark Replied
+              <CheckCircle size={14} />
             </Button>
           )}
 

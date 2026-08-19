@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
@@ -391,25 +391,29 @@ export const AdminToursPage: React.FC = () => {
       noWrap: true,
       align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', justifyContent: 'center' }}>
-          <Button variant="outline" size="sm" icon={<Edit size={13} />} onClick={() => handleStartEdit(row)}>
-            Edit
-          </Button>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={() => handleStartEdit(row)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="Edit Tour"
+          >
+            <Edit size={16} />
+          </button>
           <PermissionGuard resource="tours" action="delete">
-            <Button
-              variant="ghost"
-              size="sm"
-              style={{ color: '#ef4444' }}
-              icon={<Trash2 size={13} />}
+            <button
+              type="button"
               onClick={async () => {
                 if (window.confirm(`Delete "${row.title}"?`)) {
                   await tourismService.deleteTourPackage(row.id);
                   fetchTours();
                 }
               }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+              title="Delete Tour"
             >
-              Delete
-            </Button>
+              <Trash2 size={16} />
+            </button>
           </PermissionGuard>
         </div>
       ),

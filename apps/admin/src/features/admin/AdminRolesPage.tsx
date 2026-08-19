@@ -1,11 +1,14 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
+import { Modal } from '@tms/shared/components/common/Modal';
 import {
-  Users, Plus, ArrowLeft, Edit2, Trash2, Shield, Save, X,
+  Users, Plus, ArrowLeft, Edit2, Trash2, Shield, Save, X, Eye, AlertTriangle, Key,
 } from 'lucide-react';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
+
+import { http } from '@tms/shared/services/apiClient';
 
 interface ExtendedRoleItem {
   id: string;
@@ -20,134 +23,19 @@ interface ExtendedRoleItem {
   permissions: string[]; // e.g. "tour:create", "booking:approve"
 }
 
-const INITIAL_ROLES_LIST: ExtendedRoleItem[] = [
-  {
-    id: 'role-1',
-    roleKey: 'SUPER_ADMIN',
-    name: 'Super Administrator',
-    description: 'Unrestricted enterprise control across all platform resources and policies.',
-    status: 'Active',
-    createdDate: '4/6/2025',
-    isLocked: true,
-    isEditable: false,
-    isSwitchable: true,
-    permissions: [
-      'tour:read', 'tour:update', 'tour:create', 'tour:delete',
-      'booking:read', 'booking:update', 'booking:create', 'booking:approve', 'booking:cancel',
-      'payment:read', 'payment:create', 'payment:refund', 'payment:authorize',
-      'customer:read', 'customer:update', 'customer:verify',
-      'supplier:read', 'supplier:manage',
-      'report:read', 'report:export',
-      'system:read', 'system:update',
-    ],
-  },
-  {
-    id: 'role-2',
-    roleKey: 'ADMIN',
-    name: 'Tourism Administrator',
-    description: 'Full portal operations management, package approvals, and revenue oversight.',
-    status: 'Active',
-    createdDate: '5/5/2025',
-    isLocked: false,
-    isEditable: true,
-    isSwitchable: true,
-    permissions: [
-      'tour:read', 'tour:update', 'tour:create', 'tour:delete',
-      'booking:read', 'booking:update', 'booking:create', 'booking:approve',
-      'payment:read', 'payment:create', 'payment:refund',
-      'customer:read', 'customer:update',
-      'supplier:read', 'supplier:manage',
-      'report:read',
-    ],
-  },
-  {
-    id: 'role-3',
-    roleKey: 'TOUR_MANAGER',
-    name: 'Tour Operations Manager',
-    description: 'Creates and manages tour packages, configures itineraries, and assigns guides.',
-    status: 'Active',
-    createdDate: '10/4/2025',
-    isLocked: false,
-    isEditable: true,
-    isSwitchable: true,
-    permissions: [
-      'tour:read', 'tour:update', 'tour:create', 'tour:delete',
-      'booking:read', 'booking:approve',
-      'customer:read',
-      'supplier:read', 'supplier:manage',
-    ],
-  },
-  {
-    id: 'role-4',
-    roleKey: 'BOOKING_AGENT',
-    name: 'Booking & Reservations Agent',
-    description: 'Processes online customer reservations, confirms booking statuses, and verifies passport data.',
-    status: 'Active',
-    createdDate: '6/15/2025',
-    isLocked: false,
-    isEditable: true,
-    isSwitchable: true,
-    permissions: [
-      'tour:read',
-      'booking:read', 'booking:update', 'booking:create', 'booking:approve',
-      'customer:read', 'customer:update', 'customer:verify',
-    ],
-  },
-  {
-    id: 'role-5',
-    roleKey: 'ACCOUNTANT',
-    name: 'Finance Accountant',
-    description: 'Monitors booking transactions, processes refund payouts, generates ledger & tax reports.',
-    status: 'Active',
-    createdDate: '4/21/2025',
-    isLocked: false,
-    isEditable: true,
-    isSwitchable: true,
-    permissions: [
-      'booking:read',
-      'payment:read', 'payment:create', 'payment:refund', 'payment:authorize',
-      'report:read', 'report:export',
-    ],
-  },
-  {
-    id: 'role-6',
-    roleKey: 'GUIDE',
-    name: 'Licensed Ranger Guide',
-    description: 'Views assigned expedition schedules, passenger rosters, emergency contacts, and daily itineraries.',
-    status: 'Active',
-    createdDate: '12/8/2025',
-    isLocked: false,
-    isEditable: true,
-    isSwitchable: true,
-    permissions: ['tour:read', 'booking:read', 'customer:read'],
-  },
-  {
-    id: 'role-7',
-    roleKey: 'DRIVER',
-    name: 'Expedition Fleet Driver',
-    description: 'Accesses vehicle dispatch rosters, tourist pickup points, and passenger headcounts.',
-    status: 'Active',
-    createdDate: '9/9/2025',
-    isLocked: false,
-    isEditable: true,
-    isSwitchable: true,
-    permissions: ['tour:read', 'customer:read'],
-  },
-  {
-    id: 'role-8',
-    roleKey: 'CUSTOMER',
-    name: 'Public Traveler / Customer',
-    description: 'Browses destinations, reserves tour packages, manages self-service bookings & reviews.',
-    status: 'Active',
-    createdDate: '6/1/2025',
-    isLocked: false,
-    isEditable: true,
-    isSwitchable: true,
-    permissions: ['tour:read', 'booking:create', 'payment:create'],
-  },
-];
+interface ApiResource {
+  id: number;
+  name: string;
+  description?: string;
+}
 
-const MATRIX_RESOURCES = [
+interface ApiAction {
+  id: number;
+  action: string;
+  description?: string;
+}
+
+const DEFAULT_MATRIX_RESOURCES = [
   'tour',
   'booking',
   'payment',
@@ -159,7 +47,7 @@ const MATRIX_RESOURCES = [
   'system',
 ];
 
-const MATRIX_ACTIONS = [
+const DEFAULT_MATRIX_ACTIONS = [
   { key: 'read', label: 'READ' },
   { key: 'update', label: 'UPDATE' },
   { key: 'create', label: 'CREATE' },
@@ -177,7 +65,10 @@ const MATRIX_ACTIONS = [
 export const AdminRolesPage: React.FC = () => {
   // Navigation mode: 'list' (Image 1) vs 'detail' (Image 2)
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
-  const [rolesList, setRolesList] = useState<ExtendedRoleItem[]>(INITIAL_ROLES_LIST);
+  const [rolesList, setRolesList] = useState<ExtendedRoleItem[]>([]);
+  const [dbResources, setDbResources] = useState<ApiResource[]>([]);
+  const [dbActions, setDbActions] = useState<ApiAction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,6 +81,74 @@ export const AdminRolesPage: React.FC = () => {
   const [formIsEditable, setFormIsEditable] = useState(true);
   const [formIsSwitchable, setFormIsSwitchable] = useState(true);
   const [formPermissions, setFormPermissions] = useState<string[]>([]);
+
+  const fetchRolesData = async () => {
+    setIsLoading(true);
+    try {
+      const [rolesRes, resRes, actRes] = await Promise.all([
+        http.get('/roles'),
+        http.get('/permissions/resources'),
+        http.get('/permissions/actions'),
+      ]);
+
+      if (Array.isArray(resRes.data)) {
+        setDbResources(resRes.data);
+      }
+      if (Array.isArray(actRes.data)) {
+        setDbActions(actRes.data);
+      }
+
+      if (Array.isArray(rolesRes.data)) {
+        setRolesList(
+          rolesRes.data.map((r: any) => {
+            const perms: string[] = [];
+            if (r.rolePermissionResources) {
+              r.rolePermissionResources.forEach((rpr: any) => {
+                const resName = (rpr.resource?.name || '').toLowerCase();
+                if (rpr.rolePermissionResourceActions) {
+                  rpr.rolePermissionResourceActions.forEach((rpra: any) => {
+                    const actName = (rpra.action?.action || '').toLowerCase();
+                    if (resName && actName) {
+                      perms.push(`${resName}:${actName}`);
+                    }
+                  });
+                }
+              });
+            }
+            return {
+              id: String(r.id),
+              roleKey: r.name.toUpperCase().replace(/\s+/g, '_'),
+              name: r.name,
+              description: r.description || '',
+              status: r.is_active !== false ? 'Active' : 'Inactive',
+              createdDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'N/A',
+              isLocked: r.isLocked ?? false,
+              isEditable: r.editable ?? true,
+              isSwitchable: r.switchable ?? true,
+              permissions: perms,
+            };
+          })
+        );
+      }
+    } catch {
+      setRolesList([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchRolesData();
+  }, []);
+
+  // ── Dynamic Resources & Actions for Matrix ──
+  const matrixResources = dbResources.length > 0
+    ? dbResources.map((r) => r.name.toLowerCase())
+    : DEFAULT_MATRIX_RESOURCES;
+
+  const matrixActions = dbActions.length > 0
+    ? dbActions.map((a) => ({ key: a.action.toLowerCase(), label: a.action.toUpperCase() }))
+    : DEFAULT_MATRIX_ACTIONS;
 
   // ── Open Create Mode ──
   const handleOpenCreate = () => {
@@ -215,9 +174,52 @@ export const AdminRolesPage: React.FC = () => {
     setViewMode('detail');
   };
 
+  // View Modal State
+  const [viewingRole, setViewingRole] = useState<ExtendedRoleItem | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  // Delete Reason Modal State
+  const [deletingRole, setDeletingRole] = useState<ExtendedRoleItem | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('Deprecated Role');
+  const [deleteCustomNote, setDeleteCustomNote] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // ── Open View Mode ──
+  const handleOpenView = (role: ExtendedRoleItem) => {
+    setViewingRole(role);
+    setIsViewModalOpen(true);
+  };
+
+  // ── Open Delete Modal with Reason ──
+  const handleOpenDelete = (role: ExtendedRoleItem) => {
+    setDeletingRole(role);
+    setDeleteReason('Deprecated Role');
+    setDeleteCustomNote('');
+    setIsDeleteModalOpen(true);
+  };
+
+  // ── Confirm Delete Role ──
+  const handleConfirmDeleteRole = async () => {
+    if (!deletingRole) return;
+    setIsDeleting(true);
+    try {
+      await http.delete(`/roles/${deletingRole.id}`);
+      await fetchRolesData();
+      setIsDeleteModalOpen(false);
+      setDeletingRole(null);
+    } catch {
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // ── Delete Role ──
-  const handleDeleteRole = (id: string) => {
-    setRolesList((prev) => prev.filter((r) => r.id !== id));
+  const handleDeleteRole = async (id: string) => {
+    try {
+      await http.delete(`/roles/${id}`);
+      await fetchRolesData();
+    } catch {}
   };
 
   // ── Toggle Matrix Cell Checkbox in Detail View ──
@@ -230,7 +232,7 @@ export const AdminRolesPage: React.FC = () => {
 
   // ── Toggle All Actions for a Resource ──
   const toggleResourceRow = (resource: string) => {
-    const resourcePerms = MATRIX_ACTIONS.map((a) => `${resource}:${a.key}`);
+    const resourcePerms = matrixActions.map((a) => `${resource}:${a.key}`);
     const allChecked = resourcePerms.every((p) => formPermissions.includes(p));
 
     if (allChecked) {
@@ -242,43 +244,41 @@ export const AdminRolesPage: React.FC = () => {
   };
 
   // ── Save Role Form (Image 2 -> Image 1) ──
-  const handleSaveRole = (e: React.FormEvent) => {
+  const handleSaveRole = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formRoleName.trim()) return;
 
-    if (activeEditingId) {
-      // Update existing role
-      setRolesList((prev) =>
-        prev.map((r) =>
-          r.id === activeEditingId
-            ? {
-                ...r,
-                name: formRoleName,
-                description: formRoleDesc,
-                status: formStatus,
-                isEditable: formIsEditable,
-                isSwitchable: formIsSwitchable,
-                permissions: formPermissions,
-              }
-            : r
-        )
-      );
-    } else {
-      // Create new role
-      const roleKey = formRoleName.trim().toUpperCase().replace(/\s+/g, '_');
-      const newRole: ExtendedRoleItem = {
-        id: `role-${Date.now()}`,
-        roleKey,
-        name: formRoleName,
-        description: formRoleDesc || 'Custom enterprise RBAC role.',
-        status: formStatus,
-        createdDate: new Date().toLocaleDateString(),
-        isEditable: formIsEditable,
-        isSwitchable: formIsSwitchable,
-        permissions: formPermissions,
+    try {
+      const rolePermissionResources = dbResources
+        .map((res) => {
+          const resourceKey = res.name.toLowerCase();
+          const matchedActions = dbActions
+            .filter((act) => formPermissions.includes(`${resourceKey}:${act.action.toLowerCase()}`))
+            .map((act) => ({ permission_action_id: act.id }));
+
+          return {
+            permission_resource_id: res.id,
+            rolePermissionResourceActions: matchedActions,
+          };
+        })
+        .filter((rpr) => rpr.rolePermissionResourceActions.length > 0);
+
+      const payload = {
+        name: formRoleName.trim(),
+        description: formRoleDesc || 'Custom RBAC role.',
+        is_active: formStatus === 'Active',
+        editable: formIsEditable,
+        switchable: formIsSwitchable,
+        rolePermissionResources,
       };
-      setRolesList([newRole, ...rolesList]);
-    }
+
+      if (activeEditingId) {
+        await http.put(`/roles/${activeEditingId}`, { ...payload, id: Number(activeEditingId) });
+      } else {
+        await http.post('/roles', payload);
+      }
+      await fetchRolesData();
+    } catch {}
 
     setViewMode('list');
   };
@@ -350,52 +350,30 @@ export const AdminRolesPage: React.FC = () => {
     },
     {
       header: 'Actions',
-      width: '160px',
+      width: '120px',
       align: 'center',
       cell: (role) => (
-        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => handleOpenView(role)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0284c7', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="View Details"
+          >
+            <Eye size={16} />
+          </button>
+
           <button
             type="button"
             onClick={() => handleOpenEdit(role)}
-            style={{
-              padding: '0.3rem 0.65rem',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid rgba(37,99,235,0.3)',
-              backgroundColor: 'rgba(37,99,235,0.08)',
-              color: 'var(--brand-primary)',
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-            title="Edit Role & Permissions Matrix"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="Edit Role & Permissions"
           >
-            <Edit2 size={12} /> Edit
+            <Edit2 size={16} />
           </button>
 
           {!role.isLocked && (
-            <button
-              type="button"
-              onClick={() => handleDeleteRole(role.id)}
-              style={{
-                padding: '0.3rem 0.65rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid rgba(239,68,68,0.3)',
-                backgroundColor: 'rgba(239,68,68,0.08)',
-                color: '#ef4444',
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-              title="Delete Role"
-            >
-              <Trash2 size={12} /> Delete
-            </button>
+            <button type="button" onClick={() => handleOpenDelete(role)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="Delete"><Trash2 size={16} /></button>
           )}
         </div>
       ),
@@ -616,7 +594,7 @@ export const AdminRolesPage: React.FC = () => {
                     <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, minWidth: 160, borderRight: '1px solid rgba(255,255,255,0.15)' }}>
                       RESOURCE
                     </th>
-                    {MATRIX_ACTIONS.map((act) => (
+                    {matrixActions.map((act) => (
                       <th
                         key={act.key}
                         style={{
@@ -636,8 +614,8 @@ export const AdminRolesPage: React.FC = () => {
                 </thead>
 
                 <tbody>
-                  {MATRIX_RESOURCES.map((res, rIdx) => {
-                    const rowPerms = MATRIX_ACTIONS.map((a) => `${res}:${a.key}`);
+                  {matrixResources.map((res, rIdx) => {
+                    const rowPerms = matrixActions.map((a) => `${res}:${a.key}`);
                     const isRowFullyChecked = rowPerms.every((p) => formPermissions.includes(p));
 
                     return (
@@ -668,7 +646,7 @@ export const AdminRolesPage: React.FC = () => {
                         </td>
 
                         {/* Interactive Checkbox Cell for Action */}
-                        {MATRIX_ACTIONS.map((act) => {
+                        {matrixActions.map((act) => {
                           const permKey = `${res}:${act.key}`;
                           const isChecked = formPermissions.includes(permKey);
 
@@ -710,6 +688,153 @@ export const AdminRolesPage: React.FC = () => {
           </div>
 
         </form>
+      )}
+
+      {/* ── VIEW ROLE DETAIL MODAL ── */}
+      {isViewModalOpen && viewingRole && (
+        <Modal
+          isOpen={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
+          title={`Role Details: ${viewingRole.name}`}
+          size="md"
+          footer={
+            <div className="flex-between" style={{ width: '100%' }}>
+              <Button variant="ghost" size="sm" onClick={() => setIsViewModalOpen(false)}>
+                Close
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Edit2 size={14} />}
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  handleOpenEdit(viewingRole);
+                }}
+                style={{ backgroundColor: '#034ea2', borderColor: '#034ea2' }}
+              >
+                Edit Role
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: 'rgba(3,78,162,0.1)', color: '#034ea2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Key size={20} />
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Role ID #{viewingRole.id}
+                </div>
+                <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {viewingRole.name}
+                </div>
+              </div>
+              <span
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  backgroundColor: viewingRole.status === 'Active' ? 'rgba(22,163,74,0.12)' : 'rgba(239,68,68,0.12)',
+                  color: viewingRole.status === 'Active' ? '#16a34a' : '#ef4444',
+                }}
+              >
+                {viewingRole.status}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: 'var(--font-size-xs)' }}>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Created Date</div>
+                <div style={{ fontWeight: 700, marginTop: 4 }}>{viewingRole.createdDate}</div>
+              </div>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Permissions Assigned</div>
+                <div style={{ fontWeight: 700, marginTop: 4 }}>{viewingRole.permissions.length} actions</div>
+              </div>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Editable</div>
+                <div style={{ fontWeight: 700, marginTop: 4 }}>{viewingRole.isEditable ? 'Yes' : 'No'}</div>
+              </div>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Locked System Role</div>
+                <div style={{ fontWeight: 700, marginTop: 4 }}>{viewingRole.isLocked ? 'Yes' : 'No'}</div>
+              </div>
+            </div>
+
+            <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: 'var(--font-size-xs)' }}>Role Description</div>
+              <div style={{ marginTop: 4, fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                {viewingRole.description || 'No description provided.'}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── DELETE ROLE WITH REASON MODAL ── */}
+      {isDeleteModalOpen && deletingRole && (
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Confirm Role Deletion"
+          size="md"
+          footer={
+            <div className="flex-between" style={{ width: '100%' }}>
+              <Button variant="ghost" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                isLoading={isDeleting}
+                icon={<Trash2 size={14} />}
+                onClick={handleConfirmDeleteRole}
+              >
+                Confirm & Permanently Delete
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ padding: '0.875rem', backgroundColor: 'rgba(239,68,68,0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+              <AlertTriangle size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)' }}>
+                You are about to delete role <strong>"{deletingRole.name}"</strong> (ID: {deletingRole.id}). All users assigned to this role will lose their permissions.
+              </div>
+            </div>
+
+            <div className="tms-input-group">
+              <label className="tms-input-label">
+                Reason for Deletion <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <select
+                className="tms-input"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+              >
+                <option value="Deprecated Role">Deprecated / Outdated Role</option>
+                <option value="Organizational Restructure">Organizational Restructure</option>
+                <option value="Security Policy Update">Security Policy Update</option>
+                <option value="Accidental Duplicate">Accidental Duplicate / Mistake</option>
+                <option value="Roles Consolidation">Roles Consolidation</option>
+                <option value="Other">Other (Specify below)</option>
+              </select>
+            </div>
+
+            <div className="tms-input-group">
+              <label className="tms-input-label">Additional Deletion Notes / Audit Log</label>
+              <textarea
+                className="tms-input"
+                rows={2}
+                value={deleteCustomNote}
+                onChange={(e) => setDeleteCustomNote(e.target.value)}
+                placeholder="Enter audit explanation for this role deletion..."
+              />
+            </div>
+          </div>
+        </Modal>
       )}
 
     </div>

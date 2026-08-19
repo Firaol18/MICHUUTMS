@@ -32,34 +32,24 @@ export const AdminLoginPage: React.FC = () => {
 
       if (res.data && res.data.access_token) {
         const u = res.data.user;
+        const roleKey = u.role?.name ? u.role.name.toLowerCase() : 'admin';
         login(
           {
             id: String(u.id),
             name: u.name,
             email: u.email,
-            role: 'admin',
-            department: 'Executive Operations & Control',
-            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            role: roleKey as any,
+            department: u.organizationUnit || 'Executive Operations & Control',
+            avatarUrl: u.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           },
           res.data.access_token
         );
         navigate('/dashboard');
         return;
       }
-    } catch {
-      // Fallback for offline demo credentials
-      login(
-        {
-          id: 'usr-admin-01',
-          name: 'Alex Morgan',
-          email: cleanEmail,
-          role: 'admin',
-          department: 'Executive Operations & Control',
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        },
-        'jwt-admin-token-2026'
-      );
-      navigate('/dashboard');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Invalid email or password. Please try again.';
+      setErrorMsg(Array.isArray(msg) ? msg.join(', ') : msg);
     } finally {
       setIsLoading(false);
     }

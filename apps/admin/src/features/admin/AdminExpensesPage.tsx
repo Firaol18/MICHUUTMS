@@ -561,44 +561,8 @@ export const AdminExpensesPage: React.FC = () => {
                   </td>
                   <td style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditModal(exp)}
-                        style={{
-                          padding: '0.3rem 0.65rem',
-                          borderRadius: 'var(--radius-sm)',
-                          border: '1px solid rgba(37,99,235,0.3)',
-                          backgroundColor: 'rgba(37,99,235,0.08)',
-                          color: 'var(--brand-primary)',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                      >
-                        <Edit2 size={12} /> Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(exp.id)}
-                        style={{
-                          padding: '0.3rem 0.65rem',
-                          borderRadius: 'var(--radius-sm)',
-                          border: '1px solid rgba(239,68,68,0.3)',
-                          backgroundColor: 'rgba(239,68,68,0.08)',
-                          color: '#ef4444',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                      >
-                        <Trash2 size={12} /> Delete
-                      </button>
+                      <button type="button" onClick={() => handleOpenEditModal(exp)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="Edit"><Edit2 size={16} /></button>
+                      <button type="button" onClick={() => handleDelete(exp.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="Delete"><Trash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>
