@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useUIStore } from '@tms/shared/store/useUIStore';
 import {
@@ -28,6 +28,8 @@ import {
   BookOpen,
   Sparkles,
   FileText,
+  LifeBuoy,
+  MessageSquare,
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC = () => {
@@ -41,6 +43,8 @@ export const AdminSidebar: React.FC = () => {
     { to: '/dashboard', label: 'Dashboard', icon: <Gauge size={19} /> },
     { to: '/tours', label: 'Tours', icon: <Package size={19} />, isExpandable: true },
     { to: '/bookings', label: 'Bookings', icon: <ListOrdered size={19} /> },
+    { to: '/issues', label: 'Issue Management', icon: <LifeBuoy size={19} /> },
+    { to: '/enquiries', label: 'Inquiries', icon: <MessageSquare size={19} /> },
     { to: '/custom-trips', label: 'Custom Trips', icon: <Sparkles size={19} /> },
     { to: '/events', label: 'Events & Festivals', icon: <CalendarDays size={19} /> },
     { to: '/blog', label: 'Travel Blog', icon: <BookOpen size={19} /> },
@@ -55,6 +59,7 @@ export const AdminSidebar: React.FC = () => {
     { to: '/pages', label: 'CMS Pages', icon: <FileText size={19} /> },
     { to: '/settings', label: 'Settings', icon: <Settings size={19} /> },
   ];
+
 
   const rbacItems = [
     { to: '/employees', label: 'Employee', icon: <Shield size={18} /> },

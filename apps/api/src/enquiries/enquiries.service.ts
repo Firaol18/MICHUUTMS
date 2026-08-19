@@ -30,4 +30,11 @@ export class EnquiriesService {
     enq.status = status;
     return this.repo.save(enq);
   }
+
+  async remove(id: number) {
+    const enq = await this.repo.findOneBy({ id });
+    if (!enq) throw new NotFoundException(`Enquiry #${id} not found`);
+    return this.repo.remove(enq);
+  }
 }
+

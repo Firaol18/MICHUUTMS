@@ -721,6 +721,16 @@ class TourismService {
     saveStoredData(STORAGE_KEYS.ENQUIRIES, this.enquiries);
     return this.enquiries[idx];
   }
+
+  async deleteEnquiry(id: string): Promise<boolean> {
+    try {
+      await http.delete(`/enquiries/${id}`);
+    } catch {}
+    this.enquiries = this.enquiries.filter((e) => e.id !== id);
+    saveStoredData(STORAGE_KEYS.ENQUIRIES, this.enquiries);
+    return true;
+  }
 }
 
 export const tourismService = new TourismService();
+
