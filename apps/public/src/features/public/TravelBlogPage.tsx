@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { useContentStore } from '@tms/shared/store/useContentStore';
@@ -16,10 +16,15 @@ const BLOG_CATEGORIES: { label: string; value: BlogArticle['category'] | 'all'; 
 ];
 
 export const TravelBlogPage: React.FC = () => {
-  const { articles } = useContentStore();
+  const { articles, fetchArticles } = useContentStore();
   const [selectedCat, setSelectedCat] = useState<BlogArticle['category'] | 'all'>('all');
   const [search, setSearch] = useState('');
   const [openArticle, setOpenArticle] = useState<BlogArticle | null>(null);
+
+  React.useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
+
 
   const filtered = articles.filter((a) => {
     if (selectedCat !== 'all' && a.category !== selectedCat) return false;

@@ -1,6 +1,8 @@
 import { Injectable, OnApplicationBootstrap, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
+import { User } from '../users/entities/user.entity';
 import { Tour } from '../tours/entities/tour.entity';
 import { Event } from '../events/entities/event.entity';
 import { BlogPost } from '../blog/entities/blog-post.entity';
@@ -12,6 +14,7 @@ export class SeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(
+    @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(Tour) private tourRepo: Repository<Tour>,
     @InjectRepository(Event) private eventRepo: Repository<Event>,
     @InjectRepository(BlogPost) private blogRepo: Repository<BlogPost>,
@@ -20,12 +23,61 @@ export class SeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
+    await this.seedUsers();
     await this.seedTours();
     await this.seedEvents();
     await this.seedBlog();
     await this.seedEnquiries();
     await this.seedIssues();
   }
+
+  private async seedUsers() {
+    const count = await this.userRepo.count();
+    if (count > 0) return;
+
+    this.logger.log('🌱 Seeding initial Demo Users...');
+    const hashedPass = await bcrypt.hash('password123', 10);
+    const hashedAdminPass = await bcrypt.hash('adminpass123', 10);
+
+    const users: Partial<User>[] = [
+      {
+        name: 'Eleanor Vance',
+        email: 'eleanor.vance@example.com',
+        password: hashedPass,
+        isActive: true,
+      },
+      {
+        name: 'Alex Morgan',
+        email: 'admin@wanderlusttms.com',
+        password: hashedAdminPass,
+        isActive: true,
+      },
+      {
+        name: 'Alex Morgan',
+        email: 'admin@michuutms.com',
+        password: hashedPass,
+        isActive: true,
+      },
+      {
+        name: 'Sophia Rossi',
+        email: 'sophia.r@example.it',
+        password: hashedPass,
+        isActive: true,
+      },
+      {
+        name: 'Liam Hemsworth',
+        email: 'liam.h@example.co.uk',
+        password: hashedPass,
+        isActive: true,
+      },
+    ];
+
+    for (const u of users) {
+      await this.userRepo.save(this.userRepo.create(u));
+    }
+    this.logger.log(`✅ Seeded ${users.length} Initial Users`);
+  }
+
 
   private async seedTours() {
     const count = await this.tourRepo.count();

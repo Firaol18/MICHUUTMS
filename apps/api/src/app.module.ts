@@ -17,6 +17,13 @@ import { IssuesModule } from './issues/issues.module';
 import { CustomTripsModule } from './custom-trips/custom-trips.module';
 import { SeedModule } from './seed/seed.module';
 
+import { GuidesModule } from './guides/guides.module';
+import { DriversModule } from './drivers/drivers.module';
+import { VehiclesModule } from './vehicles/vehicles.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
+import { ExpensesModule } from './expenses/expenses.module';
+import { PaymentsModule } from './payments/payments.module';
+
 const useDatabaseUrl = !!process.env.DATABASE_URL;
 
 const connectionOptions = useDatabaseUrl
@@ -60,11 +67,18 @@ if (!useDatabaseUrl && !process.env.DB_PASSWORD) {
     EnquiriesModule,
     IssuesModule,
     CustomTripsModule,
+    GuidesModule,
+    DriversModule,
+    VehiclesModule,
+    SuppliersModule,
+    ExpensesModule,
+    PaymentsModule,
     SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+
 
 

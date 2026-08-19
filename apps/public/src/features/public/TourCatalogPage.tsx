@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { TourCard } from '@tms/shared/components/data-display/TourCard';
 import { Input } from '@tms/shared/components/common/Input';
@@ -47,8 +47,9 @@ export const TourCatalogPage: React.FC = () => {
 
   // Advanced filters
   const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(5000);
+  const [maxPrice, setMaxPrice] = useState(200000);
   const [minRating, setMinRating] = useState(0);
+
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [selectedSeason, setSelectedSeason] = useState('Any Season');
   const [offersOnly, setOffersOnly] = useState(false);

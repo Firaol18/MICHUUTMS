@@ -62,11 +62,13 @@ export class UsersService {
   }
 
   async getUserByEmail(email: string) {
+    const cleanEmail = email.trim();
     return this.usersRepo.findOne({
-      where: { email },
+      where: [{ email: cleanEmail }, { email: ILike(cleanEmail) }],
       select: ['id', 'name', 'email', 'password', 'isActive', 'createdAt', 'updatedAt'],
     });
   }
+
 
   async createUser(user: Partial<User>) {
     const userToCreate = { ...user };

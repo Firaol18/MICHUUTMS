@@ -102,9 +102,14 @@ const EVENT_PACKAGES: EventPackageOption[] = [
 
 export const EventsCalendarPage: React.FC = () => {
   const navigate = useNavigate();
-  const { events } = useContentStore();
+  const { events, fetchEvents } = useContentStore();
   const { addItem, openCart } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
 
   // View & Filter States (Cards Grid as default view)
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
