@@ -1,33 +1,23 @@
 {
-  "name": "tms1",
+  "name": "tms-monorepo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:public\" \"npm run dev:admin\"",
-    "dev:public": "vite --port 5173",
-    "dev:admin": "vite --port 5174",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@types/leaflet": "^1.9.22",
-    "leaflet": "^1.9.4",
-    "lucide-react": "^1.31.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.2",
-    "zustand": "^5.0.14"
+    "dev": "concurrently \"npm run dev --workspace=apps/public\" \"npm run dev --workspace=apps/admin\"",
+    "dev:public": "npm run dev --workspace=apps/public",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "build": "npm run build --workspace=apps/public && npm run build --workspace=apps/admin",
+    "build:public": "npm run build --workspace=apps/public",
+    "build:admin": "npm run build --workspace=apps/admin",
+    "lint": "oxlint"
   },
   "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.4",
     "concurrently": "^9.2.4",
-    "oxlint": "^1.75.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.2.0"
+    "oxlint": "^1.75.0"
   }
 }
