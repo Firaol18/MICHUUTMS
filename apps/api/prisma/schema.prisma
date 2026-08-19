@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+  // Force binary engine so PrismaClient can be constructed without adapter
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url is read from prisma.config.ts in Prisma 7
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  content    String
+  createdAt  DateTime @default(now())
+
+  sender     User @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
+
+model Employee {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  phone      String?
+  department String?
+  isActive   Boolean  @default(true)
+  roleId     Int?
+  role       Role?    @relation(fields: [roleId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  loginHistories EmployeeLoginHistory[]
+}
+
+model Role {
+  id                     Int      @id @default(autoincrement())
+  name                   String   @unique
+  description            String?
+  is_active              Boolean  @default(true)
+  isLocked               Boolean  @default(false)
+  editable               Boolean  @default(true)
+  switchable             Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  rolePermissionResources RolePermissionResource[]
+  employees               Employee[]
+  serviceAccounts         ServiceAccount[]
+}
+
+model PermissionAction {
+  id        Int      @id @default(autoincrement())
+  action    String   @unique
+  description String?
+  draft     Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rpra      RolePermissionResourceAction[]
+}
+
+model PermissionResource {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  description String?
+  draft     Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rolePermissionResources RolePermissionResource[]
+}
+
+model RolePermissionResource {
+  id                       Int      @id @default(autoincrement())
+  role_id                  Int
+  permission_resource_id   Int
+
+  role                     Role     @relation(fields: [role_id], references: [id])
+  resource                 PermissionResource @relation(fields: [permission_resource_id], references: [id])
+  rolePermissionResourceActions RolePermissionResourceAction[]
+}
+
+model RolePermissionResourceAction {
+  id                         Int      @id @default(autoincrement())
+  role_permission_resource_id Int
+  permission_action_id       Int
+
+  rolePermissionResource     RolePermissionResource @relation(fields: [role_permission_resource_id], references: [id])
+  action                     PermissionAction @relation(fields: [permission_action_id], references: [id])
+}
+
+model ServiceAccount {
+  id          Int      @id @default(autoincrement())
+  name        String
+  clientId    String   @unique
+  clientSecret String
+  isActive    Boolean  @default(true)
+  roleId      Int?
+  role        Role?    @relation(fields: [roleId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EmployeeLoginHistory {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  ipAddress  String?
+  userAgent  String?
+  loginTime  DateTime @default(now())
+}

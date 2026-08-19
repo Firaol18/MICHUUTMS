@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis IAM | Account Security & Identity Control Center</title>
+  <meta name="description" content="Aegis Identity & Access Management (IAM) Control Center. Administer employee profiles, API keys, custom roles, permissions, and audit security login history.">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Theme Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar" id="sidebar-nav">
+      <div class="sidebar-brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" class="logo-icon">
+            <path d="M12 2L3 7v9c0 5.25 3.75 10.1 9 11.5 5.25-1.4 9-6.25 9-11.5V7l-9-5zm0 18c-3.87 0-7-3.13-7-7 0-3.87 3.13-7 7-7s7 3.13 7 7c0 3.87-3.13 7-7 7z"/>
+            <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+          </svg>
+        </div>
+        <div class="brand-name">
+          <h2>AEGIS <span class="accent-text">IAM</span></h2>
+          <span class="brand-tagline">Security Console</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <span class="menu-label">Identity Management</span>
+        <a href="#employees" class="menu-item active" id="nav-btn-employees">
+          <svg viewBox="0 0 24 24" class="menu-icon"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span>Employees</span>
+        </a>
+        <a href="#service-accounts" class="menu-item" id="nav-btn-service-accounts">
+          <svg viewBox="0 0 24 24" class="menu-icon"><path d="M20 13c0-5.52-4.48-10-10-10S0 7.48 0 13c0 4.88 3.5 8.94 8 9.81V15H5v-2h3v-2.5c0-3.04 2.46-5.5 5.5-5.5H15v3h-1.5c-1.38 0-2.5 1.12-2.5 2.5V13h3.5l-.5 2h-3v7.81c4.5-.87 8-4.93 8-9.81z"/></svg>
+          <span>Service Accounts</span>
+        </a>
+        <a href="#users" class="menu-item" id="nav-btn-users">
+          <svg viewBox="0 0 24 24" class="menu-icon"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 2 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          <span>Users</span>
+        </a>
+
+        <span class="menu-label">Audit & Policies</span>
+        <a href="#login-history" class="menu-item" id="nav-btn-login-history">
+          <svg viewBox="0 0 24 24" class="menu-icon"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+          <span>Login History</span>
+        </a>
+        <a href="#roles" class="menu-item" id="nav-btn-roles">
+          <svg viewBox="0 0 24 24" class="menu-icon"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v2h-2V7zm0 4h2v6h-2v-6z"/></svg>
+          <span>Access Roles</span>
+        </a>
+        <a href="#permission-resources" class="menu-item" id="nav-btn-permission-resources">
+          <svg viewBox="0 0 24 24" class="menu-icon"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+          <span>Resources</span>
+        </a>
+        <a href="#permission-actions" class="menu-item" id="nav-btn-permission-actions">
+          <svg viewBox="0 0 24 24" class="menu-icon"><path d="M12.5 8H11V6h1.5v2zm0 8H11v-6h1.5v6zm.5-12h-2C6.48 4 4 6.48 4 9.5c0 1.84 1.13 3.41 2.75 4.06.15.06.25.2.25.36v1.58c0 .28-.22.5-.5.5-.83 0-1.5.67-1.5 1.5v1c0 .28.22.5.5.5h12c.28 0 .5-.22.5-.5v-1c0-.83-.67-1.5-1.5-1.5-.28 0-.5-.22-.5-.5v-1.58c0-.16.1-.3.25-.36C18.87 12.91 20 11.34 20 9.5 20 6.48 17.52 4 13 4z"/></svg>
+          <span>Actions</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="avatar-glow">
+            <div class="avatar-initials">SA</div>
+          </div>
+          <div class="user-details">
+            <span class="user-name">Admin Console</span>
+            <span class="user-role">Super Administrator</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Container -->
+    <main class="app-main">
+      <!-- Glassmorphic Header -->
+      <header class="workspace-header">
+        <div class="header-left">
+          <h1 id="view-title">Employees List</h1>
+          <span class="subtitle-text" id="view-subtitle">Manage organization accounts and login states.</span>
+        </div>
+        <div class="header-right">
+          <!-- Search Bar -->
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" class="search-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" id="global-search-input" placeholder="Search identities..." autocomplete="off">
+            <button id="search-clear-btn" style="display: none;">&times;</button>
+          </div>
+          <!-- Action Button (Contextual) -->
+          <button class="primary-btn" id="header-action-btn">
+            <svg viewBox="0 0 24 24" class="btn-icon"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <span id="header-action-text">Add Employee</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- System Notification Banner -->
+      <div id="toast-container" class="toast-container"></div>
+
+      <!-- Main Content Views -->
+      <section class="workspace-content" id="workspace-content">
+        <!-- Dashboard Stats Strip -->
+        <div class="stats-strip" id="view-stats-strip">
+          <!-- Dynamically populated stats cards -->
+        </div>
+
+        <!-- Filters Block -->
+        <div class="filters-panel" id="view-filters-panel">
+          <!-- Dynamically populated filter fields -->
+        </div>
+
+        <!-- Data Grid -->
+        <div class="data-card-container">
+          <div class="table-scroll-wrapper">
+            <table class="aegis-table" id="data-table">
+              <thead>
+                <tr id="table-header-row">
+                  <!-- Dynamically populated headers -->
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                <!-- Dynamically populated data rows -->
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Empty State -->
+          <div class="empty-state" id="table-empty-state" style="display: none;">
+            <svg viewBox="0 0 24 24" class="empty-icon"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0-2-.9-2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7V7h10v2zm0 8H7v-2h10v2z"/></svg>
+            <h3>No identities found</h3>
+            <p>Try refining your search filter or create a new record.</p>
+          </div>
+
+          <!-- Pagination Control -->
+          <footer class="table-pagination" id="table-pagination-nav">
+            <div class="pagination-info">
+              Showing <span class="page-range" id="page-range">1-10</span> of <span class="total-records" id="total-records">0</span> entries
+            </div>
+            <div class="pagination-actions">
+              <button class="pagination-btn" id="btn-page-prev" disabled>
+                <svg viewBox="0 0 24 24" class="page-arrow"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+              </button>
+              <div class="pagination-pages" id="pagination-pages-list">
+                <!-- Dynamic pagination buttons -->
+              </div>
+              <button class="pagination-btn" id="btn-page-next" disabled>
+                <svg viewBox="0 0 24 24" class="page-arrow"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+              </button>
+            </div>
+          </footer>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Dynamic Modal Frame -->
+  <div class="modal-overlay" id="modal-container" style="display: none;">
+    <div class="modal-card">
+      <header class="modal-header">
+        <h2 id="modal-title">Create New Record</h2>
+        <button class="close-modal-btn" id="close-modal-btn">&times;</button>
+      </header>
+      <div class="modal-body">
+        <form id="modal-form" autocomplete="off">
+          <!-- Form fields will be dynamically rendered here based on active section -->
+        </form>
+      </div>
+      <footer class="modal-footer">
+        <button class="secondary-btn" id="modal-cancel-btn">Cancel</button>
+        <button class="primary-btn" id="modal-submit-btn">
+          <span id="modal-submit-text">Confirm & Save</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Main JavaScript File -->
+  <script src="app.js"></script>
+</body>
+</html>
