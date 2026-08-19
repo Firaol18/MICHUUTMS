@@ -303,3 +303,125 @@ body {
     display: none !important;
   }
 }
+
+/* ============================================================
+   ADMIN PORTAL MOBILE RESPONSIVENESS
+   ============================================================ */
+
+/* Desktop defaults */
+.admin-mobile-toggle {
+  display: none;
+}
+
+.admin-mobile-close-btn {
+  display: none;
+}
+
+.admin-desktop-collapse-btn {
+  display: flex;
+}
+
+.admin-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Mobile & Tablet breakpoint (≤ 1024px) */
+@media (max-width: 1024px) {
+  .admin-mobile-toggle {
+    display: flex !important;
+  }
+
+  .admin-desktop-collapse-btn {
+    display: none !important;
+  }
+
+  .admin-mobile-close-btn {
+    display: flex !important;
+  }
+
+  /* Transform sidebar into an off-canvas drawer */
+  .admin-sidebar-aside {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 85vw !important;
+    transform: translateX(-100%) !important;
+    box-shadow: none !important;
+    z-index: 100 !important;
+  }
+
+  .admin-sidebar-aside.mobile-open {
+    transform: translateX(0) !important;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  /* Reduce content padding */
+  .admin-main-content {
+    padding: 1.25rem 1rem !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-main-content {
+    padding: 1rem 0.75rem !important;
+  }
+
+  /* Admin navbar adjustments */
+  .admin-navbar-header {
+    padding: 0 0.875rem !important;
+  }
+
+  .admin-user-text {
+    display: none !important;
+  }
+
+  .admin-search-wrapper {
+    max-width: 180px !important;
+  }
+
+  /* Modal form grids collapse to 1 column on phones */
+  .tms-modal-content div[style*="gridTemplateColumns"],
+  .tms-modal-content form div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Admin page headers wrap search and create button cleanly */
+  .admin-main-content > div > .flex-between,
+  .admin-main-content .flex-between:not(.table-pagination) {
+    flex-wrap: wrap !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Form actions buttons full width */
+  .tms-modal-content .flex-between {
+    flex-direction: column-reverse !important;
+    gap: 0.75rem !important;
+  }
+
+  .tms-modal-content .flex-between > button,
+  .tms-modal-content .flex-between > div > button {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-search-wrapper {
+    display: none !important;
+  }
+
+  /* Admin table action icons remain accessible */
+  .tms-table td {
+    padding: 0.625rem 0.5rem !important;
+  }
+}
+
+

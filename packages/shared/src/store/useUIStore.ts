@@ -3,14 +3,18 @@ import { create } from 'zustand';
 interface UIState {
   theme: 'light' | 'dark';
   sidebarCollapsed: boolean;
+  mobileSidebarOpen: boolean;
   toggleTheme: () => void;
   toggleSidebar: () => void;
+  toggleMobileSidebar: () => void;
+  setMobileSidebarOpen: (open: boolean) => void;
   setTheme: (theme: 'light' | 'dark') => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
   theme: (localStorage.getItem('tms-theme') as 'light' | 'dark') || 'light',
   sidebarCollapsed: false,
+  mobileSidebarOpen: false,
   toggleTheme: () =>
     set((state) => {
       const nextTheme = state.theme === 'light' ? 'dark' : 'light';
@@ -24,4 +28,7 @@ export const useUIStore = create<UIState>((set) => ({
     set({ theme });
   },
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  toggleMobileSidebar: () => set((state) => ({ mobileSidebarOpen: !state.mobileSidebarOpen })),
+  setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
 }));
+
