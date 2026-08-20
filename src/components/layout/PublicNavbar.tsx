@@ -553,13 +553,24 @@ export const PublicNavbar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* Guest: Show Sign In + Sign Up buttons */
-              <div className="flex-center" style={{ gap: '0.35rem' }}>
-                <Button variant="ghost" size="sm" icon={<LogIn size={14} />} onClick={() => navigate('/login?mode=signin')}>
+              /* Guest: Show enhanced Sign In button only */
+              <div className="flex-center">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<LogIn size={15} />}
+                  onClick={() => navigate('/login?mode=signin')}
+                  style={{
+                    fontWeight: 700,
+                    padding: '0.45rem 1.15rem',
+                    borderRadius: 'var(--radius-full)',
+                    boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                  }}
+                >
                   {t('sign_in')}
-                </Button>
-                <Button variant="primary" size="sm" onClick={() => navigate('/login?mode=signup')}>
-                  {t('sign_up')}
                 </Button>
               </div>
             )}
