@@ -12,7 +12,7 @@ export class BookingsService {
   constructor(
     @InjectRepository(Booking) private repo: Repository<Booking>,
     private readonly toursService: ToursService,
-  ) {}
+  ) { }
 
   private generateRef(): string {
     return `MCH-BKG-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -54,12 +54,14 @@ export class BookingsService {
       );
     }
 
-    const pricePerPerson = tour?.pricePerPerson ?? 1500;
+    const pricePerPerson = tour?.pricePerPerson ?? (dto.totalPrice ? dto.totalPrice / numberOfTravelers : 1500);
     const tourTitle = dto.tourTitle || tour?.title || 'Ethiopian Tour Expedition';
     const destinationName = dto.destinationName || tour?.destinationName || 'Ethiopia';
     const adults = dto.numberOfAdults ?? numberOfTravelers;
     const children = dto.numberOfChildren ?? 0;
-    const totalPrice = pricePerPerson * numberOfTravelers;
+    const totalPrice = dto.totalPrice ?? (pricePerPerson * numberOfTravelers);
+    const assignedGuideName = dto.assignedGuideName ?? null;
+    const status = (dto.status as any) || 'pending';
 
     const booking = this.repo.create({
       tourId: tour?.id ?? null,
@@ -78,13 +80,14 @@ export class BookingsService {
       numberOfAdults: adults,
       numberOfChildren: children,
       totalPrice,
-      status: 'pending',
-      paymentStatus: 'unpaid',
+      status,
+      paymentStatus: (dto.paymentStatus as any) || 'paid',
       refundStatus: 'none',
+      assignedGuideName,
       userId: userId ?? null,
     });
 
-    const saved = await this.repo.save(booking);
+    const saved = (await this.repo.save(booking)) as Booking;
     this.logger.log(`Booking created: ${saved.bookingReference} (id=${saved.id})`);
     return saved;
   }
@@ -124,10 +127,10 @@ export class BookingsService {
     const booking = await this.findOne(id);
     const wasAlreadyPaid = booking.paymentStatus === 'paid';
     booking.status = 'cancelled';
-    booking.cancellationReason = dto.reason || 'Cancelled by user';
-    if (wasAlreadyPaid && dto.requestRefund) {
+    booking.cancellationReason = dto.reason || 'Cancelled by admin';
+    if (wasAlreadyPaid || dto.requestRefund) {
       booking.paymentStatus = 'refunded';
-      booking.refundStatus = 'pending';
+      booking.refundStatus = 'processed';
     }
     return this.repo.save(booking);
   }

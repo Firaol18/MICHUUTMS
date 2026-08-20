@@ -16,6 +16,10 @@ export class CreateBookingDto {
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(1) numberOfTravelers?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() numberOfAdults?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() numberOfChildren?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() totalPrice?: number;
+  @ApiPropertyOptional() @IsOptional() @IsString() status?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() paymentStatus?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() assignedGuideName?: string;
 }
 
 export class CancelBookingDto {

@@ -50,9 +50,9 @@ export class Booking {
   @ApiProperty() @Column({ type: 'varchar', length: 30, default: 'unpaid' }) paymentStatus: PaymentStatus;
   @ApiProperty() @Column({ type: 'varchar', length: 30, default: 'none' }) refundStatus: RefundStatus;
 
-  @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) assignedGuideId: string;
-  @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) assignedGuideName: string;
-  @ApiProperty() @Column({ type: 'text', nullable: true }) cancellationReason: string;
+  @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) assignedGuideId?: string | null;
+  @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) assignedGuideName?: string | null;
+  @ApiProperty() @Column({ type: 'text', nullable: true }) cancellationReason?: string | null;
 
   @ApiProperty() @CreateDateColumn() bookingDate: Date;
   @ApiProperty() @UpdateDateColumn() updatedAt: Date;

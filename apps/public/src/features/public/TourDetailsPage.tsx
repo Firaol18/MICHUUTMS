@@ -512,7 +512,8 @@ export const TourDetailsPage: React.FC = () => {
               <div><strong>Travel Date:</strong> {confirmedBooking.travelDate}</div>
               <div><strong>Travelers:</strong> {confirmedBooking.numberOfTravelers} Guests</div>
               <div><strong>Total Paid:</strong> ${confirmedBooking.totalPrice.toLocaleString()}</div>
-              <div><strong>Assigned Ranger Guide:</strong> {confirmedBooking.assignedGuideName}</div>
+              <div><strong>Assigned Guide:</strong> {confirmedBooking.assignedGuideName || 'None (Pending Admin Assignment)'}</div>
+              <div><strong>Status:</strong> <Badge variant={confirmedBooking.status === 'confirmed' ? 'success' : 'warning'}>{(confirmedBooking.status || 'pending').toUpperCase()}</Badge></div>
             </Card>
           </div>
         ) : (

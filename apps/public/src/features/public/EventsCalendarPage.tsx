@@ -11,6 +11,8 @@ import { useContentStore } from '@tms/shared/store/useContentStore';
 import { useCartStore } from '@tms/shared/store/useCartStore';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { ETHIOPIAN_REGIONS, type EthiopianEvent } from '@tms/shared/services/mockEventsData';
+import { tourismService } from '@tms/shared/services/tourismService';
+import type { Booking } from '@tms/shared/types/booking';
 import {
   CalendarDays,
   MapPin,
@@ -37,6 +39,12 @@ import {
   Users,
   ShieldCheck,
   Coffee,
+  CheckCircle2,
+  AlertCircle,
+  Utensils,
+  Car,
+  Globe,
+  ShoppingCart,
 } from 'lucide-react';
 
 const CATEGORY_LABELS: Record<EthiopianEvent['category'], string> = {
@@ -125,14 +133,23 @@ export const EventsCalendarPage: React.FC = () => {
 
   // Booking Form State
   const [selectedPackageId, setSelectedPackageId] = useState<'vip' | 'standard' | 'community'>('standard');
-  const [travelersCount, setTravelersCount] = useState<number>(2);
-  const [pickupPoint, setPickupPoint] = useState<string>('bole-airport');
+  const [adultsCount, setAdultsCount] = useState<number>(2);
+  const [childrenCount, setChildrenCount] = useState<number>(0);
+  const [travelDate, setTravelDate] = useState<string>('');
+  const [pickupPoint, setPickupPoint] = useState<string>('meskel-square');
   const [addCostumeRental, setAddCostumeRental] = useState<boolean>(false);
   const [addPhotoPermit, setAddPhotoPermit] = useState<boolean>(false);
   const [addBuffetDining, setAddBuffetDining] = useState<boolean>(true);
   const [travelerName, setTravelerName] = useState<string>('');
   const [travelerEmail, setTravelerEmail] = useState<string>('');
   const [travelerPhone, setTravelerPhone] = useState<string>('');
+  const [travelerNationality, setTravelerNationality] = useState<string>('Ethiopia');
+  const [specialRequests, setSpecialRequests] = useState<string>('');
+
+  // Live direct booking submission state
+  const [isDirectSubmitting, setIsDirectSubmitting] = useState<boolean>(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [confirmedDirectBooking, setConfirmedDirectBooking] = useState<Booking | null>(null);
 
   // Leaflet Map Reference
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -313,47 +330,112 @@ export const EventsCalendarPage: React.FC = () => {
   // Open Booking Modal for an Event
   const handleOpenBooking = (evt: EthiopianEvent) => {
     setBookingEvent(evt);
+    setTravelDate(evt.date);
     setTravelerName(user?.name || '');
     setTravelerEmail(user?.email || '');
     setTravelerPhone((user as any)?.phone || '');
-
-    setTravelersCount(2);
+    setTravelerNationality('Ethiopia');
+    setSpecialRequests('');
+    setAdultsCount(2);
+    setChildrenCount(0);
     setSelectedPackageId('standard');
+    setAddCostumeRental(false);
+    setAddPhotoPermit(false);
+    setAddBuffetDining(true);
     setBookingSuccessMsg(null);
+    setBookingError(null);
+    setConfirmedDirectBooking(null);
   };
 
   // Calculate Event Booking Total
+  const totalTravelers = Math.max(1, adultsCount + childrenCount);
   const selectedPkg = EVENT_PACKAGES.find((p) => p.id === selectedPackageId) || EVENT_PACKAGES[1];
   const addonsTotalPerPerson = (addCostumeRental ? 25 : 0) + (addPhotoPermit ? 35 : 0) + (addBuffetDining ? 20 : 0);
   const totalPerGuest = selectedPkg.pricePerPerson + addonsTotalPerPerson;
-  const bookingGrandTotal = totalPerGuest * travelersCount;
+  const bookingGrandTotal = totalPerGuest * totalTravelers;
 
-  // Submit Event Booking to Cart
-  const handleConfirmBooking = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Direct Live Backend Booking Submission (Same as Tour flow)
+  const handleDirectBookingSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!bookingEvent) return;
 
+    if (!travelerName.trim()) {
+      setBookingError('Please enter the lead guest full name.');
+      return;
+    }
+    if (!travelerEmail.trim()) {
+      setBookingError('Please enter a valid contact email address.');
+      return;
+    }
+
+    setIsDirectSubmitting(true);
+    setBookingError(null);
+
+    try {
+      const packageTitle = `${bookingEvent.title} (${selectedPkg.title.split(' ')[0]} Festival Pass)`;
+      const destination = `${bookingEvent.location}, ${bookingEvent.region}`;
+
+      const booking = await tourismService.createBooking(
+        bookingEvent.id,
+        {
+          name: travelerName.trim(),
+          email: travelerEmail.trim(),
+          phone: travelerPhone.trim() || '+251 91 123 4567',
+          nationality: travelerNationality.trim() || 'Ethiopia',
+          specialRequests: [
+            `Pickup: ${pickupPoint}`,
+            addCostumeRental ? 'Traditional Attire Included' : null,
+            addPhotoPermit ? 'VIP Photo Escort Pass Included' : null,
+            addBuffetDining ? 'Traditional Cultural Feast Included' : null,
+            specialRequests ? `Special Request: ${specialRequests}` : null,
+          ].filter(Boolean).join(' • '),
+        },
+        travelDate || bookingEvent.date,
+        totalTravelers,
+        adultsCount,
+        childrenCount,
+        {
+          title: packageTitle,
+          destination: destination,
+          totalPrice: bookingGrandTotal,
+          status: 'pending',
+        }
+      );
+
+      setConfirmedDirectBooking(booking);
+    } catch (err: any) {
+      console.error('Event booking failed:', err);
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to confirm booking on the server. Please try again.';
+      setBookingError(errMsg);
+    } finally {
+      setIsDirectSubmitting(false);
+    }
+  };
+
+  // Submit Event Booking to Cart
+  const handleAddToCartFromModal = (evt: EthiopianEvent) => {
     addItem({
-      id: `event-${bookingEvent.id}-${Date.now()}`,
+      id: `event-${evt.id}-${selectedPackageId}-${Date.now()}`,
       type: 'event',
-      title: `${bookingEvent.title} (${selectedPkg.title.split(' ')[0]} Pass)`,
-      subtitle: `${travelersCount} Guests • ${bookingEvent.location} • ${selectedPkg.badge}`,
-      imageUrl: bookingEvent.imageUrl,
+      title: `${evt.title} (${selectedPkg.title.split(' ')[0]} Pass)`,
+      subtitle: `${totalTravelers} Guest${totalTravelers !== 1 ? 's' : ''} • ${evt.location} • ${selectedPkg.badge}`,
+      imageUrl: evt.imageUrl,
       unitPrice: totalPerGuest,
-      quantity: travelersCount,
-      date: bookingEvent.date,
+      quantity: totalTravelers,
+      date: travelDate || evt.date,
       details: {
-        location: `${bookingEvent.location} (${bookingEvent.region})`,
-        duration: bookingEvent.endDate ? '2 Days Festival' : '1 Day Festival',
+        location: `${evt.location} (${evt.region})`,
+        duration: evt.endDate ? '2 Days Festival' : '1 Day Festival',
         guideName: 'Certified Cultural Guide & Escort',
       },
     });
 
-    setBookingSuccessMsg(`✓ Successfully added "${bookingEvent.title}" to your booking cart!`);
+    setBookingSuccessMsg(`✓ Successfully added "${evt.title}" to your booking cart!`);
     setTimeout(() => {
       setBookingEvent(null);
+      setActiveModalEvent(null);
       openCart();
-    }, 900);
+    }, 600);
   };
 
   return (
@@ -813,16 +895,175 @@ export const EventsCalendarPage: React.FC = () => {
         </Card>
       )}
 
-      {/* ── 7. DETAILED EVENT MODAL (CULTURAL ETIQUETTE & STORY) ── */}
+      {/* ── 7. ENHANCED DETAILED EVENT MODAL (STORY, HIGHLIGHTS & BOOKING WIDGET) ── */}
       {activeModalEvent && (
         <Modal
           isOpen={Boolean(activeModalEvent)}
           onClose={() => setActiveModalEvent(null)}
           title={`🇪🇹 ${activeModalEvent.title}`}
           size="lg"
-          footer={
-            <div className="flex-between" style={{ width: '100%', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Hero Image with Floating Badges */}
+            <div
+              style={{
+                height: 280,
+                backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.75)), url(${activeModalEvent.imageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                borderRadius: 'var(--radius-lg)',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '1.25rem',
+                color: '#fff',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <Badge variant="warning">{CATEGORY_LABELS[activeModalEvent.category].toUpperCase()}</Badge>
+                  {activeModalEvent.isFeatured && <Badge variant="success">⭐ FEATURED CELEBRATION</Badge>}
+                </div>
+                <div
+                  style={{
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    backdropFilter: 'blur(8px)',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                  }}
+                >
+                  📍 {activeModalEvent.region}
+                </div>
+              </div>
+
+              <div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 0.35rem 0', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}>
+                  {activeModalEvent.title}
+                </h3>
+                {activeModalEvent.ethiopianDate && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', backgroundColor: 'rgba(0,0,0,0.6)', padding: '0.25rem 0.6rem', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: 600 }}>
+                    🇪🇹 Ethiopian Ge'ez Calendar: <strong>{activeModalEvent.ethiopianDate}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+              <div style={{ padding: '0.875rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Festival Pass</div>
+                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--brand-primary)', marginTop: '0.2rem' }}>
+                  $45 – $180 <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>/ guest</span>
+                </div>
+              </div>
+              <div style={{ padding: '0.875rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Gregorian Date</div>
+                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', marginTop: '0.2rem' }}>
+                  {new Date(activeModalEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+              </div>
+              <div style={{ padding: '0.875rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Host Location</div>
+                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {activeModalEvent.location}
+                </div>
+              </div>
+              <div style={{ padding: '0.875rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Duration</div>
+                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', marginTop: '0.2rem' }}>
+                  {activeModalEvent.endDate ? '2-Day Festival' : 'Full Day Celebration'}
+                </div>
+              </div>
+            </div>
+
+            {/* Cultural Story & Significance */}
+            <div>
+              <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Sparkles size={18} style={{ color: 'var(--brand-primary)' }} /> Cultural Significance & Story
+              </h4>
+              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.75, margin: 0 }}>
+                {activeModalEvent.description}
+              </p>
+            </div>
+
+            {/* Highlights Included with Festival Booking */}
+            <div style={{ padding: '1.25rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Ticket size={16} style={{ color: 'var(--brand-primary)' }} /> Available Experience Inclusions
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', fontSize: 'var(--font-size-xs)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Check size={14} style={{ color: 'var(--status-success)' }} />
+                  <span>Official Festival Entry & Grandstand</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Check size={14} style={{ color: 'var(--status-success)' }} />
+                  <span>Certified Multilingual Cultural Guide</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Check size={14} style={{ color: 'var(--status-success)' }} />
+                  <span>Roundtrip Convoy / Private 4x4 Transport</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Check size={14} style={{ color: 'var(--status-success)' }} />
+                  <span>Traditional Coffee Ceremony & Blessing</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modesty Guidelines & Dress Code */}
+            {activeModalEvent.dressCode && (
+              <div style={{ padding: '1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                  <Shirt size={15} style={{ color: 'var(--brand-primary)' }} />
+                  Traditional Dress Code & Modesty Guidelines
+                </div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  {activeModalEvent.dressCode}
+                </div>
+              </div>
+            )}
+
+            {/* Insider Visitor & Photography Tips */}
+            {activeModalEvent.tipForVisitors && (
+              <div style={{ padding: '1rem', backgroundColor: 'var(--brand-primary-light)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(var(--brand-primary-rgb), 0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', marginBottom: '0.35rem' }}>
+                  <Camera size={15} />
+                  Insider Visitor & Photography Tips
+                </div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', fontWeight: 600, lineHeight: 1.5 }}>
+                  {activeModalEvent.tipForVisitors}
+                </div>
+              </div>
+            )}
+
+            {/* Dedicated Action Box — Styled same as Tour Detail CTA */}
+            <Card
+              glass
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                padding: '1.25rem',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-secondary)',
+              }}
+            >
+              <div className="flex-between" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+                    FESTIVAL EXPERIENCE PASS
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--brand-primary)' }}>
+                    $45 – $180 <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 400, color: 'var(--text-muted)' }}>/ guest</span>
+                  </div>
+                </div>
+
                 <a
                   href={generateGoogleCalendarUrl(activeModalEvent)}
                   target="_blank"
@@ -834,230 +1075,263 @@ export const EventsCalendarPage: React.FC = () => {
                     fontSize: 'var(--font-size-xs)',
                     fontWeight: 600,
                     textDecoration: 'none',
-                    backgroundColor: 'var(--brand-primary-light)',
-                    color: 'var(--brand-primary)',
-                    padding: '0.4rem 0.75rem',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-secondary)',
+                    padding: '0.5rem 0.875rem',
                     borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-color)',
                   }}
                 >
-                  <CalendarDays size={14} /> Add to Google Calendar ↗
+                  <CalendarDays size={14} /> Add to Calendar ↗
                 </a>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <Button
                   variant="primary"
-                  size="sm"
-                  icon={<Ticket size={14} />}
+                  size="lg"
+                  icon={<Ticket size={18} />}
                   onClick={() => {
                     const evt = activeModalEvent;
                     setActiveModalEvent(null);
                     handleOpenBooking(evt);
                   }}
-                  style={{ backgroundColor: '#f59e0b', color: '#000000', fontWeight: 800 }}
+                  style={{ width: '100%' }}
                 >
-                  Book Festival Pass ($95)
+                  Book This Festival Experience Now
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => setActiveModalEvent(null)}>
-                  Close
+
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => handleAddToCartFromModal(activeModalEvent)}
+                  style={{ width: '100%' }}
+                >
+                  🛒 Add to Cart (Multi-Item Package)
                 </Button>
               </div>
-            </div>
-          }
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ height: 240, backgroundImage: `url(${activeModalEvent.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: 'var(--radius-md)', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '1rem', left: '1rem', display: 'flex', gap: '0.5rem' }}>
-                <Badge variant="warning">{CATEGORY_LABELS[activeModalEvent.category].toUpperCase()}</Badge>
-                {activeModalEvent.isFeatured && <Badge variant="success">⭐ FEATURED CELEBRATION</Badge>}
-              </div>
 
-              {activeModalEvent.ethiopianDate && (
-                <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-sm)', fontSize: 'var(--font-size-xs)', fontWeight: 700 }}>
-                  🇪🇹 Ethiopian Ge'ez Calendar: {activeModalEvent.ethiopianDate}
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Gregorian Date</div>
-                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', marginTop: '0.2rem' }}>
-                  {new Date(activeModalEvent.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  {activeModalEvent.endDate && ` to ${new Date(activeModalEvent.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-                </div>
+              <div className="flex-center" style={{ gap: '0.5rem', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                <ShieldCheck size={16} style={{ color: 'var(--status-success)' }} /> Instant confirmation & 100% money-back guarantee
               </div>
-              <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Location & Host Region</div>
-                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', marginTop: '0.2rem' }}>
-                  {activeModalEvent.location} ({activeModalEvent.region})
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-                Cultural Significance & History
-              </h4>
-              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
-                {activeModalEvent.description}
-              </p>
-            </div>
-
-            {activeModalEvent.dressCode && (
-              <div style={{ padding: '1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
-                  <Shirt size={15} style={{ color: 'var(--brand-primary)' }} />
-                  Traditional Dress Code & Modesty Guidelines
-                </div>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>
-                  {activeModalEvent.dressCode}
-                </div>
-              </div>
-            )}
-
-            {activeModalEvent.tipForVisitors && (
-              <div style={{ padding: '1rem', backgroundColor: 'var(--brand-primary-light)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', marginBottom: '0.35rem' }}>
-                  <Camera size={15} />
-                  Insider Visitor & Photography Tips
-                </div>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', fontWeight: 600 }}>
-                  {activeModalEvent.tipForVisitors}
-                </div>
-              </div>
-            )}
+            </Card>
           </div>
         </Modal>
       )}
 
-      {/* ── 8. DEDICATED FESTIVAL BOOKING MODAL ── */}
+      {/* ── 8. DEDICATED FESTIVAL BOOKING MODAL (LIVE BACKEND + CART SUPPORT) ── */}
       {bookingEvent && (
         <Modal
           isOpen={Boolean(bookingEvent)}
-          onClose={() => setBookingEvent(null)}
-          title={`🎟️ Book Festival Experience: ${bookingEvent.title}`}
+          onClose={() => {
+            setBookingEvent(null);
+            setConfirmedDirectBooking(null);
+          }}
+          title={
+            confirmedDirectBooking
+              ? '🎉 Reservation Confirmed!'
+              : `🎟️ Book Festival: ${bookingEvent.title}`
+          }
           size="lg"
           footer={
-            <div className="flex-between" style={{ width: '100%', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>Estimated Total:</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--brand-primary)' }}>
-                  ${bookingGrandTotal.toLocaleString()} USD
-                </span>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>(${totalPerGuest}/guest)</span>
+            confirmedDirectBooking ? (
+              <div className="flex-between" style={{ width: '100%' }}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setBookingEvent(null);
+                    setConfirmedDirectBooking(null);
+                  }}
+                >
+                  Close
+                </Button>
+                <Button variant="primary" size="sm" onClick={() => navigate('/my-bookings')}>
+                  View My Reservations
+                </Button>
               </div>
+            ) : (
+              <div className="flex-between" style={{ width: '100%', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>Total:</span>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--brand-primary)' }}>
+                    ${bookingGrandTotal.toLocaleString()} USD
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>(${totalPerGuest}/guest)</span>
+                </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <Button variant="ghost" size="sm" onClick={() => setBookingEvent(null)}>
-                  Cancel
-                </Button>
-                <Button variant="primary" size="md" icon={<Ticket size={16} />} onClick={handleConfirmBooking}>
-                  Confirm & Add to Cart
-                </Button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <Button variant="ghost" size="sm" onClick={() => setBookingEvent(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddToCartFromModal(bookingEvent)}
+                  >
+                    🛒 Add to Cart
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<Ticket size={16} />}
+                    onClick={handleDirectBookingSubmit}
+                    isLoading={isDirectSubmitting}
+                  >
+                    Confirm Booking (${bookingGrandTotal.toLocaleString()})
+                  </Button>
+                </div>
               </div>
-            </div>
+            )
           }
         >
-          <form onSubmit={handleConfirmBooking} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {bookingSuccessMsg && (
-              <div style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--status-success-light)', color: 'var(--status-success)', borderRadius: 'var(--radius-sm)', fontWeight: 700, fontSize: 'var(--font-size-xs)' }}>
-                {bookingSuccessMsg}
+          {confirmedDirectBooking ? (
+            <div className="flex-center" style={{ flexDirection: 'column', gap: '1.25rem', textAlign: 'center', padding: '1rem 0' }}>
+              <div
+                className="flex-center"
+                style={{ width: 64, height: 64, borderRadius: '50%', backgroundColor: 'var(--status-success-bg)', color: 'var(--status-success)' }}
+              >
+                <CheckCircle2 size={38} />
               </div>
-            )}
-
-            {/* Event Quick Summary Banner */}
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <img
-                src={bookingEvent.imageUrl}
-                alt={bookingEvent.title}
-                style={{ width: 64, height: 64, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
-              />
               <div>
-                <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                  {bookingEvent.title}
-                </h4>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'flex', gap: '0.75rem' }}>
-                  <span>📅 {new Date(bookingEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                  <span>📍 {bookingEvent.location}</span>
+                <h3 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800 }}>
+                  Booking Reference #{confirmedDirectBooking.bookingReference}
+                </h3>
+                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  Thank you <strong>{confirmedDirectBooking.traveler.name}</strong>! Your festival experience for <strong>{confirmedDirectBooking.tourTitle}</strong> is officially confirmed in the live system.
+                </p>
+              </div>
+
+              <Card glass style={{ width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.625rem', fontSize: 'var(--font-size-sm)', padding: '1.25rem' }}>
+                <div className="flex-between">
+                  <span style={{ color: 'var(--text-muted)' }}>Travel Date:</span>
+                  <span style={{ fontWeight: 700 }}>{confirmedDirectBooking.travelDate}</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Select Experience Tier */}
-            <div>
-              <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, display: 'block', marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Select Festival Package Tier
-              </label>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                {EVENT_PACKAGES.map((pkg) => {
-                  const isSelected = selectedPackageId === pkg.id;
-                  return (
-                    <div
-                      key={pkg.id}
-                      onClick={() => setSelectedPackageId(pkg.id)}
-                      style={{
-                        padding: '1rem',
-                        borderRadius: 'var(--radius-md)',
-                        border: `2px solid ${isSelected ? 'var(--brand-primary)' : 'var(--border-color)'}`,
-                        backgroundColor: isSelected ? 'var(--brand-primary-light)' : 'var(--bg-secondary)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                          <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: 'var(--radius-full)', backgroundColor: isSelected ? 'var(--brand-primary)' : 'var(--bg-tertiary)', color: isSelected ? '#fff' : 'var(--text-muted)' }}>
-                            {pkg.badge}
-                          </span>
-                        </div>
-                        <div style={{ fontWeight: 800, fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-                          {pkg.title}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                          {pkg.description}
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: '0.875rem', fontWeight: 800, fontSize: '1.1rem', color: 'var(--brand-primary)' }}>
-                        ${pkg.pricePerPerson} <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>/ guest</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Travelers count & Pickup point */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.35rem' }}>
-                  Number of Guests
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setTravelersCount((c) => Math.max(1, c - 1))}
-                    style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', cursor: 'pointer', fontWeight: 700 }}
-                  >
-                    -
-                  </button>
-                  <span style={{ fontWeight: 800, fontSize: 'var(--font-size-md)', minWidth: 30, textAlign: 'center' }}>
-                    {travelersCount}
+                <div className="flex-between">
+                  <span style={{ color: 'var(--text-muted)' }}>Travelers:</span>
+                  <span style={{ fontWeight: 700 }}>{confirmedDirectBooking.numberOfTravelers} Guests ({confirmedDirectBooking.numberOfAdults ?? adultsCount} Adults, {confirmedDirectBooking.numberOfChildren ?? childrenCount} Children)</span>
+                </div>
+                <div className="flex-between">
+                  <span style={{ color: 'var(--text-muted)' }}>Total Amount:</span>
+                  <span style={{ fontWeight: 800, color: 'var(--brand-primary)', fontSize: 'var(--font-size-md)' }}>${confirmedDirectBooking.totalPrice.toLocaleString()} USD</span>
+                </div>
+                <div className="flex-between">
+                  <span style={{ color: 'var(--text-muted)' }}>Assigned Guide:</span>
+                  <span style={{ fontWeight: 600, color: confirmedDirectBooking.assignedGuideName ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                    {confirmedDirectBooking.assignedGuideName || 'None (Pending Admin Assignment)'}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setTravelersCount((c) => c + 1)}
-                    style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', cursor: 'pointer', fontWeight: 700 }}
-                  >
-                    +
-                  </button>
+                </div>
+                <div className="flex-between">
+                  <span style={{ color: 'var(--text-muted)' }}>Status:</span>
+                  <Badge variant={confirmedDirectBooking.status === 'confirmed' ? 'success' : 'warning'}>
+                    {(confirmedDirectBooking.status || 'pending').toUpperCase()}
+                  </Badge>
+                </div>
+              </Card>
+            </div>
+          ) : (
+            <form onSubmit={handleDirectBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {bookingError && (
+                <div style={{ padding: '0.75rem 1rem', backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-sm)', color: '#dc2626', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
+                  ⚠ {bookingError}
+                </div>
+              )}
+
+              {/* Event Quick Summary Banner */}
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <img
+                  src={bookingEvent.imageUrl}
+                  alt={bookingEvent.title}
+                  style={{ width: 64, height: 64, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
+                />
+                <div>
+                  <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                    {bookingEvent.title}
+                  </h4>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <span>📅 {new Date(bookingEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    <span>📍 {bookingEvent.location}</span>
+                  </div>
                 </div>
               </div>
 
+              {/* Select Experience Tier */}
+              <div>
+                <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, display: 'block', marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Select Festival Package Tier
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                  {EVENT_PACKAGES.map((pkg) => {
+                    const isSelected = selectedPackageId === pkg.id;
+                    return (
+                      <div
+                        key={pkg.id}
+                        onClick={() => setSelectedPackageId(pkg.id)}
+                        style={{
+                          padding: '1rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: `2px solid ${isSelected ? 'var(--brand-primary)' : 'var(--border-color)'}`,
+                          backgroundColor: isSelected ? 'var(--brand-primary-light)' : 'var(--bg-secondary)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                            <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: 'var(--radius-full)', backgroundColor: isSelected ? 'var(--brand-primary)' : 'var(--bg-tertiary)', color: isSelected ? '#fff' : 'var(--text-muted)' }}>
+                              {pkg.badge}
+                            </span>
+                          </div>
+                          <div style={{ fontWeight: 800, fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                            {pkg.title}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                            {pkg.description}
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: '0.875rem', fontWeight: 800, fontSize: '1.1rem', color: 'var(--brand-primary)' }}>
+                          ${pkg.pricePerPerson} <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>/ guest</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Guests and Departure Date */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+                <Input
+                  label="Adults"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={adultsCount}
+                  onChange={(e) => setAdultsCount(Math.max(1, Number(e.target.value)))}
+                  required
+                />
+                <Input
+                  label="Children (under 12)"
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={childrenCount}
+                  onChange={(e) => setChildrenCount(Math.max(0, Number(e.target.value)))}
+                />
+                <Input
+                  label="Attendance Date"
+                  type="date"
+                  value={travelDate}
+                  onChange={(e) => setTravelDate(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Meeting / Pickup Location */}
               <div className="tms-input-group" style={{ margin: 0 }}>
                 <label className="tms-input-label">Meeting & Pickup Location</label>
                 <select
@@ -1065,84 +1339,102 @@ export const EventsCalendarPage: React.FC = () => {
                   value={pickupPoint}
                   onChange={(e) => setPickupPoint(e.target.value)}
                 >
-                  <option value="bole-airport">✈️ Bole International Airport (Terminal 2 VIP Gate)</option>
                   <option value="meskel-square">📍 Meskel Square Central Hub (Finfinnee)</option>
+                  <option value="bole-airport">✈️ Bole International Airport (Terminal 2 VIP Gate)</option>
                   <option value="hotel-pickup">🏨 Hotel Pickup (In City Center)</option>
                   <option value="venue-gate">🏛️ Direct Festival Venue Gate Meeting Point</option>
                 </select>
               </div>
-            </div>
 
-            {/* Cultural Add-ons */}
-            <div>
-              <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, display: 'block', marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Optional Cultural Enhancements
-              </label>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                <label style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: addCostumeRental ? 'var(--brand-primary-light)' : 'var(--bg-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)' }}>
-                  <input
-                    type="checkbox"
-                    checked={addCostumeRental}
-                    onChange={(e) => setAddCostumeRental(e.target.checked)}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 700 }}>👗 Traditional Attire</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+$25 / guest</div>
-                  </div>
+              {/* Cultural Add-ons */}
+              <div>
+                <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, display: 'block', marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Optional Cultural Enhancements
                 </label>
 
-                <label style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: addPhotoPermit ? 'var(--brand-primary-light)' : 'var(--bg-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)' }}>
-                  <input
-                    type="checkbox"
-                    checked={addPhotoPermit}
-                    onChange={(e) => setAddPhotoPermit(e.target.checked)}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 700 }}>📸 Photo Pass & Escort</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+$35 / guest</div>
-                  </div>
-                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                  <label style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: addCostumeRental ? 'var(--brand-primary-light)' : 'var(--bg-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)' }}>
+                    <input
+                      type="checkbox"
+                      checked={addCostumeRental}
+                      onChange={(e) => setAddCostumeRental(e.target.checked)}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 700 }}>👗 Traditional Attire</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+$25 / guest</div>
+                    </div>
+                  </label>
 
-                <label style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: addBuffetDining ? 'var(--brand-primary-light)' : 'var(--bg-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)' }}>
-                  <input
-                    type="checkbox"
-                    checked={addBuffetDining}
-                    onChange={(e) => setAddBuffetDining(e.target.checked)}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 700 }}>🍽️ Traditional Feast</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+$20 / guest</div>
-                  </div>
-                </label>
+                  <label style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: addPhotoPermit ? 'var(--brand-primary-light)' : 'var(--bg-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)' }}>
+                    <input
+                      type="checkbox"
+                      checked={addPhotoPermit}
+                      onChange={(e) => setAddPhotoPermit(e.target.checked)}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 700 }}>📸 Photo Pass & Escort</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+$35 / guest</div>
+                    </div>
+                  </label>
+
+                  <label style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: addBuffetDining ? 'var(--brand-primary-light)' : 'var(--bg-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)' }}>
+                    <input
+                      type="checkbox"
+                      checked={addBuffetDining}
+                      onChange={(e) => setAddBuffetDining(e.target.checked)}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 700 }}>🍽️ Traditional Feast</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+$20 / guest</div>
+                    </div>
+                  </label>
+                </div>
               </div>
-            </div>
 
-            {/* Primary Guest Contact Details */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              {/* Primary Guest Contact Details */}
               <Input
-                label="Full Name"
+                label="Lead Guest Full Name"
                 placeholder="Marcus Vance"
                 value={travelerName}
                 onChange={(e) => setTravelerName(e.target.value)}
                 required
               />
-              <Input
-                label="Email"
-                type="email"
-                placeholder="marcus@example.com"
-                value={travelerEmail}
-                onChange={(e) => setTravelerEmail(e.target.value)}
-                required
-              />
-              <Input
-                label="Mobile Phone"
-                placeholder="+251 911 000 000"
-                value={travelerPhone}
-                onChange={(e) => setTravelerPhone(e.target.value)}
-              />
-            </div>
-          </form>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <Input
+                  label="Email Address"
+                  type="email"
+                  placeholder="marcus@example.com"
+                  value={travelerEmail}
+                  onChange={(e) => setTravelerEmail(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Mobile Phone"
+                  placeholder="+251 911 000 000"
+                  value={travelerPhone}
+                  onChange={(e) => setTravelerPhone(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <Input
+                  label="Nationality / Country"
+                  placeholder="Ethiopia"
+                  value={travelerNationality}
+                  onChange={(e) => setTravelerNationality(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Special Dietary or Accessibility Requests"
+                  placeholder="e.g. Vegetarian feast, wheelchair access"
+                  value={specialRequests}
+                  onChange={(e) => setSpecialRequests(e.target.value)}
+                />
+              </div>
+            </form>
+          )}
         </Modal>
       )}
 

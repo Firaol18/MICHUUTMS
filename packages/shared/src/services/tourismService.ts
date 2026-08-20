@@ -308,12 +308,13 @@ class TourismService {
     travelDate: string,
     numberOfTravelers: number,
     numberOfAdults?: number,
-    numberOfChildren?: number
+    numberOfChildren?: number,
+    customDetails?: { title?: string; destination?: string; totalPrice?: number; assignedGuideName?: string; status?: BookingStatus; paymentStatus?: PaymentStatus }
   ): Promise<Booking> {
     // Find tour in local cache (for metadata only)
     const tour = this.tours.find((t) => t.id === tourPackageId || t.slug === tourPackageId);
-    const tourTitle = tour?.title || 'Ethiopian Tour Expedition';
-    const destinationName = tour ? `${tour.destination.name}, ${tour.destination.country}` : 'Ethiopia';
+    const tourTitle = customDetails?.title || tour?.title || 'Ethiopian Tour Expedition';
+    const destinationName = customDetails?.destination || (tour ? `${tour.destination.name}, ${tour.destination.country}` : 'Ethiopia');
     const adults = numberOfAdults ?? numberOfTravelers;
     const children = numberOfChildren ?? 0;
 
@@ -330,6 +331,10 @@ class TourismService {
       numberOfTravelers,
       numberOfAdults: adults,
       numberOfChildren: children,
+      totalPrice: customDetails?.totalPrice,
+      assignedGuideName: customDetails?.assignedGuideName,
+      status: customDetails?.status || 'pending',
+      paymentStatus: customDetails?.paymentStatus || 'paid',
     };
 
     // No fallback — if backend fails, throw so the UI shows a real error

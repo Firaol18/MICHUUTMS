@@ -18,21 +18,21 @@ const AVAILABLE_GUIDES = [
   'Abebe Bekele', 'Tigist Assefa', 'Biruk Tadesse', 'Gennet Worku', 'Solomon Haile',
 ];
 
-const STATUS_FLOW: BookingStatus[] = ['pending', 'confirmed', 'paid', 'completed'];
+const STATUS_FLOW: BookingStatus[] = ['pending', 'confirmed', 'completed'];
 
 function statusVariant(s: BookingStatus) {
   if (s === 'confirmed') return 'success';
   if (s === 'pending') return 'warning';
-  if (s === 'paid') return 'info';
   if (s === 'completed') return 'success';
+  if (s === 'paid') return 'info';
   return 'danger';
 }
 
 function paymentVariant(p: PaymentStatus) {
   if (p === 'paid') return 'success';
+  if (p === 'refunded') return 'info';
   if (p === 'partial') return 'warning';
-  if (p === 'unpaid') return 'danger';
-  return 'info'; // refunded
+  return 'danger'; // unpaid
 }
 
 export const AdminBookingsPage: React.FC = () => {
@@ -140,33 +140,12 @@ export const AdminBookingsPage: React.FC = () => {
     },
     {
       header: 'Payment',
-      minWidth: '120px',
+      minWidth: '110px',
       noWrap: true,
       cell: (row) => (
-        <PermissionGuard resource="bookings" action="update">
-          <select
-            value={row.paymentStatus}
-            onChange={(e) => handlePaymentChange(row.id, e.target.value as PaymentStatus)}
-            style={{
-              padding: '0.25rem 0.4rem',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--bg-secondary)',
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: 'pointer',
-              color: row.paymentStatus === 'paid' ? '#16a34a'
-                : row.paymentStatus === 'refunded' ? '#3b82f6'
-                : row.paymentStatus === 'partial' ? '#f59e0b'
-                : '#ef4444',
-            }}
-          >
-            <option value="unpaid">UNPAID</option>
-            <option value="partial">PARTIAL</option>
-            <option value="paid">PAID</option>
-            <option value="refunded">REFUNDED</option>
-          </select>
-        </PermissionGuard>
+        <Badge variant={paymentVariant(row.paymentStatus)}>
+          {row.paymentStatus.toUpperCase()}
+        </Badge>
       ),
     },
     {
@@ -177,14 +156,17 @@ export const AdminBookingsPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <UserCheck size={13} style={{ color: 'var(--brand-primary)' }} />
           <select
-            value={row.assignedGuideName || AVAILABLE_GUIDES[0]}
+            value={row.assignedGuideName || ''}
             onChange={(e) => handleGuideAssign(row.id, e.target.value)}
             style={{
               padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-sm)',
               border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)',
-              fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer',
+              fontSize: 11, fontWeight: 600,
+              color: row.assignedGuideName ? 'var(--text-primary)' : 'var(--text-muted)',
+              cursor: 'pointer',
             }}
           >
+            <option value="">-- Assign Guide --</option>
             {AVAILABLE_GUIDES.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         </div>
@@ -231,7 +213,8 @@ export const AdminBookingsPage: React.FC = () => {
               const nextStatus = STATUS_FLOW[currentIdx + 1];
               if (!nextStatus) return null;
               const labels: Record<string, string> = {
-                confirmed: 'Confirm Booking', paid: 'Mark Paid', completed: 'Mark Completed',
+                confirmed: 'Confirm Booking (Pending → Confirmed)',
+                completed: 'Mark Completed (Confirmed → Completed)',
               };
               return (
                 <button
@@ -244,18 +227,18 @@ export const AdminBookingsPage: React.FC = () => {
                 </button>
               );
             })()}
-            {/* Cancel button */}
+            {/* Cancel and Automatic Refund button */}
             {row.status !== 'cancelled' && row.status !== 'completed' && (
               <button
                 type="button"
                 onClick={async () => {
-                  const reason = window.prompt('Enter cancellation reason:');
+                  const reason = window.prompt('Enter cancellation reason (will automatically mark payment as REFUNDED):');
                   if (reason === null) return;
-                  await tourismService.cancelBookingWithRefund(row.id, reason || 'Cancelled by admin', false);
+                  await tourismService.cancelBookingWithRefund(row.id, reason || 'Cancelled by admin', true);
                   fetchBookings();
                 }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }}
-                title="Cancel Booking"
+                title="Cancel Booking & Refund Payment"
               >
                 <XCircle size={16} />
               </button>
@@ -266,7 +249,7 @@ export const AdminBookingsPage: React.FC = () => {
     },
   ];
 
-  const filterTabs = (['all', 'pending', 'confirmed', 'paid', 'completed', 'cancelled'] as const);
+  const filterTabs = (['all', 'pending', 'confirmed', 'completed', 'cancelled'] as const);
 
   return (
     <div>
