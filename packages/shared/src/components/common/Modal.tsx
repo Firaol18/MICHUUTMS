@@ -18,6 +18,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   footer,
+  size = 'md',
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -35,20 +36,30 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
+  const sizeMaxWidth =
+    size === 'sm' ? '440px' :
+    size === 'lg' ? '860px' :
+    size === 'xl' ? '1100px' :
+    '580px';
+
   return (
     <div className="tms-modal-overlay" onClick={onClose}>
-      <div className="tms-modal-content" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`tms-modal-content tms-modal-${size}`}
+        style={{ maxWidth: sizeMaxWidth, width: '100%' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex-between" style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)' }}>
-          <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--text-primary)' }}>{title}</h3>
+          <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{title}</h3>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close modal">
             <X size={18} />
           </Button>
         </div>
-        <div style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>{children}</div>
+        <div style={{ padding: '1.25rem', maxHeight: '78vh', overflowY: 'auto' }}>{children}</div>
         {footer && (
           <div
             className="flex-between"
-            style={{ padding: '1rem 1.5rem', backgroundColor: 'var(--bg-tertiary)', borderTop: '1px solid var(--border-color)' }}
+            style={{ padding: '1rem 1.25rem', backgroundColor: 'var(--bg-tertiary)', borderTop: '1px solid var(--border-color)' }}
           >
             {footer}
           </div>
