@@ -25,8 +25,53 @@ export class IssuesService {
     return this.repo.save(issue);
   }
 
-  async findAll() {
-    return this.repo.find({ order: { dateReported: 'DESC' } });
+  async findAll(filters?: { status?: string; category?: string; issueType?: string; branch?: string; search?: string }) {
+    try {
+      const qb = this.repo.createQueryBuilder('issue');
+
+      if (filters?.status && filters.status !== 'all' && filters.status !== 'All Status') {
+        qb.andWhere('issue.status = :status', { status: filters.status.toLowerCase() });
+      }
+
+      const cat = filters?.category || filters?.issueType;
+      if (cat && cat !== 'all' && cat !== 'All Category') {
+        qb.andWhere('issue.issueType ILIKE :cat', { cat: `%${cat}%` });
+      }
+
+      if (filters?.search && filters.search.trim()) {
+        const s = `%${filters.search.trim()}%`;
+        qb.andWhere(
+          '(issue.ticketId ILIKE :s OR issue.reportedBy ILIKE :s OR issue.email ILIKE :s OR issue.description ILIKE :s OR issue.issueType ILIKE :s)',
+          { s },
+        );
+      }
+
+      qb.orderBy('issue.dateReported', 'DESC');
+      return await qb.getMany();
+    } catch (err) {
+      // Fallback to find with in-memory filter if query builder hits dialect discrepancies
+      const all = await this.repo.find({ order: { dateReported: 'DESC' } });
+      return all.filter((item) => {
+        if (filters?.status && filters.status !== 'all' && filters.status !== 'All Status') {
+          if (item.status?.toLowerCase() !== filters.status.toLowerCase()) return false;
+        }
+        const cat = filters?.category || filters?.issueType;
+        if (cat && cat !== 'all' && cat !== 'All Category') {
+          if (!item.issueType?.toLowerCase().includes(cat.toLowerCase())) return false;
+        }
+        if (filters?.search && filters.search.trim()) {
+          const s = filters.search.trim().toLowerCase();
+          const matches =
+            item.ticketId?.toLowerCase().includes(s) ||
+            item.reportedBy?.toLowerCase().includes(s) ||
+            item.email?.toLowerCase().includes(s) ||
+            item.description?.toLowerCase().includes(s) ||
+            item.issueType?.toLowerCase().includes(s);
+          if (!matches) return false;
+        }
+        return true;
+      });
+    }
   }
 
   async findByEmailOrUser(email?: string, userId?: string) {

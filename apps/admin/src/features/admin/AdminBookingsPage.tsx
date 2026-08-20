@@ -263,29 +263,7 @@ export const AdminBookingsPage: React.FC = () => {
         }
       />
 
-      {/* Status Filter Tabs & Search */}
-      <div className="flex-between" style={{ marginBottom: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-          {filterTabs.map((st) => (
-            <button
-              key={st}
-              onClick={() => setActiveStatus(st)}
-              style={{
-                padding: '0.4rem 0.875rem',
-                borderRadius: 'var(--radius-full)',
-                fontSize: 'var(--font-size-xs)',
-                fontWeight: activeStatus === st ? 700 : 500,
-                color: activeStatus === st ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                backgroundColor: activeStatus === st ? 'var(--brand-primary-light)' : 'var(--bg-secondary)',
-                border: '1px solid var(--border-color)',
-                cursor: 'pointer',
-              }}
-            >
-              {st.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Bookings Data Table with Unified Filter and Search */}
       <DataTable
         columns={columns}
         data={bookings}
@@ -295,6 +273,26 @@ export const AdminBookingsPage: React.FC = () => {
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search reference, traveler name, tour title..."
         entityName="bookings"
+        filterModalTitle="Filter Reservations"
+        filterFields={[
+          {
+            id: 'status',
+            label: 'Booking Status',
+            value: activeStatus,
+            onChange: (v) => setActiveStatus(v as any),
+            options: [
+              { label: 'All Status', value: 'all' },
+              { label: 'Pending', value: 'pending' },
+              { label: 'Confirmed', value: 'confirmed' },
+              { label: 'Completed', value: 'completed' },
+              { label: 'Cancelled', value: 'cancelled' },
+            ],
+          },
+        ]}
+        onApplyFilters={() => fetchBookings()}
+        onClearFilters={() => {
+          setActiveStatus('all');
+        }}
       />
 
       {/* Booking Detail Modal */}

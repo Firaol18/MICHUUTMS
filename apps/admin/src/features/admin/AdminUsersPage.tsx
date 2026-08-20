@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -105,13 +105,18 @@ export const AdminUsersPage: React.FC = () => {
     fetchUsers();
   }, []);
 
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all');
+
   const save = (list: CustomerProfile[]) => { setCustomers(list); };
 
-  const filtered = customers.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filtered = customers.filter((c) => {
+    const matchesSearch =
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.role.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const openDetail = async (c: CustomerProfile) => {
     setDetailCustomer(c); setActiveTab('overview'); setIsDetailOpen(true);
@@ -318,8 +323,24 @@ export const AdminUsersPage: React.FC = () => {
         isLoading={isLoading}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Search customer name, email, or role..."
-        entityName="customers"
+        filterModalTitle="Filter Users"
+        filterFields={[
+          {
+            id: 'status',
+            label: 'User Status',
+            value: statusFilter,
+            onChange: (v) => setStatusFilter(v as any),
+            options: [
+              { label: 'All Status', value: 'all' },
+              { label: 'Active', value: 'active' },
+              { label: 'Blocked', value: 'blocked' },
+            ],
+          },
+        ]}
+        onApplyFilters={() => fetchUsers()}
+        onClearFilters={() => {
+          setStatusFilter('all');
+        }}
       />
 
       {/* DETAIL MODAL */}

@@ -30,7 +30,9 @@ export const AdminIssuesPage: React.FC = () => {
 
   const [issues, setIssues] = useState<IssueTicket[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'in_progress' | 'resolved' | 'rejected'>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [branchFilter, setBranchFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal State
@@ -39,10 +41,15 @@ export const AdminIssuesPage: React.FC = () => {
   const [adminReasonInput, setAdminReasonInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchIssues = async () => {
+  const fetchIssues = async (overrideParams?: { status?: string; category?: string; branch?: string; search?: string }) => {
     setIsLoading(true);
     try {
-      const data = await tourismService.getIssueTickets();
+      const data = await tourismService.getIssueTickets({
+        status: overrideParams?.status ?? statusFilter,
+        category: overrideParams?.category ?? categoryFilter,
+        branch: overrideParams?.branch ?? branchFilter,
+        search: overrideParams?.search ?? searchQuery,
+      });
       setIssues(data);
     } finally {
       setIsLoading(false);
@@ -51,7 +58,7 @@ export const AdminIssuesPage: React.FC = () => {
 
   useEffect(() => {
     fetchIssues();
-  }, []);
+  }, [searchQuery]);
 
   const openDetailModal = (ticket: IssueTicket, initialMode: 'resolved' | 'rejected' = 'resolved') => {
     setSelectedTicket(ticket);
@@ -75,7 +82,7 @@ export const AdminIssuesPage: React.FC = () => {
         selectedTicket.id,
         decisionMode,
         adminReasonInput.trim(),
-        adminName
+        adminName,
       );
       await fetchIssues();
       closeModal();
@@ -84,28 +91,48 @@ export const AdminIssuesPage: React.FC = () => {
     }
   };
 
-  // Filtered issues
-  const filtered = issues.filter((i) => {
-    const matchesSearch =
-      i.ticketId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      i.reportedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      i.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      i.issueType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      i.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus = statusFilter === 'all' || i.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  // Count metrics
-  const counts = {
-    all: issues.length,
-    open: issues.filter((i) => i.status === 'open').length,
-    in_progress: issues.filter((i) => i.status === 'in_progress').length,
-    resolved: issues.filter((i) => i.status === 'resolved').length,
-    rejected: issues.filter((i) => i.status === 'rejected').length,
-  };
+  const filterFields = [
+    {
+      id: 'status',
+      label: 'Status',
+      value: statusFilter,
+      onChange: setStatusFilter,
+      options: [
+        { label: 'All Status', value: 'all' },
+        { label: 'Open', value: 'open' },
+        { label: 'In Progress', value: 'in_progress' },
+        { label: 'Resolved', value: 'resolved' },
+        { label: 'Rejected', value: 'rejected' },
+      ],
+    },
+    {
+      id: 'category',
+      label: 'Category',
+      value: categoryFilter,
+      onChange: setCategoryFilter,
+      options: [
+        { label: 'All Category', value: 'all' },
+        { label: 'Billing & Payments', value: 'Billing & Payments' },
+        { label: 'Tour Guide & Safari', value: 'Tour Guide & Safari' },
+        { label: 'Vehicle & Transportation', value: 'Vehicle & Transportation' },
+        { label: 'Hotel & Accommodation', value: 'Hotel & Accommodation' },
+        { label: 'General Support', value: 'General Support' },
+      ],
+    },
+    {
+      id: 'branch',
+      label: 'Branch',
+      value: branchFilter,
+      onChange: setBranchFilter,
+      options: [
+        { label: 'All Branch', value: 'all' },
+        { label: 'Addis Ababa HQ', value: 'Addis Ababa HQ' },
+        { label: 'Bishoftu Regional Hub', value: 'Bishoftu Regional Hub' },
+        { label: 'Hawassa Operations', value: 'Hawassa Operations' },
+        { label: 'Lalibela Base', value: 'Lalibela Base' },
+      ],
+    },
+  ];
 
   const columns: Column<IssueTicket>[] = [
     {
@@ -135,67 +162,54 @@ export const AdminIssuesPage: React.FC = () => {
     {
       header: 'Reported By',
       cell: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-color)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '11px',
-              fontWeight: 700,
-              color: 'var(--brand-primary)',
-              flexShrink: 0,
-            }}
-          >
-            {row.reportedBy.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)' }}>
-              {row.reportedBy}
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{row.email}</div>
+        <div>
+          <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{row.reportedBy}</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <Mail size={10} /> {row.email}
           </div>
         </div>
       ),
     },
     {
-      header: 'Category',
+      header: 'Category / Subject',
       cell: (row) => (
-        <Badge variant="info">
-          <Tag size={10} style={{ marginRight: '4px' }} />
-          {row.issueType}
-        </Badge>
-      ),
-    },
-    {
-      header: 'Description',
-      cell: (row) => (
-        <div
-          style={{
-            maxWidth: '260px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            fontSize: 'var(--font-size-xs)',
-            color: 'var(--text-secondary)',
-          }}
-          title={row.description}
-        >
-          {row.description}
+        <div>
+          <span
+            style={{
+              display: 'inline-block',
+              fontSize: '10px',
+              fontWeight: 700,
+              padding: '0.15rem 0.45rem',
+              borderRadius: 'var(--radius-sm)',
+              backgroundColor: 'var(--bg-tertiary)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-color)',
+              marginBottom: '0.2rem',
+            }}
+          >
+            {row.issueType}
+          </span>
+          <div
+            style={{
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--text-primary)',
+              maxWidth: 240,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {row.description}
+          </div>
         </div>
       ),
     },
     {
       header: 'Date Reported',
       cell: (row) => (
-        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
           {row.dateReported}
-        </span>
+        </div>
       ),
     },
     {
@@ -276,81 +290,32 @@ export const AdminIssuesPage: React.FC = () => {
         title="Manage Issues & Support Tickets"
         description="Review customer complaints, inspect ticket details, and resolve or reject support requests with formal reasoning."
         actions={
-          <Button variant="secondary" size="sm" icon={<RefreshCw size={14} />} onClick={fetchIssues}>
+          <Button variant="secondary" size="sm" icon={<RefreshCw size={14} />} onClick={() => fetchIssues()}>
             Refresh Tickets
           </Button>
         }
       />
 
-      {/* Filter Tabs & Search Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          marginBottom: '1.25rem',
+      {/* Main Issues Data Table with Filter Modal Dialog & Backend Integration */}
+      <DataTable
+        columns={columns}
+        data={issues}
+        keyExtractor={(item) => item.id}
+        isLoading={isLoading}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search complaints, ticket #, traveler..."
+        entityName="complaints"
+        filterModalTitle="Filter Complaints"
+        filterFields={filterFields}
+        onApplyFilters={() => fetchIssues()}
+        onClearFilters={() => {
+          setStatusFilter('all');
+          setCategoryFilter('all');
+          setBranchFilter('all');
+          fetchIssues({ status: 'all', category: 'all', branch: 'all' });
         }}
-      >
-        {/* Status Filter Tabs */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '0.35rem',
-            backgroundColor: 'var(--bg-tertiary)',
-            padding: '0.25rem',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-color)',
-          }}
-        >
-          {(['all', 'open', 'in_progress', 'resolved', 'rejected'] as const).map((st) => {
-            const isActive = statusFilter === st;
-            const labelMap = {
-              all: `All (${counts.all})`,
-              open: `Open (${counts.open})`,
-              in_progress: `In Progress (${counts.in_progress})`,
-              resolved: `Resolved (${counts.resolved})`,
-              rejected: `Rejected (${counts.rejected})`,
-            };
-
-            return (
-              <button
-                key={st}
-                type="button"
-                onClick={() => setStatusFilter(st)}
-                style={{
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: 'var(--font-size-xs)',
-                  fontWeight: isActive ? 700 : 500,
-                  backgroundColor: isActive ? 'var(--bg-secondary)' : 'transparent',
-                  color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                  border: isActive ? '1px solid var(--border-color)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
-                }}
-              >
-                {labelMap[st]}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search Bar */}
-        <div style={{ maxWidth: '300px', width: '100%' }}>
-          <Input
-            placeholder="Search ticket #, traveler, keyword..."
-            icon={<Search size={16} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Main Issues Data Table */}
-      <DataTable columns={columns} data={filtered} keyExtractor={(item) => item.id} isLoading={isLoading} />
+      />
 
       {/* ── TICKET DETAIL & DECISION MODAL ── */}
       {selectedTicket && (

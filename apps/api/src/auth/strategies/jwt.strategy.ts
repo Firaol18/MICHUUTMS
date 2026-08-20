@@ -14,10 +14,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: { sub: string; email: string }) {
-    const user = await this.usersService.getUserById(payload.sub);
-    if (!user) {
-      throw new UnauthorizedException();
+    try {
+      const user = await this.usersService.getUserById(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException();
+      }
+      return user;
+    } catch {
+      throw new UnauthorizedException('Invalid or expired session');
     }
-    return user;
   }
 }

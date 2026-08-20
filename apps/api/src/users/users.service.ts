@@ -55,9 +55,20 @@ export class UsersService {
   }
 
   async getUserById(id: string) {
-    const user = await this.usersRepo.findOneBy({ id });
-    if (!user) throw new NotFoundException(`User with id ${id} not found`);
-    return user;
+    if (!id || typeof id !== 'string') {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      throw new NotFoundException(`Invalid user ID format: ${id}`);
+    }
+    try {
+      const user = await this.usersRepo.findOneBy({ id });
+      if (!user) throw new NotFoundException(`User with id ${id} not found`);
+      return user;
+    } catch {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
   }
 
   async getUserByEmail(email: string) {

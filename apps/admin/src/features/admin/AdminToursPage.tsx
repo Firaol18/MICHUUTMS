@@ -160,6 +160,7 @@ export const AdminToursPage: React.FC = () => {
   const [tours, setTours] = useState<TourPackage[]>([]);
   const [guides, setGuides] = useState<TourGuide[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
 
   // Create state
@@ -480,13 +481,33 @@ export const AdminToursPage: React.FC = () => {
 
       <DataTable
         columns={columns}
-        data={tours}
+        data={tours.filter((t) => categoryFilter === 'all' || t.category === categoryFilter)}
         keyExtractor={(item) => item.id}
         isLoading={isLoading}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search tour package title, destination, or category..."
-        entityName="tours"
+        filterModalTitle="Filter Tour Packages"
+        filterFields={[
+          {
+            id: 'category',
+            label: 'Tour Category',
+            value: categoryFilter,
+            onChange: (v) => setCategoryFilter(v as any),
+            options: [
+              { label: 'All Category', value: 'all' },
+              { label: 'Cultural', value: 'cultural' },
+              { label: 'Safari', value: 'safari' },
+              { label: 'Mountain', value: 'mountain' },
+              { label: 'City', value: 'city' },
+              { label: 'Luxury', value: 'luxury' },
+            ],
+          },
+        ]}
+        onApplyFilters={() => fetchTours()}
+        onClearFilters={() => {
+          setCategoryFilter('all');
+        }}
       />
 
       {/* CREATE MODAL */}

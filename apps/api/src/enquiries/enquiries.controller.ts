@@ -1,8 +1,7 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { EnquiriesService } from './enquiries.service';
 import { CreateEnquiryDto } from '../common/dto/shared.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('enquiries')
 @Controller('enquiries')
@@ -16,16 +15,12 @@ export class EnquiriesController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all enquiries (admin)' })
   findAll() {
     return this.enquiriesService.findAll();
   }
 
   @Patch(':id/status')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update enquiry status (admin)' })
   updateStatus(
     @Param('id') id: string,
@@ -35,8 +30,6 @@ export class EnquiriesController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete enquiry (admin)' })
   remove(@Param('id') id: string) {
     return this.enquiriesService.remove(id);

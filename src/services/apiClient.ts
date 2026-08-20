@@ -33,6 +33,12 @@ http.interceptors.request.use(
 http.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 401) {
+      try {
+        localStorage.removeItem('tms_token');
+        localStorage.removeItem('auth_user');
+      } catch {}
+    }
     return Promise.reject(error);
   }
 );

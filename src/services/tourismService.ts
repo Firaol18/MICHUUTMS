@@ -622,9 +622,16 @@ class TourismService {
     return this.guides[idx];
   }
 
-  async getIssueTickets(): Promise<IssueTicket[]> {
+  async getIssueTickets(filters?: { status?: string; category?: string; issueType?: string; branch?: string; search?: string }): Promise<IssueTicket[]> {
     try {
-      const res = await http.get('/issues');
+      const params: any = {};
+      if (filters?.status && filters.status !== 'all' && filters.status !== 'All Status') params.status = filters.status;
+      if (filters?.category && filters.category !== 'all' && filters.category !== 'All Category') params.category = filters.category;
+      if (filters?.issueType && filters.issueType !== 'all') params.issueType = filters.issueType;
+      if (filters?.branch && filters.branch !== 'all' && filters.branch !== 'All Branch') params.branch = filters.branch;
+      if (filters?.search) params.search = filters.search;
+
+      const res = await http.get('/issues', { params });
       if (Array.isArray(res.data)) {
         return res.data.map((i: any) => ({
           id: String(i.id),

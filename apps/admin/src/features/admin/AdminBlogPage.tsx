@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -244,55 +244,35 @@ export const AdminBlogPage: React.FC = () => {
         }
       />
 
-      {/* Filter and Search Bar */}
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ maxWidth: '320px', width: '100%' }}>
-          <Input
-            placeholder="Search articles by title, author or tag..."
-            icon={<Search size={16} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setCategoryFilter('all')}
-            style={{
-              padding: '0.35rem 0.75rem',
-              borderRadius: 'var(--radius-full)',
-              border: `1px solid ${categoryFilter === 'all' ? 'var(--brand-primary)' : 'var(--border-color)'}`,
-              backgroundColor: categoryFilter === 'all' ? 'var(--brand-primary-light)' : 'transparent',
-              color: categoryFilter === 'all' ? 'var(--brand-primary)' : 'var(--text-secondary)',
-              fontSize: 'var(--font-size-xs)',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            All Categories ({articles.length})
-          </button>
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => setCategoryFilter(cat.value)}
-              style={{
-                padding: '0.35rem 0.75rem',
-                borderRadius: 'var(--radius-full)',
-                border: `1px solid ${categoryFilter === cat.value ? cat.color : 'var(--border-color)'}`,
-                backgroundColor: categoryFilter === cat.value ? `${cat.color}15` : 'transparent',
-                color: categoryFilter === cat.value ? cat.color : 'var(--text-secondary)',
-                fontSize: 'var(--font-size-xs)',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <DataTable columns={columns} data={filteredArticles} keyExtractor={(item) => item.id} />
+      {/* Main Articles Data Table with Unified Filter and Search */}
+      <DataTable
+        columns={columns}
+        data={filteredArticles}
+        keyExtractor={(item) => item.id}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search articles by title, author, or tags..."
+        filterModalTitle="Filter Blog Posts"
+        filterFields={[
+          {
+            id: 'category',
+            label: 'Article Category',
+            value: categoryFilter,
+            onChange: setCategoryFilter,
+            options: [
+              { label: 'All Category', value: 'all' },
+              ...CATEGORIES.map((cat) => ({
+                label: cat.label,
+                value: cat.value,
+              })),
+            ],
+          },
+        ]}
+        onApplyFilters={() => {}}
+        onClearFilters={() => {
+          setCategoryFilter('all');
+        }}
+      />
 
       {/* Create / Edit Article Modal */}
       <Modal

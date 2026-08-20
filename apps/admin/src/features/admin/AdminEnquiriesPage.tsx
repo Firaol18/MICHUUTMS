@@ -283,41 +283,35 @@ export const AdminEnquiriesPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {(['all', 'unread', 'read', 'replied'] as const).map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              style={{
-                padding: '0.45rem 0.85rem',
-                borderRadius: 'var(--radius-full)',
-                fontSize: 'var(--font-size-xs)',
-                fontWeight: statusFilter === st ? 700 : 500,
-                backgroundColor: statusFilter === st ? 'var(--brand-primary)' : 'var(--bg-secondary)',
-                color: statusFilter === st ? '#ffffff' : 'var(--text-secondary)',
-                border: `1px solid ${statusFilter === st ? 'var(--brand-primary)' : 'var(--border-color)'}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {st.toUpperCase()}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ width: '100%', maxWidth: '300px' }}>
-          <Input
-            placeholder="Search inquiries by name, subject..."
-            icon={<Search size={16} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <DataTable columns={columns} data={filtered} keyExtractor={(item) => item.id} isLoading={isLoading} />
+      {/* Main Inquiries Data Table with Unified Filter and Search */}
+      <DataTable
+        columns={columns}
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        isLoading={isLoading}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search inquiries by traveler name, email, subject..."
+        filterModalTitle="Filter Inquiries"
+        filterFields={[
+          {
+            id: 'status',
+            label: 'Inquiry Status',
+            value: statusFilter,
+            onChange: (v) => setStatusFilter(v as any),
+            options: [
+              { label: 'All Status', value: 'all' },
+              { label: 'Unread', value: 'unread' },
+              { label: 'Read', value: 'read' },
+              { label: 'Replied', value: 'replied' },
+            ],
+          },
+        ]}
+        onApplyFilters={() => fetchEnquiries()}
+        onClearFilters={() => {
+          setStatusFilter('all');
+        }}
+      />
 
       {/* ── View Detail Modal ── */}
       <Modal

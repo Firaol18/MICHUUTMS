@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -242,56 +242,35 @@ export const AdminEventsPage: React.FC = () => {
         }
       />
 
-      {/* Filter and Search Bar */}
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ maxWidth: '320px', width: '100%' }}>
-          <Input
-            placeholder="Search events by name or location..."
-            icon={<Search size={16} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setCategoryFilter('all')}
-            style={{
-              padding: '0.35rem 0.75rem',
-              borderRadius: 'var(--radius-full)',
-              border: `1px solid ${categoryFilter === 'all' ? 'var(--brand-primary)' : 'var(--border-color)'}`,
-              backgroundColor: categoryFilter === 'all' ? 'var(--brand-primary-light)' : 'transparent',
-              color: categoryFilter === 'all' ? 'var(--brand-primary)' : 'var(--text-secondary)',
-              fontSize: 'var(--font-size-xs)',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            All Categories ({events.length})
-          </button>
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              style={{
-                padding: '0.35rem 0.75rem',
-                borderRadius: 'var(--radius-full)',
-                border: `1px solid ${categoryFilter === cat ? CATEGORY_COLORS[cat] : 'var(--border-color)'}`,
-                backgroundColor: categoryFilter === cat ? `${CATEGORY_COLORS[cat]}15` : 'transparent',
-                color: categoryFilter === cat ? CATEGORY_COLORS[cat] : 'var(--text-secondary)',
-                fontSize: 'var(--font-size-xs)',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textTransform: 'capitalize',
-              }}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <DataTable columns={columns} data={filteredEvents} keyExtractor={(item) => item.id} />
+      {/* Main Events Data Table with Unified Filter and Search */}
+      <DataTable
+        columns={columns}
+        data={filteredEvents}
+        keyExtractor={(item) => item.id}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search events by title, location, or tag..."
+        filterModalTitle="Filter Events"
+        filterFields={[
+          {
+            id: 'category',
+            label: 'Event Category',
+            value: categoryFilter,
+            onChange: setCategoryFilter,
+            options: [
+              { label: 'All Category', value: 'all' },
+              ...CATEGORIES.map((cat) => ({
+                label: cat.charAt(0).toUpperCase() + cat.slice(1),
+                value: cat,
+              })),
+            ],
+          },
+        ]}
+        onApplyFilters={() => {}}
+        onClearFilters={() => {
+          setCategoryFilter('all');
+        }}
+      />
 
       {/* Create / Edit Event Modal */}
       <Modal

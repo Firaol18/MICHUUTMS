@@ -343,20 +343,6 @@ export const AdminGuidesPage: React.FC = () => {
         }
       />
 
-      {/* Filter Tabs & Search */}
-      <div className="flex-between" style={{ marginBottom: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-          {(['all', 'available', 'on_tour', 'off_duty'] as const).map((st) => (
-            <button
-              key={st}
-              onClick={() => setActiveStatus(st)}
-              style={TAB_STYLE(activeStatus === st)}
-            >
-              {st.replace('_', ' ').toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
       <DataTable
         columns={columns}
         data={filteredGuides}
@@ -365,7 +351,25 @@ export const AdminGuidesPage: React.FC = () => {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search guide name, language, or specialization..."
-        entityName="guides"
+        filterModalTitle="Filter Tour Guides"
+        filterFields={[
+          {
+            id: 'status',
+            label: 'Guide Status',
+            value: activeStatus,
+            onChange: (v) => setActiveStatus(v as any),
+            options: [
+              { label: 'All Status', value: 'all' },
+              { label: 'Available', value: 'available' },
+              { label: 'On Tour', value: 'on_tour' },
+              { label: 'Off Duty', value: 'off_duty' },
+            ],
+          },
+        ]}
+        onApplyFilters={() => fetchGuides()}
+        onClearFilters={() => {
+          setActiveStatus('all');
+        }}
       />
 
       {/* ─── GUIDE DETAIL MODAL ────────────────────────────────────── */}

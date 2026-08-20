@@ -1,8 +1,7 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Body, Param, Query, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IssuesService } from './issues.service';
 import { CreateIssueDto } from '../common/dto/shared.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('issues')
 @Controller('issues')
@@ -16,11 +15,15 @@ export class IssuesController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all support tickets (admin)' })
-  findAll() {
-    return this.issuesService.findAll();
+  findAll(
+    @Query('status') status?: string,
+    @Query('category') category?: string,
+    @Query('issueType') issueType?: string,
+    @Query('branch') branch?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.issuesService.findAll({ status, category, issueType, branch, search });
   }
 
   @Get('my')
@@ -36,8 +39,6 @@ export class IssuesController {
   }
 
   @Patch(':id/status')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update ticket status (admin)' })
   updateStatus(
     @Param('id') id: string,
