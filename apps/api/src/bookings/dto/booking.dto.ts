@@ -1,21 +1,25 @@
-import { IsString, IsNumber, IsOptional, IsArray, Min, IsIn, IsDateString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateBookingDto {
-  @ApiProperty() @IsNumber() tourId: number;
-  @ApiProperty() @IsString() tourTitle: string;
-  @ApiProperty() @IsString() destinationName: string;
-  @ApiProperty() traveler: {
-    name: string; email: string; phone: string;
-    nationality: string; specialRequests?: string;
+  @ApiPropertyOptional() @IsOptional() tourId?: number | string;
+  @ApiPropertyOptional() @IsOptional() @IsString() tourTitle?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() destinationName?: string;
+  @ApiPropertyOptional() @IsOptional() traveler?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    nationality?: string;
+    specialRequests?: string;
   };
-  @ApiProperty() @IsDateString() travelDate: string;
-  @ApiProperty() @IsNumber() @Min(1) numberOfTravelers: number;
-  @ApiProperty() @IsOptional() @IsNumber() numberOfAdults?: number;
-  @ApiProperty() @IsOptional() @IsNumber() numberOfChildren?: number;
+  @ApiPropertyOptional() @IsOptional() travelDate?: string;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(1) numberOfTravelers?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() numberOfAdults?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() numberOfChildren?: number;
 }
 
 export class CancelBookingDto {
-  @ApiProperty() @IsString() reason: string;
-  @ApiProperty() @IsOptional() requestRefund?: boolean;
+  @ApiPropertyOptional() @IsOptional() @IsString() reason?: string;
+  @ApiPropertyOptional() @IsOptional() requestRefund?: boolean;
 }
+

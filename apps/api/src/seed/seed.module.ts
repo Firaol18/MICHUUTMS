@@ -12,13 +12,14 @@ import { Vehicle } from '../vehicles/entities/vehicle.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { Expense } from '../expenses/entities/expense.entity';
 import { Guide } from '../guides/entities/guide.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 import { SeedService } from './seed.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       User, Tour, Event, BlogPost, Enquiry, Issue,
-      Supplier, Driver, Vehicle, Payment, Expense, Guide,
+      Supplier, Driver, Vehicle, Payment, Expense, Guide, Booking,
     ]),
   ],
   providers: [SeedService],

@@ -268,11 +268,21 @@ class TourismService {
       if (search && search.trim() !== '') params.search = search.trim();
 
       const res = await http.get('/bookings', { params });
-      if (res.data && res.data.data && Array.isArray(res.data.data)) {
-        return res.data.data.map(mapBackendBooking);
+      let items: any[] = [];
+      if (res.data && Array.isArray(res.data.data)) {
+        items = res.data.data;
+      } else if (Array.isArray(res.data)) {
+        items = res.data;
+      }
+
+      if (items.length > 0) {
+        const mapped = items.map(mapBackendBooking);
+        this.bookings = mapped;
+        saveStoredData(STORAGE_KEYS.BOOKINGS, mapped);
+        return mapped;
       }
     } catch {
-      // Fallback
+      // Backend offline fallback
     }
 
     let result = [...this.bookings];
@@ -300,12 +310,12 @@ class TourismService {
     numberOfAdults?: number,
     numberOfChildren?: number
   ): Promise<Booking> {
-    const tour = this.tours.find((t) => t.id === tourPackageId);
+    const tour = this.tours.find((t) => t.id === tourPackageId || t.slug === tourPackageId);
     const pricePerPerson = tour ? tour.pricePerPerson : 1500;
     const tourTitle = tour ? tour.title : 'Custom Luxury Expedition';
     const destinationName = tour ? `${tour.destination.name}, ${tour.destination.country}` : 'Ethiopian Destination';
 
-    const numTourId = Number(tourPackageId) || 1;
+    const numTourId = parseInt(String(tourPackageId).replace(/\D/g, ''), 10) || 1;
     const adults = numberOfAdults ?? numberOfTravelers;
     const children = numberOfChildren ?? 0;
 
@@ -349,8 +359,8 @@ class TourismService {
 
         return created;
       }
-    } catch {
-      // Local fallback
+    } catch (e) {
+      console.warn('Backend booking creation failed, using fallback:', e);
     }
 
     const newBooking: Booking = {
@@ -399,10 +409,12 @@ class TourismService {
 
   async updateBookingStatus(id: string, status: BookingStatus): Promise<Booking | null> {
     try {
-      const res = await http.patch(`/bookings/${id}/status`, { status });
+      const numId = parseInt(String(id).replace(/\D/g, ''), 10);
+      const url = !isNaN(numId) ? `/bookings/${numId}/status` : `/bookings/${id}/status`;
+      const res = await http.patch(url, { status });
       if (res.data) {
         const item = mapBackendBooking(res.data);
-        const idx = this.bookings.findIndex((b) => b.id === id);
+        const idx = this.bookings.findIndex((b) => b.id === id || b.id === String(numId));
         if (idx !== -1) this.bookings[idx] = item;
         saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
         return item;
@@ -418,10 +430,12 @@ class TourismService {
 
   async updatePaymentStatus(id: string, paymentStatus: PaymentStatus): Promise<Booking | null> {
     try {
-      const res = await http.patch(`/bookings/${id}/payment-status`, { paymentStatus });
+      const numId = parseInt(String(id).replace(/\D/g, ''), 10);
+      const url = !isNaN(numId) ? `/bookings/${numId}/payment-status` : `/bookings/${id}/payment-status`;
+      const res = await http.patch(url, { paymentStatus });
       if (res.data) {
         const item = mapBackendBooking(res.data);
-        const idx = this.bookings.findIndex((b) => b.id === id);
+        const idx = this.bookings.findIndex((b) => b.id === id || b.id === String(numId));
         if (idx !== -1) this.bookings[idx] = item;
         saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
         return item;
@@ -441,10 +455,12 @@ class TourismService {
     requestRefund: boolean
   ): Promise<Booking | null> {
     try {
-      const res = await http.patch(`/bookings/${id}/cancel`, { reason, requestRefund });
+      const numId = parseInt(String(id).replace(/\D/g, ''), 10);
+      const url = !isNaN(numId) ? `/bookings/${numId}/cancel` : `/bookings/${id}/cancel`;
+      const res = await http.patch(url, { reason, requestRefund });
       if (res.data) {
         const item = mapBackendBooking(res.data);
-        const idx = this.bookings.findIndex((b) => b.id === id);
+        const idx = this.bookings.findIndex((b) => b.id === id || b.id === String(numId));
         if (idx !== -1) this.bookings[idx] = item;
         saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
         return item;
@@ -467,6 +483,19 @@ class TourismService {
   }
 
   async assignGuideToBooking(bookingId: string, guideName: string): Promise<Booking | null> {
+    try {
+      const numId = parseInt(String(bookingId).replace(/\D/g, ''), 10);
+      const url = !isNaN(numId) ? `/bookings/${numId}/assign-guide` : `/bookings/${bookingId}/assign-guide`;
+      const res = await http.patch(url, { assignedGuideName: guideName });
+      if (res.data) {
+        const item = mapBackendBooking(res.data);
+        const idx = this.bookings.findIndex((b) => b.id === bookingId || b.id === String(numId));
+        if (idx !== -1) this.bookings[idx] = item;
+        saveStoredData(STORAGE_KEYS.BOOKINGS, this.bookings);
+        return item;
+      }
+    } catch {}
+
     const idx = this.bookings.findIndex((b) => b.id === bookingId);
     if (idx === -1) return null;
 

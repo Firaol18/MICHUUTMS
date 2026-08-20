@@ -14,6 +14,7 @@ import { Vehicle } from '../vehicles/entities/vehicle.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { Expense } from '../expenses/entities/expense.entity';
 import { Guide } from '../guides/entities/guide.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
@@ -32,6 +33,7 @@ export class SeedService implements OnApplicationBootstrap {
     @InjectRepository(Payment) private paymentRepo: Repository<Payment>,
     @InjectRepository(Expense) private expenseRepo: Repository<Expense>,
     @InjectRepository(Guide) private guideRepo: Repository<Guide>,
+    @InjectRepository(Booking) private bookingRepo: Repository<Booking>,
   ) {}
 
   async onApplicationBootstrap() {
@@ -47,6 +49,7 @@ export class SeedService implements OnApplicationBootstrap {
     await this.seedPayments();
     await this.seedExpenses();
     await this.seedGuides();
+    await this.seedBookings();
   }
 
   private async seedUsers() {
@@ -958,5 +961,85 @@ export class SeedService implements OnApplicationBootstrap {
       await this.issueRepo.save(this.issueRepo.create(i));
     }
     this.logger.log(`✅ Seeded ${issues.length} Issues`);
+  }
+
+  private async seedBookings() {
+    const count = await this.bookingRepo.count();
+    if (count > 0) return;
+
+    this.logger.log('🌱 Seeding Bookings...');
+    const bookings = [
+      {
+        bookingReference: 'MCH-BKG-8819',
+        tourTitle: 'Wenchi Crater Lake Eco-Resort & Equestrian Expedition',
+        destinationName: 'Wenchi Crater Lake, Oromia Region',
+        traveler: {
+          name: 'Eleanor Vance',
+          email: 'eleanor.vance@example.com',
+          phone: '+251 91 123 4567',
+          nationality: 'Ethiopia / US',
+          specialRequests: 'Vegetarian meal plan requested for Day 2 boat tour.',
+        },
+        travelDate: '2026-09-15',
+        numberOfTravelers: 2,
+        numberOfAdults: 2,
+        numberOfChildren: 0,
+        totalPrice: 900,
+        status: 'confirmed' as const,
+        paymentStatus: 'paid' as const,
+        refundStatus: 'none' as const,
+        assignedGuideName: 'Abebe Bekele',
+        assignedGuideId: 'gd-1',
+      },
+      {
+        bookingReference: 'MCH-BKG-4412',
+        tourTitle: 'Lalibela World Heritage Monolithic Rock Churches Pilgrimage',
+        destinationName: 'Lalibela Rock Churches, Amhara Region',
+        traveler: {
+          name: 'Liam Hemsworth',
+          email: 'liam.h@example.co.uk',
+          phone: '+44 20 7946 0912',
+          nationality: 'United Kingdom',
+          specialRequests: 'Wheelchair accessible transport required.',
+        },
+        travelDate: '2026-10-01',
+        numberOfTravelers: 3,
+        numberOfAdults: 2,
+        numberOfChildren: 1,
+        totalPrice: 2550,
+        status: 'pending' as const,
+        paymentStatus: 'unpaid' as const,
+        refundStatus: 'none' as const,
+        assignedGuideName: 'Tigist Assefa',
+        assignedGuideId: 'gd-2',
+      },
+      {
+        bookingReference: 'MCH-BKG-1109',
+        tourTitle: 'Simien Mountains Walia Ibex & Ras Dashen Trek',
+        destinationName: 'Simien Mountains, Amhara Region',
+        traveler: {
+          name: 'Sophia Rossi',
+          email: 'sophia.r@example.it',
+          phone: '+39 06 698 12345',
+          nationality: 'Italy',
+          specialRequests: 'High-altitude sleeping bag rental.',
+        },
+        travelDate: '2026-09-28',
+        numberOfTravelers: 1,
+        numberOfAdults: 1,
+        numberOfChildren: 0,
+        totalPrice: 1200,
+        status: 'completed' as const,
+        paymentStatus: 'paid' as const,
+        refundStatus: 'none' as const,
+        assignedGuideName: 'Biruk Tadesse',
+        assignedGuideId: 'gd-3',
+      },
+    ];
+
+    for (const b of bookings) {
+      await this.bookingRepo.save(this.bookingRepo.create(b));
+    }
+    this.logger.log(`✅ Seeded ${bookings.length} Bookings`);
   }
 }

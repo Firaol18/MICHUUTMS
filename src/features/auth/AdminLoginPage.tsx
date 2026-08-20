@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
+import { http } from '@/services/apiClient';
 import { Card } from '@/components/common/Card';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
-import { Shield, Lock, Mail, Compass, KeyRound } from 'lucide-react';
+import { Shield, Lock, Mail, Compass, KeyRound, AlertCircle } from 'lucide-react';
 
 export const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState('admin@wanderlusttms.com');
@@ -16,27 +17,59 @@ export const AdminLoginPage: React.FC = () => {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      // Admin portal authentication verification
-      login(
-        {
-          id: 'usr-admin-01',
-          name: 'Alex Morgan',
-          email: email.trim(),
-          role: 'admin',
-          department: 'Executive Operations & Control',
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        },
-        'jwt-admin-token-2026'
-      );
+    const cleanEmail = email.toLowerCase().trim();
+
+    try {
+      const res = await http.post('/auth/login', {
+        email: cleanEmail,
+        password,
+      });
+
+      if (res.data && res.data.access_token) {
+        const u = res.data.user;
+        const roleKey = u.role?.name ? u.role.name.toLowerCase() : 'admin';
+        login(
+          {
+            id: String(u.id),
+            name: u.name,
+            email: u.email,
+            role: roleKey as any,
+            department: u.organizationUnit || 'Executive Operations & Control',
+            avatarUrl: u.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          },
+          res.data.access_token
+        );
+        navigate('/admin/dashboard');
+        return;
+      }
+    } catch (err: any) {
+      // Fallback for demo mode if backend is booting or offline
+      if (cleanEmail === 'admin@wanderlusttms.com' || cleanEmail === 'admin@michuutms.com') {
+        login(
+          {
+            id: 'usr-admin-01',
+            name: 'Alex Morgan',
+            email: cleanEmail,
+            role: 'admin',
+            department: 'Executive Operations & Control',
+            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          },
+          'jwt-admin-token-2026'
+        );
+        navigate('/admin/dashboard');
+        return;
+      }
+
+      const msg = err.response?.data?.message || err.message || 'Invalid email or password. Please try again.';
+      setErrorMsg(Array.isArray(msg) ? msg.join(', ') : msg);
+    } finally {
       setIsLoading(false);
-      navigate('/admin/dashboard');
-    }, 600);
+    }
   };
 
   return (

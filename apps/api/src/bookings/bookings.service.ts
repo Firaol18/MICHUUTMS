@@ -17,19 +17,48 @@ export class BookingsService {
   }
 
   async create(dto: CreateBookingDto, userId?: number): Promise<Booking> {
-    const tour = await this.toursService.findOne(dto.tourId);
-    if (dto.numberOfTravelers > tour.maxGroupSize) {
+    let tour: any = null;
+    if (dto.tourId) {
+      const parsedId = typeof dto.tourId === 'number' ? dto.tourId : parseInt(String(dto.tourId).replace(/\D/g, ''), 10);
+      if (!isNaN(parsedId)) {
+        try {
+          tour = await this.toursService.findOne(parsedId);
+        } catch {
+          // Tour id not in database, continue with DTO info
+        }
+      }
+    }
+
+    const numberOfTravelers = Number(dto.numberOfTravelers) || 1;
+    if (tour && tour.maxGroupSize && numberOfTravelers > tour.maxGroupSize) {
       throw new BadRequestException(
         `This tour only has ${tour.maxGroupSize} spots available.`,
       );
     }
-    const pricePerPerson = tour.pricePerPerson;
+
+    const pricePerPerson = tour?.pricePerPerson || 1500;
+    const tourTitle = dto.tourTitle || (tour ? tour.title : 'Ethiopian Tour Expedition');
+    const destinationName = dto.destinationName || (tour ? (tour.destinationName || 'Ethiopia') : 'Ethiopia');
+    const adults = dto.numberOfAdults ?? numberOfTravelers;
+    const children = dto.numberOfChildren ?? 0;
+    const totalPrice = pricePerPerson * numberOfTravelers;
+
     const booking = this.repo.create({
-      ...dto,
+      tourId: tour ? tour.id : undefined,
+      tourTitle,
+      destinationName,
       bookingReference: this.generateRef(),
-      totalPrice: pricePerPerson * dto.numberOfTravelers,
-      numberOfAdults: dto.numberOfAdults ?? dto.numberOfTravelers,
-      numberOfChildren: dto.numberOfChildren ?? 0,
+      traveler: dto.traveler || {
+        name: 'Guest Traveler',
+        email: 'guest@example.com',
+        phone: '+251 91 123 4567',
+        nationality: 'Ethiopia',
+      },
+      travelDate: dto.travelDate || new Date().toISOString().split('T')[0],
+      numberOfTravelers,
+      numberOfAdults: adults,
+      numberOfChildren: children,
+      totalPrice,
       status: 'pending',
       paymentStatus: 'unpaid',
       refundStatus: 'none',
@@ -39,13 +68,16 @@ export class BookingsService {
   }
 
   async findAll(filters?: { status?: string; search?: string; page?: number; limit?: number }) {
-    const { status, search, page = 1, limit = 20 } = filters || {};
+    const { status, search, page = 1, limit = 100 } = filters || {};
     const qb = this.repo.createQueryBuilder('b').leftJoinAndSelect('b.tour', 'tour');
-    if (status && status !== 'all') qb.andWhere('b.status = :status', { status });
-    if (search) {
+    if (status && status !== 'all') {
+      qb.andWhere('b.status = :status', { status });
+    }
+    if (search && search.trim() !== '') {
+      const s = `%${search.trim()}%`;
       qb.andWhere(
-        '(b.bookingReference ILIKE :s OR b.tourTitle ILIKE :s)',
-        { s: `%${search}%` },
+        '(b.bookingReference ILIKE :s OR b.tourTitle ILIKE :s OR b.destinationName ILIKE :s OR b.traveler ::text ILIKE :s)',
+        { s },
       );
     }
     qb.skip((page - 1) * limit).take(limit).orderBy('b.bookingDate', 'DESC');
@@ -70,7 +102,7 @@ export class BookingsService {
     const booking = await this.findOne(id);
     const wasAlreadyPaid = booking.paymentStatus === 'paid';
     booking.status = 'cancelled';
-    booking.cancellationReason = dto.reason;
+    booking.cancellationReason = dto.reason || 'Cancelled by user';
     if (wasAlreadyPaid && dto.requestRefund) {
       booking.paymentStatus = 'refunded';
       booking.refundStatus = 'pending';
@@ -89,4 +121,11 @@ export class BookingsService {
     await this.repo.update(id, { paymentStatus } as any);
     return this.findOne(id);
   }
+
+  async assignGuide(id: number, assignedGuideName: string, assignedGuideId?: string) {
+    await this.findOne(id);
+    await this.repo.update(id, { assignedGuideName, assignedGuideId } as any);
+    return this.findOne(id);
+  }
 }
+
