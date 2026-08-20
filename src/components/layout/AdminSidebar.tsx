@@ -39,7 +39,7 @@ export const AdminSidebar: React.FC = () => {
 
   const navItems = [
     { to: '/admin/dashboard', label: 'Dashboard', icon: <Gauge size={19} /> },
-    { to: '/admin/tours', label: 'Tours', icon: <Package size={19} />, isExpandable: true },
+    { to: '/admin/tours', label: 'Tours', icon: <Package size={19} /> },
     { to: '/admin/bookings', label: 'Bookings', icon: <ListOrdered size={19} /> },
     { to: '/admin/custom-trips', label: 'Custom Trips', icon: <Sparkles size={19} /> },
     { to: '/admin/events', label: 'Events & Festivals', icon: <CalendarDays size={19} /> },
@@ -132,97 +132,28 @@ export const AdminSidebar: React.FC = () => {
           </div>
         )}
 
-        {navItems.map((item) => {
-          if (item.isExpandable) {
-            return (
-              <div key={item.to}>
-                <div
-                  onClick={() => setTourPackagesExpanded(!tourPackagesExpanded)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: sidebarCollapsed ? 'center' : 'space-between',
-                    gap: '0.75rem',
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: 'var(--font-size-sm)',
-                    fontWeight: isTourActive ? 700 : 500,
-                    color: isTourActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                    backgroundColor: isTourActive ? 'var(--brand-primary-light)' : 'transparent',
-                    cursor: 'pointer',
-                    transition: 'all var(--transition-fast)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center' }}>{item.icon}</span>
-                    {!sidebarCollapsed && <span>{item.label}</span>}
-                  </div>
-                  {!sidebarCollapsed && (
-                    <span style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>
-                      {tourPackagesExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    </span>
-                  )}
-                </div>
-
-                {/* Submenu for Tours */}
-                {!sidebarCollapsed && tourPackagesExpanded && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', paddingLeft: '2.25rem', marginTop: '0.15rem' }}>
-                    <NavLink
-                      to="/admin/tours"
-                      end
-                      style={() => {
-                        const isActive = location.pathname === '/admin/tours' && !location.search.includes('create=true');
-                        return {
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          padding: '0.35rem 0.65rem',
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: 'var(--font-size-xs)',
-                          fontWeight: isActive ? 700 : 400,
-                          color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                          backgroundColor: isActive ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
-                          textDecoration: 'none',
-                        };
-                      }}
-                    >
-                      <List size={13} />
-                      <span>Manage Packages</span>
-                    </NavLink>
-
-                    <NavLink
-                      to="/admin/tours?create=true"
-                      style={() => {
-                        const isActive = location.pathname === '/admin/tours' && location.search.includes('create=true');
-                        return {
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          padding: '0.35rem 0.65rem',
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: 'var(--font-size-xs)',
-                          fontWeight: isActive ? 700 : 400,
-                          color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                          backgroundColor: isActive ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
-                          textDecoration: 'none',
-                        };
-                      }}
-                    >
-                      <PlusCircle size={13} />
-                      <span>Create Package</span>
-                    </NavLink>
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              style={({ isActive }) => ({
-                display: 'flex',
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            style={({ isActive }) => ({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.5rem 0.75rem',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+              backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
+              transition: 'all var(--transition-fast)',
+              textDecoration: 'none',
+            })}
+          >
+            <span style={{ display: 'flex', alignItems: 'center' }}>{item.icon}</span>
+            {!sidebarCollapsed && <span>{item.label}</span>}
+          </NavLink>
+        ))}
                 alignItems: 'center',
                 gap: '0.75rem',
                 padding: '0.5rem 0.75rem',

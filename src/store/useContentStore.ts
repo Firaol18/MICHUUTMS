@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ETHIOPIAN_EVENTS, BLOG_ARTICLES, type EthiopianEvent, type BlogArticle } from '@/services/mockEventsData';
+import { BLOG_ARTICLES, type EthiopianEvent, type BlogArticle } from '@/services/mockEventsData';
 
 export interface CustomDestinationOption {
   id: string;
@@ -135,8 +135,8 @@ interface ContentStoreState {
 export const useContentStore = create<ContentStoreState>()(
   persist(
     (set, get) => ({
-      // Events initial
-      events: ETHIOPIAN_EVENTS,
+      // Events initial (empty - loaded from backend)
+      events: [],
       addEvent: (eventData) => {
         const newEvent: EthiopianEvent = {
           ...eventData,

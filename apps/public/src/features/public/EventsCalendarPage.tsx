@@ -45,6 +45,7 @@ import {
   Car,
   Globe,
   ShoppingCart,
+  ArrowRight,
 } from 'lucide-react';
 
 const CATEGORY_LABELS: Record<EthiopianEvent['category'], string> = {
@@ -72,7 +73,7 @@ const MONTH_NAMES = [
 
 type ViewMode = 'cards' | 'timeline' | 'map';
 
-interface EventPackageOption {
+export interface EventPackageOption {
   id: 'vip' | 'standard' | 'community';
   title: string;
   pricePerPerson: number;
@@ -81,32 +82,92 @@ interface EventPackageOption {
   features: string[];
 }
 
-const EVENT_PACKAGES: EventPackageOption[] = [
-  {
-    id: 'vip',
-    title: '🌟 VIP Cultural Experience & Reserved Viewing',
-    pricePerPerson: 180,
-    badge: 'ALL-INCLUSIVE VIP',
-    description: 'Reserved grandstand viewing, private 4x4 transport, VIP festival access, certified multilingual guide & traditional feast banquet.',
-    features: ['Reserved Grandstand Seating', 'Private 4x4 Chauffeur', 'Traditional Multi-Course Feast', 'Commemorative Netela Scarf / Gift'],
-  },
-  {
-    id: 'standard',
-    title: '🎟️ Guided Festival Tour & Group Transport',
-    pricePerPerson: 95,
-    badge: 'MOST POPULAR',
-    description: 'Shared convoy roundtrip transport, English-speaking certified guide, hydration, snack pack, and ceremony blessing escort.',
-    features: ['Group Convoy Transport', 'Certified Cultural Guide', 'Festival Blessing Escort', 'Bottled Mineral Water & Snacks'],
-  },
-  {
-    id: 'community',
-    title: '🎫 Community Festival Day Pass & Local Ranger',
-    pricePerPerson: 45,
-    badge: 'COMMUNITY SUPPORT',
-    description: 'Official festival entry pass, local resident scout guide, and yellow Adey Abeba / blessing grass donation token.',
-    features: ['Official Festival Access Pass', 'Local Community Guide', 'Cultural Blessing Grass / Flowers'],
-  },
-];
+export function getEventBasePrice(evt?: EthiopianEvent | null): number {
+  if (!evt) return 65;
+  if (evt.price && evt.price > 0 && evt.price < 500) {
+    return Math.round(evt.price);
+  }
+  if (evt.price && evt.price >= 500) {
+    // If stored in ETB (e.g. 3000 ETB / 2500 ETB), convert to USD equivalent
+    return Math.round(evt.price / 120);
+  }
+  const title = (evt.title || '').toLowerCase();
+  if (title.includes('dallol') || title.includes('erta ale')) return 220;
+  if (title.includes('hamar') || title.includes('bull jumping')) return 150;
+  if (title.includes('kaffa') || title.includes('coffee')) return 95;
+  if (title.includes('timkat')) return 65;
+  if (title.includes('ashenda')) return 60;
+  if (title.includes('meskel')) return 55;
+  if (title.includes('arsedi')) return 50;
+  if (title.includes('gurage')) return 50;
+  if (title.includes('finfinnee')) return 45;
+  if (title.includes('fichee') || title.includes('sidama')) return 45;
+  if (title.includes('shawal') || title.includes('harar')) return 40;
+  if (title.includes('enkutatash') || title.includes('new year')) return 40;
+  if (title.includes('run') || title.includes('10k')) return 25;
+  return 60;
+}
+
+export function getEventPackages(evt?: EthiopianEvent | null): EventPackageOption[] {
+  const basePrice = getEventBasePrice(evt);
+  const isSport = evt?.category === 'sport';
+
+  if (isSport) {
+    return [
+      {
+        id: 'vip',
+        title: '🌟 Elite Runner VIP Hospitality & Race Kit',
+        pricePerPerson: Math.round(basePrice * 2.5),
+        badge: 'VIP ATHLETE',
+        description: 'VIP start zone seeding, official dri-fit marathon kit, elite hospitality lounge access, and recovery massage banquet.',
+        features: ['VIP Starting Pen', 'Official Running Kit & Medal', 'VIP Hospitality Lounge', 'Hotel Convoy Transfer'],
+      },
+      {
+        id: 'standard',
+        title: '🎟️ Standard Runner Entry & Official Kit',
+        pricePerPerson: basePrice,
+        badge: 'OFFICIAL RACE PASS',
+        description: 'Official race bib registration, timing chip, commemorative race t-shirt, and finish line medal ceremony.',
+        features: ['Official Race Number / Bib', 'Commemorative T-Shirt', 'Hydration & Snack Stations', 'Finish Line Medal'],
+      },
+      {
+        id: 'community',
+        title: '🎫 Spectator & Cheer Squad Grandstand Pass',
+        pricePerPerson: Math.max(15, Math.round(basePrice * 0.6)),
+        badge: 'CHEER SQUAD',
+        description: 'Reserved finish line grandstand seating, carnival cheering accessories, and hydration voucher.',
+        features: ['Reserved Finish Grandstand', 'Cheering Flags / Megaphone', 'Hydration Token'],
+      },
+    ];
+  }
+
+  return [
+    {
+      id: 'vip',
+      title: '🌟 VIP Cultural Experience & Reserved Viewing',
+      pricePerPerson: Math.round(basePrice * 1.8),
+      badge: 'ALL-INCLUSIVE VIP',
+      description: 'Reserved grandstand viewing, private 4x4 transport, VIP festival access, certified multilingual guide & traditional feast banquet.',
+      features: ['Reserved Grandstand Seating', 'Private 4x4 Chauffeur', 'Traditional Multi-Course Feast', 'Commemorative Netela Scarf / Gift'],
+    },
+    {
+      id: 'standard',
+      title: '🎟️ Guided Festival Tour & Group Transport',
+      pricePerPerson: basePrice,
+      badge: 'MOST POPULAR',
+      description: 'Shared convoy roundtrip transport, English-speaking certified guide, hydration, snack pack, and ceremony blessing escort.',
+      features: ['Group Convoy Transport', 'Certified Cultural Guide', 'Festival Blessing Escort', 'Bottled Mineral Water & Snacks'],
+    },
+    {
+      id: 'community',
+      title: '🎫 Community Festival Day Pass & Local Ranger',
+      pricePerPerson: Math.max(15, Math.round(basePrice * 0.45)),
+      badge: 'COMMUNITY SUPPORT',
+      description: 'Official festival entry pass, local resident scout guide, and yellow Adey Abeba / blessing grass donation token.',
+      features: ['Official Festival Access Pass', 'Local Community Guide', 'Cultural Blessing Grass / Flowers'],
+    },
+  ];
+}
 
 export const EventsCalendarPage: React.FC = () => {
   const navigate = useNavigate();
@@ -200,10 +261,19 @@ export const EventsCalendarPage: React.FC = () => {
     return [...filteredEvents].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [filteredEvents]);
 
-  // Next Upcoming Festival Spotlight
+  // Next Upcoming Festival Spotlight — pick nearest event whose date >= today
   const upcomingFeaturedEvent = useMemo(() => {
-    const featured = events.find((e) => e.isFeatured) || events[0];
-    return featured;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // Sort all events ascending by date, pick first one that hasn't ended yet
+    const future = [...events]
+      .filter((e) => {
+        const endOrStart = e.endDate ? new Date(e.endDate) : new Date(e.date);
+        endOrStart.setHours(23, 59, 59, 999);
+        return endOrStart >= today;
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return future[0] ?? events[0];
   }, [events]);
 
   // Live Countdown Calculation
@@ -347,9 +417,14 @@ export const EventsCalendarPage: React.FC = () => {
     setConfirmedDirectBooking(null);
   };
 
+  // Dynamic Package computation for current booking event
+  const currentEventPackages = useMemo(() => {
+    return getEventPackages(bookingEvent);
+  }, [bookingEvent]);
+
   // Calculate Event Booking Total
   const totalTravelers = Math.max(1, adultsCount + childrenCount);
-  const selectedPkg = EVENT_PACKAGES.find((p) => p.id === selectedPackageId) || EVENT_PACKAGES[1];
+  const selectedPkg = currentEventPackages.find((p) => p.id === selectedPackageId) || currentEventPackages[1];
   const addonsTotalPerPerson = (addCostumeRental ? 25 : 0) + (addPhotoPermit ? 35 : 0) + (addBuffetDining ? 20 : 0);
   const totalPerGuest = selectedPkg.pricePerPerson + addonsTotalPerPerson;
   const bookingGrandTotal = totalPerGuest * totalTravelers;
@@ -460,8 +535,8 @@ export const EventsCalendarPage: React.FC = () => {
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '2.5rem', alignItems: 'center' }}>
             <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.875rem', borderRadius: 'var(--radius-full)', backgroundColor: '#f59e0b', color: '#000000', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-                <Sparkles size={13} /> NEXT UPCOMING SPOTLIGHT FESTIVAL
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.875rem', borderRadius: 'var(--radius-full)', backgroundColor: upcomingFeaturedEvent.status === 'ongoing' ? '#16a34a' : '#f59e0b', color: upcomingFeaturedEvent.status === 'ongoing' ? '#ffffff' : '#000000', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '1.25rem' }}>
+                <Sparkles size={13} /> {upcomingFeaturedEvent.status === 'ongoing' ? '🟢 HAPPENING NOW' : 'NEXT UPCOMING SPOTLIGHT FESTIVAL'}
               </div>
 
               <h1 style={{ fontSize: '2.4rem', fontWeight: 800, lineHeight: 1.2, color: '#ffffff', marginBottom: '0.75rem' }}>
@@ -496,7 +571,9 @@ export const EventsCalendarPage: React.FC = () => {
                   onClick={() => handleOpenBooking(upcomingFeaturedEvent)}
                   style={{ backgroundColor: '#f59e0b', color: '#000000', fontWeight: 800 }}
                 >
-                  Book Festival Pass & Guide ($95)
+                  {upcomingFeaturedEvent.category === 'sport'
+                    ? `Register for Event ($${getEventBasePrice(upcomingFeaturedEvent)})`
+                    : `Book Festival Pass & Guide ($${getEventBasePrice(upcomingFeaturedEvent)})`}
                 </Button>
 
                 <Button
@@ -763,7 +840,9 @@ export const EventsCalendarPage: React.FC = () => {
                                   onClick={() => handleOpenBooking(evt)}
                                   style={{ backgroundColor: '#f59e0b', color: '#000000', fontWeight: 800 }}
                                 >
-                                  Book Festival Pass ($95)
+                                  {evt.category === 'sport'
+                                    ? `Register ($${getEventBasePrice(evt)})`
+                                    : `Book Festival Pass ($${getEventBasePrice(evt)})`}
                                 </Button>
 
                                 <Button variant="outline" size="sm" icon={<Info size={14} />} onClick={() => setActiveModalEvent(evt)}>
@@ -796,77 +875,208 @@ export const EventsCalendarPage: React.FC = () => {
 
       {/* ── 4. VIEW 2: CARDS GRID VIEW ── */}
       {viewMode === 'cards' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
-          {sortedEvents.map((evt) => (
-            <Card
-              key={evt.id}
-              glass
-              style={{
-                padding: 0,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                border: evt.isFeatured ? '2px solid #f59e0b' : '1px solid var(--border-color)',
-              }}
-            >
-              <div style={{ height: 200, backgroundImage: `url(${evt.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', display: 'flex', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#ffffff', backgroundColor: CATEGORY_COLORS[evt.category], padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', textTransform: 'uppercase' }}>
-                    {CATEGORY_LABELS[evt.category]}
-                  </span>
-                  {evt.isFeatured && (
-                    <span style={{ fontSize: '10px', fontWeight: 800, color: '#000', backgroundColor: '#f59e0b', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)' }}>
-                      ⭐ FEATURED
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+          {sortedEvents.map((evt) => {
+            const basePrice = getEventBasePrice(evt);
+            const hasOffer = evt.hasOffer;
+            const computedOriginal = evt.originalPrice
+              ? evt.originalPrice
+              : evt.discountPercent
+              ? Math.round(basePrice / (1 - evt.discountPercent / 100))
+              : null;
+
+            return (
+              <Card
+                key={evt.id}
+                glass
+                style={{
+                  padding: 0,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  cursor: 'pointer',
+                  transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+                  border: hasOffer
+                    ? '1.5px solid rgba(239,68,68,0.4)'
+                    : evt.isFeatured
+                    ? '2px solid #f59e0b'
+                    : '1px solid var(--border-color)',
+                }}
+                onClick={() => handleOpenBooking(evt)}
+              >
+                {/* ── Cover Image ── */}
+                <div style={{ position: 'relative', height: 210, width: '100%', overflow: 'hidden' }}>
+                  <img
+                    src={evt.imageUrl}
+                    alt={evt.title}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transition: 'transform 0.4s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                  />
+
+                  {/* Top-left badges */}
+                  <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        color: '#ffffff',
+                        backgroundColor: CATEGORY_COLORS[evt.category],
+                        padding: '0.25rem 0.65rem',
+                        borderRadius: 'var(--radius-full)',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {CATEGORY_LABELS[evt.category]}
                     </span>
+                    {hasOffer && (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          color: '#ffffff',
+                          backgroundColor: '#ef4444',
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: 'var(--radius-full)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                        }}
+                      >
+                        <Tag size={10} />
+                        {evt.offerTag || (evt.discountPercent ? `${evt.discountPercent}% OFF` : 'SPECIAL OFFER')}
+                      </span>
+                    )}
+                    {evt.isFeatured && !hasOffer && (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          color: '#000',
+                          backgroundColor: '#f59e0b',
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: 'var(--radius-full)',
+                        }}
+                      >
+                        ⭐ FEATURED
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Ethiopian date bottom-left */}
+                  {evt.ethiopianDate && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: 10,
+                        left: 10,
+                        backgroundColor: 'rgba(0,0,0,0.7)',
+                        backdropFilter: 'blur(4px)',
+                        color: '#ffffff',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        padding: '0.2rem 0.55rem',
+                        borderRadius: 'var(--radius-sm)',
+                      }}
+                    >
+                      🇪🇹 {evt.ethiopianDate}
+                    </div>
                   )}
                 </div>
 
-                {evt.ethiopianDate && (
-                  <div style={{ position: 'absolute', bottom: '0.75rem', left: '0.75rem', backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', color: '#ffffff', fontSize: '11px', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-sm)' }}>
-                    🇪🇹 {evt.ethiopianDate}
+                {/* ── Card Body ── */}
+                <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1, gap: '0.75rem' }}>
+                  {/* Location tag */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', fontWeight: 600 }}>
+                    <MapPin size={13} />
+                    <span>{evt.location}, {evt.region}</span>
                   </div>
-                )}
-              </div>
 
-              <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                  {/* Title */}
+                  <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35, margin: 0 }}>
                     {evt.title}
                   </h3>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.875rem', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <CalendarDays size={13} style={{ color: 'var(--brand-primary)' }} />
-                      {new Date(evt.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <MapPin size={13} style={{ color: 'var(--brand-primary)' }} /> {evt.location} ({evt.region})
-                    </span>
+                  {/* Description */}
+                  <p
+                    style={{
+                      fontSize: 'var(--font-size-xs)',
+                      color: 'var(--text-muted)',
+                      lineHeight: 1.6,
+                      margin: 0,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {evt.description}
+                  </p>
+
+                  {/* Date & Guests row */}
+                  <div
+                    style={{
+                      marginTop: 'auto',
+                      paddingTop: '0.75rem',
+                      borderTop: '1px solid var(--border-color)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: 'var(--font-size-xs)',
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <CalendarDays size={13} style={{ color: 'var(--text-muted)' }} />
+                      <span>{new Date(evt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    {evt.endDate && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--text-muted)' }}>
+                        <span>Multi-Day</span>
+                      </div>
+                    )}
                   </div>
 
-                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-                    {evt.description.slice(0, 140)}...
-                  </p>
-                </div>
+                  {/* ── Price & CTA Row ── */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '0.5rem' }}>
+                    <div>
+                      <span style={{ fontSize: '10px', color: hasOffer ? '#ef4444' : 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
+                        {hasOffer ? 'Special Offer Price' : 'From'}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.375rem', marginTop: '0.125rem' }}>
+                        {computedOriginal && (
+                          <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', fontWeight: 500 }}>
+                            ${computedOriginal.toLocaleString()}
+                          </span>
+                        )}
+                        <span style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, color: hasOffer ? '#16a34a' : 'var(--text-primary)' }}>
+                          ${basePrice.toLocaleString()}
+                        </span>
+                        <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 400, color: 'var(--text-muted)' }}>/ guest</span>
+                      </div>
+                    </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', gap: '0.5rem' }}>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    icon={<Ticket size={14} />}
-                    onClick={() => handleOpenBooking(evt)}
-                    style={{ backgroundColor: '#f59e0b', color: '#000000', fontWeight: 800 }}
-                  >
-                    Book Pass ($95)
-                  </Button>
-
-                  <Button variant="ghost" size="sm" onClick={() => setActiveModalEvent(evt)}>
-                    Details
-                  </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={<ArrowRight size={14} />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveModalEvent(evt);
+                      }}
+                    >
+                      Details
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -1262,7 +1472,7 @@ export const EventsCalendarPage: React.FC = () => {
                 </label>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-                  {EVENT_PACKAGES.map((pkg) => {
+                  {currentEventPackages.map((pkg) => {
                     const isSelected = selectedPackageId === pkg.id;
                     return (
                       <div

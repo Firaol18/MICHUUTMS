@@ -11,11 +11,16 @@ export class Event {
   @ApiProperty() @Column({ type: 'varchar', length: 200 }) location: string;
   @ApiProperty() @Column({ type: 'varchar', length: 100, default: 'cultural' }) category: string;
   @ApiProperty() @Column({ type: 'varchar', length: 500, default: '' }) imageUrl: string;
-  @ApiProperty() @Column({ type: 'float', nullable: true }) price: number;
+  @ApiProperty() @Column({ type: 'float', default: 0 }) price: number;
   @ApiProperty() @Column({ type: 'boolean', default: false }) isFree: boolean;
   @ApiProperty() @Column({ type: 'boolean', default: true }) isActive: boolean;
   @ApiProperty() @Column({ type: 'varchar', length: 50, default: 'upcoming' }) status: string;
   @ApiProperty() @Column({ type: 'jsonb', default: '[]' }) tags: string[];
+  // Offer / discount fields
+  @ApiProperty() @Column({ type: 'boolean', default: false }) hasOffer: boolean;
+  @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) offerTag: string | null;
+  @ApiProperty() @Column({ type: 'float', nullable: true }) discountPercent: number | null;
+  @ApiProperty() @Column({ type: 'float', nullable: true }) originalPrice: number | null;
   @ApiProperty() @CreateDateColumn() createdAt: Date;
   @ApiProperty() @UpdateDateColumn() updatedAt: Date;
 }

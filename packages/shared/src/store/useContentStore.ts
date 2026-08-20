@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { http } from '@tms/shared/services/apiClient';
-import { ETHIOPIAN_EVENTS, BLOG_ARTICLES, type EthiopianEvent, type BlogArticle } from '@tms/shared/services/mockEventsData';
+import { BLOG_ARTICLES, type EthiopianEvent, type BlogArticle } from '@tms/shared/services/mockEventsData';
 
 export interface CustomDestinationOption {
   id: string;
@@ -138,30 +138,55 @@ interface ContentStoreState {
 
 export const useContentStore = create<ContentStoreState>()(
   persist(
-    (set) => ({
-      // Events
-      events: ETHIOPIAN_EVENTS,
+    (set, get) => ({
+      // Events (Loaded strictly from real backend)
+      events: [],
 
       fetchEvents: async () => {
         try {
           const res = await http.get('/events');
-          if (Array.isArray(res.data) && res.data.length > 0) {
-            const mapped: EthiopianEvent[] = res.data.map((e: any) => ({
-              id: String(e.id),
-              title: e.title,
-              date: e.eventDate,
-              endDate: e.endDate,
-              location: e.location,
-              region: 'Oromia',
-              category: e.category || 'cultural',
-              description: e.description,
-              imageUrl: e.imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
-              isFeatured: Boolean(e.isActive),
-            }));
+          if (Array.isArray(res.data)) {
+            const mapped: EthiopianEvent[] = res.data.map((e: any) => {
+              // Extract region from location or tags if available
+              const locMatch = typeof e.location === 'string' ? e.location.match(/\(([^)]+)\)$/) : null;
+              const regionFromLoc = locMatch ? locMatch[1] : undefined;
+              const region = e.region || regionFromLoc || (Array.isArray(e.tags) && e.tags[0]) || 'Oromia';
+
+              const ethiopianDate = e.ethiopianDate || (Array.isArray(e.tags) ? e.tags.find((t: string) => t.includes('(') || t.includes('፲') || t.includes('፩') || t.includes('፳') || t.includes('፮')) : undefined);
+
+              return {
+                id: String(e.id),
+                title: e.title,
+                date: typeof e.eventDate === 'string' ? e.eventDate.split('T')[0] : (e.date || '2026-10-01'),
+                endDate: e.endDate ? (typeof e.endDate === 'string' ? e.endDate.split('T')[0] : e.endDate) : undefined,
+                ethiopianDate,
+                location: e.location,
+                region,
+                category: e.category || 'cultural',
+                description: e.description,
+                imageUrl: e.imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
+                // status is auto-computed by backend from real dates
+                status: e.status as 'upcoming' | 'ongoing' | 'completed',
+                // isFeatured = isActive AND not already completed
+                isFeatured: Boolean(e.isActive) && e.status !== 'completed',
+                price: typeof e.price === 'number' ? e.price : 0,
+                isFree: Boolean(e.isFree),
+                hasOffer: Boolean(e.hasOffer),
+                offerTag: e.offerTag ?? undefined,
+                discountPercent: e.discountPercent ?? undefined,
+                originalPrice: e.originalPrice ?? undefined,
+                tipForVisitors: e.tipForVisitors,
+                dressCode: e.dressCode,
+              };
+            });
+
             set({ events: mapped });
+          } else {
+            set({ events: [] });
           }
-        } catch {
-          // fallback to local
+        } catch (error) {
+          console.error('Failed to fetch events from backend API:', error);
+          set({ events: [] });
         }
       },
 
@@ -175,16 +200,36 @@ export const useContentStore = create<ContentStoreState>()(
             location: eventData.location,
             category: eventData.category,
             imageUrl: eventData.imageUrl,
+            isActive: eventData.isFeatured !== false,
+            price: eventData.price ?? 0,
+            isFree: eventData.isFree ?? (!eventData.price || eventData.price === 0),
+            hasOffer: eventData.hasOffer ?? false,
+            offerTag: eventData.offerTag,
+            discountPercent: eventData.discountPercent,
+            originalPrice: eventData.originalPrice,
           });
           if (res.data) {
+            const locMatch = typeof res.data.location === 'string' ? res.data.location.match(/\(([^)]+)\)$/) : null;
+            const regionFromLoc = locMatch ? locMatch[1] : undefined;
+            const region = res.data.region || regionFromLoc || (Array.isArray(res.data.tags) && res.data.tags[0]) || eventData.region || 'Oromia';
             const newEvent: EthiopianEvent = {
               ...eventData,
               id: String(res.data.id),
+              region,
+              price: typeof res.data.price === 'number' ? res.data.price : (eventData.price ?? 0),
+              isFree: res.data.isFree ?? eventData.isFree ?? false,
+              hasOffer: res.data.hasOffer ?? eventData.hasOffer ?? false,
+              offerTag: res.data.offerTag ?? eventData.offerTag,
+              discountPercent: res.data.discountPercent ?? eventData.discountPercent,
+              originalPrice: res.data.originalPrice ?? eventData.originalPrice,
             };
             set((state) => ({ events: [newEvent, ...state.events] }));
             return newEvent;
           }
-        } catch {}
+        } catch (error) {
+          console.error('Failed to add event on backend:', error);
+          throw error;
+        }
 
         const newEvent: EthiopianEvent = {
           ...eventData,
@@ -196,11 +241,25 @@ export const useContentStore = create<ContentStoreState>()(
 
       updateEvent: async (id, updates) => {
         try {
-          const numId = Number(id);
-          if (!isNaN(numId)) {
-            await http.patch(`/events/${numId}`, updates);
-          }
-        } catch {}
+          await http.patch(`/events/${id}`, {
+            ...(updates.title && { title: updates.title }),
+            ...(updates.description && { description: updates.description }),
+            ...(updates.date && { eventDate: updates.date }),
+            ...(updates.endDate !== undefined && { endDate: updates.endDate }),
+            ...(updates.location && { location: updates.location }),
+            ...(updates.category && { category: updates.category }),
+            ...(updates.imageUrl && { imageUrl: updates.imageUrl }),
+            ...(updates.isFeatured !== undefined && { isActive: updates.isFeatured }),
+            ...(updates.price !== undefined && { price: updates.price }),
+            ...(updates.isFree !== undefined && { isFree: updates.isFree }),
+            ...(updates.hasOffer !== undefined && { hasOffer: updates.hasOffer }),
+            ...(updates.offerTag !== undefined && { offerTag: updates.offerTag }),
+            ...(updates.discountPercent !== undefined && { discountPercent: updates.discountPercent }),
+            ...(updates.originalPrice !== undefined && { originalPrice: updates.originalPrice }),
+          });
+        } catch (error) {
+          console.error('Failed to update event on backend:', error);
+        }
         set((state) => ({
           events: state.events.map((e) => (e.id === id ? { ...e, ...updates } : e)),
         }));
@@ -208,20 +267,27 @@ export const useContentStore = create<ContentStoreState>()(
 
       deleteEvent: async (id) => {
         try {
-          const numId = Number(id);
-          if (!isNaN(numId)) {
-            await http.delete(`/events/${numId}`);
-          }
-        } catch {}
+          await http.delete(`/events/${id}`);
+        } catch (error) {
+          console.error('Failed to delete event on backend:', error);
+        }
         set((state) => ({
           events: state.events.filter((e) => e.id !== id),
         }));
       },
 
-      toggleFeaturedEvent: (id) => {
+      toggleFeaturedEvent: async (id) => {
+        const current = get().events.find((e) => e.id === id);
+        if (!current) return;
+        const newFeatured = !current.isFeatured;
         set((state) => ({
-          events: state.events.map((e) => (e.id === id ? { ...e, isFeatured: !e.isFeatured } : e)),
+          events: state.events.map((e) => (e.id === id ? { ...e, isFeatured: newFeatured } : e)),
         }));
+        try {
+          await http.patch(`/events/${id}`, { isActive: newFeatured });
+        } catch (error) {
+          console.error('Failed to toggle featured event on backend:', error);
+        }
       },
 
       // Blog Articles

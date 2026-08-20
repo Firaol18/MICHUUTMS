@@ -38,12 +38,16 @@ const CATEGORIES: EthiopianEvent['category'][] = [
 ];
 
 export const AdminEventsPage: React.FC = () => {
-  const { events, addEvent, updateEvent, deleteEvent, toggleFeaturedEvent } = useContentStore();
+  const { events, fetchEvents, addEvent, updateEvent, deleteEvent, toggleFeaturedEvent } = useContentStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EthiopianEvent | null>(null);
+
+  React.useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -56,6 +60,12 @@ export const AdminEventsPage: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [tipForVisitors, setTipForVisitors] = useState('');
+  // Offer/Price fields
+  const [price, setPrice] = useState<string>('');
+  const [hasOffer, setHasOffer] = useState(false);
+  const [offerTag, setOfferTag] = useState('');
+  const [discountPercent, setDiscountPercent] = useState<string>('');
+  const [originalPrice, setOriginalPrice] = useState<string>('');
 
   const openCreateModal = () => {
     setEditingEvent(null);
@@ -69,6 +79,11 @@ export const AdminEventsPage: React.FC = () => {
     setImageUrl('https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800');
     setIsFeatured(false);
     setTipForVisitors('');
+    setPrice('');
+    setHasOffer(false);
+    setOfferTag('');
+    setDiscountPercent('');
+    setOriginalPrice('');
     setIsModalOpen(true);
   };
 
@@ -84,6 +99,11 @@ export const AdminEventsPage: React.FC = () => {
     setImageUrl(evt.imageUrl);
     setIsFeatured(evt.isFeatured);
     setTipForVisitors(evt.tipForVisitors || '');
+    setPrice(evt.price !== undefined ? String(evt.price) : '');
+    setHasOffer(evt.hasOffer ?? false);
+    setOfferTag(evt.offerTag ?? '');
+    setDiscountPercent(evt.discountPercent !== undefined ? String(evt.discountPercent) : '');
+    setOriginalPrice(evt.originalPrice !== undefined ? String(evt.originalPrice) : '');
     setIsModalOpen(true);
   };
 
@@ -103,6 +123,11 @@ export const AdminEventsPage: React.FC = () => {
         imageUrl: imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
         isFeatured,
         tipForVisitors: tipForVisitors || undefined,
+        price: price !== '' ? Number(price) : 0,
+        hasOffer,
+        offerTag: hasOffer && offerTag ? offerTag : undefined,
+        discountPercent: hasOffer && discountPercent !== '' ? Number(discountPercent) : undefined,
+        originalPrice: hasOffer && originalPrice !== '' ? Number(originalPrice) : undefined,
       });
     } else {
       addEvent({
@@ -116,6 +141,11 @@ export const AdminEventsPage: React.FC = () => {
         imageUrl: imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
         isFeatured,
         tipForVisitors: tipForVisitors || undefined,
+        price: price !== '' ? Number(price) : 0,
+        hasOffer,
+        offerTag: hasOffer && offerTag ? offerTag : undefined,
+        discountPercent: hasOffer && discountPercent !== '' ? Number(discountPercent) : undefined,
+        originalPrice: hasOffer && originalPrice !== '' ? Number(originalPrice) : undefined,
       });
     }
     setIsModalOpen(false);
@@ -193,6 +223,30 @@ export const AdminEventsPage: React.FC = () => {
         >
           {row.category}
         </span>
+      ),
+    },
+    {
+      header: 'Price / Offer',
+      minWidth: '130px',
+      noWrap: true,
+      cell: (row) => (
+        <div style={{ fontSize: 'var(--font-size-xs)' }}>
+          {row.hasOffer ? (
+            <>
+              <span style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', display: 'block', marginBottom: '1px' }}>
+                🏷 {row.offerTag || (row.discountPercent ? `${row.discountPercent}% OFF` : 'SPECIAL OFFER')}
+              </span>
+              {row.originalPrice && (
+                <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)', marginRight: 4 }}>
+                  ${row.originalPrice}
+                </span>
+              )}
+              <span style={{ fontWeight: 700, color: '#16a34a' }}>${row.price ?? 0}</span>
+            </>
+          ) : (
+            <span style={{ fontWeight: 600 }}>${row.price ?? 0}</span>
+          )}
+        </div>
       ),
     },
     {
@@ -385,6 +439,67 @@ export const AdminEventsPage: React.FC = () => {
             value={tipForVisitors}
             onChange={(e) => setTipForVisitors(e.target.value)}
           />
+
+          {/* ── Offer / Pricing Section ── */}
+          <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>🏷 Pricing & Offer Settings</div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <Input
+                label="Base Price (USD / guest)"
+                type="number"
+                placeholder="e.g. 65"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                min={0}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', paddingTop: '1.75rem', gap: '0.5rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={hasOffer}
+                    onChange={(e) => setHasOffer(e.target.checked)}
+                  />
+                  🏷️ Enable Special Offer
+                </label>
+              </div>
+            </div>
+
+            {hasOffer && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                  <Input
+                    label="Original Price (for strikethrough)"
+                    type="number"
+                    placeholder="e.g. 95"
+                    value={originalPrice}
+                    onChange={(e) => setOriginalPrice(e.target.value)}
+                    min={0}
+                  />
+                  <Input
+                    label="Discount % (optional)"
+                    type="number"
+                    placeholder="e.g. 20"
+                    value={discountPercent}
+                    onChange={(e) => setDiscountPercent(e.target.value)}
+                    min={0}
+                    max={99}
+                  />
+                  <Input
+                    label="Offer Tag Label"
+                    placeholder="e.g. EARLY BIRD -20%"
+                    value={offerTag}
+                    onChange={(e) => setOfferTag(e.target.value)}
+                  />
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '0.5rem 0.75rem', backgroundColor: 'rgba(239,68,68,0.06)', borderRadius: 'var(--radius-sm)', border: '1px dashed rgba(239,68,68,0.25)' }}>
+                  Preview: <strong style={{ color: '#ef4444' }}>{offerTag || (discountPercent ? `${discountPercent}% OFF` : 'SPECIAL OFFER')}</strong> — was <s>${originalPrice || '?'}</s> now <strong style={{ color: '#16a34a' }}>${price || '?'}</strong> / guest
+                </div>
+              </>
+            )}
+          </div>
         </form>
       </Modal>
     </div>

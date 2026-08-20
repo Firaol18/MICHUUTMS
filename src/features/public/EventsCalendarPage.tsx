@@ -73,32 +73,100 @@ interface EventPackageOption {
   features: string[];
 }
 
-const EVENT_PACKAGES: EventPackageOption[] = [
-  {
-    id: 'vip',
-    title: '🌟 VIP Cultural Experience & Reserved Viewing',
-    pricePerPerson: 180,
-    badge: 'ALL-INCLUSIVE VIP',
-    description: 'Reserved grandstand viewing, private 4x4 transport, VIP festival access, certified multilingual guide & traditional feast banquet.',
-    features: ['Reserved Grandstand Seating', 'Private 4x4 Chauffeur', 'Traditional Multi-Course Feast', 'Commemorative Netela Scarf / Gift'],
-  },
-  {
-    id: 'standard',
-    title: '🎟️ Guided Festival Tour & Group Transport',
-    pricePerPerson: 95,
-    badge: 'MOST POPULAR',
-    description: 'Shared convoy roundtrip transport, English-speaking certified guide, hydration, snack pack, and ceremony blessing escort.',
-    features: ['Group Convoy Transport', 'Certified Cultural Guide', 'Festival Blessing Escort', 'Bottled Mineral Water & Snacks'],
-  },
-  {
-    id: 'community',
-    title: '🎫 Community Festival Day Pass & Local Ranger',
-    pricePerPerson: 45,
-    badge: 'COMMUNITY SUPPORT',
-    description: 'Official festival entry pass, local resident scout guide, and yellow Adey Abeba / blessing grass donation token.',
-    features: ['Official Festival Access Pass', 'Local Community Guide', 'Cultural Blessing Grass / Flowers'],
-  },
-];
+export interface EventPackageOption {
+  id: 'vip' | 'standard' | 'community';
+  title: string;
+  pricePerPerson: number;
+  badge: string;
+  description: string;
+  features: string[];
+}
+
+export function getEventBasePrice(evt?: EthiopianEvent | null): number {
+  if (!evt) return 65;
+  if (evt.price && evt.price > 0 && evt.price < 500) {
+    return Math.round(evt.price);
+  }
+  if (evt.price && evt.price >= 500) {
+    return Math.round(evt.price / 120);
+  }
+  const title = (evt.title || '').toLowerCase();
+  if (title.includes('dallol') || title.includes('erta ale')) return 220;
+  if (title.includes('hamar') || title.includes('bull jumping')) return 150;
+  if (title.includes('kaffa') || title.includes('coffee')) return 95;
+  if (title.includes('timkat')) return 65;
+  if (title.includes('ashenda')) return 60;
+  if (title.includes('meskel')) return 55;
+  if (title.includes('arsedi')) return 50;
+  if (title.includes('gurage')) return 50;
+  if (title.includes('finfinnee')) return 45;
+  if (title.includes('fichee') || title.includes('sidama')) return 45;
+  if (title.includes('shawal') || title.includes('harar')) return 40;
+  if (title.includes('enkutatash') || title.includes('new year')) return 40;
+  if (title.includes('run') || title.includes('10k')) return 25;
+  return 60;
+}
+
+export function getEventPackages(evt?: EthiopianEvent | null): EventPackageOption[] {
+  const basePrice = getEventBasePrice(evt);
+  const isSport = evt?.category === 'sport';
+
+  if (isSport) {
+    return [
+      {
+        id: 'vip',
+        title: '🌟 Elite Runner VIP Hospitality & Race Kit',
+        pricePerPerson: Math.round(basePrice * 2.5),
+        badge: 'VIP ATHLETE',
+        description: 'VIP start zone seeding, official dri-fit marathon kit, elite hospitality lounge access, and recovery massage banquet.',
+        features: ['VIP Starting Pen', 'Official Running Kit & Medal', 'VIP Hospitality Lounge', 'Hotel Convoy Transfer'],
+      },
+      {
+        id: 'standard',
+        title: '🎟️ Standard Runner Entry & Official Kit',
+        pricePerPerson: basePrice,
+        badge: 'OFFICIAL RACE PASS',
+        description: 'Official race bib registration, timing chip, commemorative race t-shirt, and finish line medal ceremony.',
+        features: ['Official Race Number / Bib', 'Commemorative T-Shirt', 'Hydration & Snack Stations', 'Finish Line Medal'],
+      },
+      {
+        id: 'community',
+        title: '🎫 Spectator & Cheer Squad Grandstand Pass',
+        pricePerPerson: Math.max(15, Math.round(basePrice * 0.6)),
+        badge: 'CHEER SQUAD',
+        description: 'Reserved finish line grandstand seating, carnival cheering accessories, and hydration voucher.',
+        features: ['Reserved Finish Grandstand', 'Cheering Flags / Megaphone', 'Hydration Token'],
+      },
+    ];
+  }
+
+  return [
+    {
+      id: 'vip',
+      title: '🌟 VIP Cultural Experience & Reserved Viewing',
+      pricePerPerson: Math.round(basePrice * 1.8),
+      badge: 'ALL-INCLUSIVE VIP',
+      description: 'Reserved grandstand viewing, private 4x4 transport, VIP festival access, certified multilingual guide & traditional feast banquet.',
+      features: ['Reserved Grandstand Seating', 'Private 4x4 Chauffeur', 'Traditional Multi-Course Feast', 'Commemorative Netela Scarf / Gift'],
+    },
+    {
+      id: 'standard',
+      title: '🎟️ Guided Festival Tour & Group Transport',
+      pricePerPerson: basePrice,
+      badge: 'MOST POPULAR',
+      description: 'Shared convoy roundtrip transport, English-speaking certified guide, hydration, snack pack, and ceremony blessing escort.',
+      features: ['Group Convoy Transport', 'Certified Cultural Guide', 'Festival Blessing Escort', 'Bottled Mineral Water & Snacks'],
+    },
+    {
+      id: 'community',
+      title: '🎫 Community Festival Day Pass & Local Ranger',
+      pricePerPerson: Math.max(15, Math.round(basePrice * 0.45)),
+      badge: 'COMMUNITY SUPPORT',
+      description: 'Official festival entry pass, local resident scout guide, and yellow Adey Abeba / blessing grass donation token.',
+      features: ['Official Festival Access Pass', 'Local Community Guide', 'Cultural Blessing Grass / Flowers'],
+    },
+  ];
+}
 
 export const EventsCalendarPage: React.FC = () => {
   const navigate = useNavigate();
@@ -316,8 +384,13 @@ export const EventsCalendarPage: React.FC = () => {
     setBookingSuccessMsg(null);
   };
 
+  // Dynamic Package computation for current booking event
+  const currentEventPackages = useMemo(() => {
+    return getEventPackages(bookingEvent);
+  }, [bookingEvent]);
+
   // Calculate Event Booking Total
-  const selectedPkg = EVENT_PACKAGES.find((p) => p.id === selectedPackageId) || EVENT_PACKAGES[1];
+  const selectedPkg = currentEventPackages.find((p) => p.id === selectedPackageId) || currentEventPackages[1];
   const addonsTotalPerPerson = (addCostumeRental ? 25 : 0) + (addPhotoPermit ? 35 : 0) + (addBuffetDining ? 20 : 0);
   const totalPerGuest = selectedPkg.pricePerPerson + addonsTotalPerPerson;
   const bookingGrandTotal = totalPerGuest * travelersCount;
@@ -408,7 +481,9 @@ export const EventsCalendarPage: React.FC = () => {
                   onClick={() => handleOpenBooking(upcomingFeaturedEvent)}
                   style={{ backgroundColor: '#f59e0b', color: '#000000', fontWeight: 800 }}
                 >
-                  Book Festival Pass & Guide ($95)
+                  {upcomingFeaturedEvent.category === 'sport'
+                    ? `Register for Event ($${getEventBasePrice(upcomingFeaturedEvent)})`
+                    : `Book Festival Pass & Guide ($${getEventBasePrice(upcomingFeaturedEvent)})`}
                 </Button>
 
                 <Button
@@ -675,7 +750,9 @@ export const EventsCalendarPage: React.FC = () => {
                                   onClick={() => handleOpenBooking(evt)}
                                   style={{ backgroundColor: '#f59e0b', color: '#000000', fontWeight: 800 }}
                                 >
-                                  Book Festival Pass ($95)
+                                  {evt.category === 'sport'
+                                    ? `Register ($${getEventBasePrice(evt)})`
+                                    : `Book Festival Pass ($${getEventBasePrice(evt)})`}
                                 </Button>
 
                                 <Button variant="outline" size="sm" icon={<Info size={14} />} onClick={() => setActiveModalEvent(evt)}>
@@ -769,7 +846,9 @@ export const EventsCalendarPage: React.FC = () => {
                     onClick={() => handleOpenBooking(evt)}
                     style={{ backgroundColor: '#f59e0b', color: '#000000', fontWeight: 800 }}
                   >
-                    Book Pass ($95)
+                    {evt.category === 'sport'
+                      ? `Register ($${getEventBasePrice(evt)})`
+                      : `Book Pass ($${getEventBasePrice(evt)})`}
                   </Button>
 
                   <Button variant="ghost" size="sm" onClick={() => setActiveModalEvent(evt)}>
@@ -985,7 +1064,7 @@ export const EventsCalendarPage: React.FC = () => {
               </label>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                {EVENT_PACKAGES.map((pkg) => {
+                {currentEventPackages.map((pkg) => {
                   const isSelected = selectedPackageId === pkg.id;
                   return (
                     <div
