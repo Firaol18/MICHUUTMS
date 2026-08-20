@@ -2,11 +2,11 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { ApiProperty } from '@nestjs/swagger';
 import { Role } from '../../account-management/entities/role.entity';
 
-@Entity('users') // Table name
+@Entity('users')
 export class User {
-  @ApiProperty({ example: 1, description: 'The unique ID of the user' })
-  @PrimaryGeneratedColumn()
-  id: number;
+  @ApiProperty({ description: 'The unique UUID of the user' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ApiProperty({ example: 'Sam', description: 'The name of the user' })
   @Column({ type: 'varchar', length: 100 })
@@ -24,20 +24,19 @@ export class User {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
-  @ApiProperty({ example: 1, description: 'The role ID of the user', required: false })
-  @Column({ nullable: true })
-  roleId: number;
+  @ApiProperty({ description: 'The role ID of the user', required: false })
+  @Column({ type: 'uuid', nullable: true })
+  roleId: string;
 
   @ManyToOne(() => Role, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'roleId' })
   role: Role;
 
-  @ApiProperty({ example: '2025-12-15T12:00:00Z', description: 'User creation timestamp' })
+  @ApiProperty({ description: 'User creation timestamp' })
   @CreateDateColumn()
   createdAt: Date;
 
-  @ApiProperty({ example: '2025-12-15T12:05:00Z', description: 'User last update timestamp' })
+  @ApiProperty({ description: 'User last update timestamp' })
   @UpdateDateColumn()
   updatedAt: Date;
 }
-

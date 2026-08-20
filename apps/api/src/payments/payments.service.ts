@@ -11,7 +11,7 @@ export class PaymentsService {
     return this.repo.find({ order: { paymentDate: 'DESC' } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const payment = await this.repo.findOneBy({ id });
     if (!payment) throw new NotFoundException(`Payment #${id} not found`);
     return payment;
@@ -25,7 +25,7 @@ export class PaymentsService {
     return this.repo.save(payment);
   }
 
-  async update(id: number, data: Partial<Payment>) {
+  async update(id: string, data: Partial<Payment>) {
     await this.findOne(id);
     await this.repo.update(id, data);
     return this.findOne(id);

@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('drivers')
 export class Driver {
-  @ApiProperty() @PrimaryGeneratedColumn() id: number;
+  @ApiProperty() @PrimaryGeneratedColumn('uuid') id: string;
   @ApiProperty() @Column({ type: 'varchar', length: 100 }) name: string;
   @ApiProperty() @Column({ type: 'varchar', length: 100 }) licenseNumber: string;
   @ApiProperty() @Column({ type: 'date' }) licenseExpiry: string;

@@ -1,6 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, Query,
-  ParseIntPipe, UseGuards,
+  Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BlogService } from './blog.service';
@@ -25,8 +24,8 @@ export class BlogController {
   @Get(':slugOrId')
   @ApiOperation({ summary: 'Get blog post by slug or ID (public)' })
   findOne(@Param('slugOrId') slugOrId: string) {
-    const num = Number(slugOrId);
-    return isNaN(num) ? this.blogService.findBySlug(slugOrId) : this.blogService.findOne(num);
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(slugOrId) ? this.blogService.findOne(slugOrId) : this.blogService.findBySlug(slugOrId);
   }
 
   @Post()
@@ -41,7 +40,7 @@ export class BlogController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update blog post (admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<CreateBlogPostDto>) {
+  update(@Param('id') id: string, @Body() dto: Partial<CreateBlogPostDto>) {
     return this.blogService.update(id, dto);
   }
 
@@ -49,7 +48,7 @@ export class BlogController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete blog post (admin)' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.blogService.remove(id);
   }
 }

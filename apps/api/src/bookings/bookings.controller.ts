@@ -15,7 +15,7 @@ export class BookingsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all bookings (admin or public dashboard)' })
+  @ApiOperation({ summary: 'Get all bookings (admin)' })
   findAll(
     @Query('status') status?: string,
     @Query('search') search?: string,
@@ -37,25 +37,25 @@ export class BookingsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get single booking by ID' })
   findOne(@Param('id') id: string) {
-    return this.bookingsService.findOne(+id);
+    return this.bookingsService.findOne(id);
   }
 
   @Patch(':id/cancel')
   @ApiOperation({ summary: 'Cancel a booking' })
   cancel(@Param('id') id: string, @Body() dto: CancelBookingDto) {
-    return this.bookingsService.cancel(+id, dto);
+    return this.bookingsService.cancel(id, dto);
   }
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update booking status (admin)' })
   updateStatus(@Param('id') id: string, @Body('status') status: string) {
-    return this.bookingsService.updateStatus(+id, status);
+    return this.bookingsService.updateStatus(id, status);
   }
 
   @Patch(':id/payment-status')
   @ApiOperation({ summary: 'Update payment status (admin)' })
   updatePaymentStatus(@Param('id') id: string, @Body('paymentStatus') ps: string) {
-    return this.bookingsService.updatePaymentStatus(+id, ps);
+    return this.bookingsService.updatePaymentStatus(id, ps);
   }
 
   @Patch(':id/assign-guide')
@@ -65,7 +65,6 @@ export class BookingsController {
     @Body('assignedGuideName') guideName: string,
     @Body('assignedGuideId') guideId?: string,
   ) {
-    return this.bookingsService.assignGuide(+id, guideName, guideId);
+    return this.bookingsService.assignGuide(id, guideName, guideId);
   }
 }
-

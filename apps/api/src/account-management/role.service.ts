@@ -34,7 +34,7 @@ export class RoleService {
             role_id: savedRole.id,
             permission_resource_id: resDto.permission_resource_id,
           });
-          const savedRpr = await queryRunner.manager.save(RolePermissionResource, rpr);
+          const savedRpr = await queryRunner.manager.save(RolePermissionResource, rpr) as RolePermissionResource;
 
           if (resDto.rolePermissionResourceActions && resDto.rolePermissionResourceActions.length > 0) {
             const actionsToSave = resDto.rolePermissionResourceActions.map((actDto) => {
@@ -70,7 +70,7 @@ export class RoleService {
     });
   }
 
-  async findOne(id: number): Promise<Role> {
+  async findOne(id: string): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { id },
       relations: [
@@ -86,7 +86,7 @@ export class RoleService {
     return role;
   }
 
-  async update(id: number, updateRoleDto: UpdateRoleDto): Promise<Role> {
+  async update(id: string, updateRoleDto: UpdateRoleDto): Promise<Role> {
     const role = await this.findOne(id);
     if (role.isLocked) {
       throw new BadRequestException('Locked roles cannot be modified');
@@ -112,7 +112,7 @@ export class RoleService {
               role_id: id,
               permission_resource_id: resDto.permission_resource_id,
             });
-            const savedRpr = await queryRunner.manager.save(RolePermissionResource, rpr);
+            const savedRpr = await queryRunner.manager.save(RolePermissionResource, rpr) as RolePermissionResource;
 
             if (resDto.rolePermissionResourceActions && resDto.rolePermissionResourceActions.length > 0) {
               const actionsToSave = resDto.rolePermissionResourceActions.map((actDto) => {
@@ -137,7 +137,7 @@ export class RoleService {
     }
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const role = await this.findOne(id);
     if (!role.editable) {
       throw new BadRequestException('This role is not editable/deletable');

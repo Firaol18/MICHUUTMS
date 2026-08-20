@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { VehiclesService } from './vehicles.service';
 import { Vehicle } from './entities/vehicle.entity';
@@ -17,7 +17,7 @@ export class VehiclesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get vehicle by ID' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.vehiclesService.findOne(id);
   }
 
@@ -33,7 +33,7 @@ export class VehiclesController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update vehicle (admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<Vehicle>) {
+  update(@Param('id') id: string, @Body() dto: Partial<Vehicle>) {
     return this.vehiclesService.update(id, dto);
   }
 
@@ -41,7 +41,7 @@ export class VehiclesController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete vehicle (admin)' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.vehiclesService.remove(id);
   }
 }

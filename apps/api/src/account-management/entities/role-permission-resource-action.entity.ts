@@ -6,16 +6,16 @@ import { PermissionAction } from './permission-action.entity';
 @Entity('role_permission_resource_actions')
 export class RolePermissionResourceAction {
   @ApiProperty()
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ApiProperty()
-  @Column()
-  role_permission_resource_id: number;
+  @Column({ type: 'uuid', nullable: true })
+  role_permission_resource_id: string;
 
   @ApiProperty()
-  @Column()
-  permission_action_id: number;
+  @Column({ type: 'uuid', nullable: true })
+  permission_action_id: string;
 
   @ManyToOne(() => RolePermissionResource, (rpr) => rpr.rolePermissionResourceActions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'role_permission_resource_id' })

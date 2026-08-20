@@ -1,19 +1,19 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsBoolean, IsArray, ValidateNested, IsNumber, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsBoolean, IsArray, ValidateNested, IsOptional, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateRolePermissionResourceActionDto {
-  @ApiProperty({ example: 1 })
-  @IsNumber()
+  @ApiProperty({ example: 'uuid-here' })
+  @IsUUID()
   @IsNotEmpty()
-  permission_action_id: number;
+  permission_action_id: string;
 }
 
 export class CreateRolePermissionResourceDto {
-  @ApiProperty({ example: 1 })
-  @IsNumber()
+  @ApiProperty({ example: 'uuid-here' })
+  @IsUUID()
   @IsNotEmpty()
-  permission_resource_id: number;
+  permission_resource_id: string;
 
   @ApiProperty({ type: [CreateRolePermissionResourceActionDto] })
   @IsArray()
@@ -58,8 +58,8 @@ export class CreateRoleDto {
 }
 
 export class UpdateRoleDto extends PartialType(CreateRoleDto) {
-  @ApiProperty({ example: 1 })
-  @IsNumber()
-  @IsNotEmpty()
-  id: number;
+  @ApiPropertyOptional({ example: 'uuid-here' })
+  @IsUUID()
+  @IsOptional()
+  id?: string;
 }

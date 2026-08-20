@@ -2,14 +2,14 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeor
 
 @Entity('messages')
 export class Message {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
-  senderId: number;
+  @Column({ type: 'uuid' })
+  senderId: string;
 
-  @Column()
-  receiverId: number;
+  @Column({ type: 'uuid' })
+  receiverId: string;
 
   @Column({ type: 'text' })
   content: string;

@@ -24,14 +24,14 @@ export class EnquiriesService {
     return this.repo.find({ order: { date: 'DESC' } });
   }
 
-  async updateStatus(id: number, status: 'unread' | 'read' | 'replied') {
+  async updateStatus(id: string, status: 'unread' | 'read' | 'replied') {
     const enq = await this.repo.findOneBy({ id });
     if (!enq) throw new NotFoundException(`Enquiry #${id} not found`);
     enq.status = status;
     return this.repo.save(enq);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const enq = await this.repo.findOneBy({ id });
     if (!enq) throw new NotFoundException(`Enquiry #${id} not found`);
     return this.repo.remove(enq);

@@ -11,7 +11,7 @@ export class VehiclesService {
     return this.repo.find({ order: { vehicleName: 'ASC' } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const vehicle = await this.repo.findOneBy({ id });
     if (!vehicle) throw new NotFoundException(`Vehicle #${id} not found`);
     return vehicle;
@@ -22,13 +22,13 @@ export class VehiclesService {
     return this.repo.save(vehicle);
   }
 
-  async update(id: number, data: Partial<Vehicle>) {
+  async update(id: string, data: Partial<Vehicle>) {
     await this.findOne(id);
     await this.repo.update(id, data);
     return this.findOne(id);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const vehicle = await this.findOne(id);
     return this.repo.remove(vehicle);
   }

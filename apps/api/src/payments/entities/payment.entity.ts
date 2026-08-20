@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('payments')
 export class Payment {
-  @ApiProperty() @PrimaryGeneratedColumn() id: number;
+  @ApiProperty() @PrimaryGeneratedColumn('uuid') id: string;
   @ApiProperty() @Column({ type: 'varchar', length: 50, unique: true }) transactionRef: string;
   @ApiProperty() @Column({ type: 'varchar', length: 50 }) bookingRef: string;
   @ApiProperty() @Column({ type: 'varchar', length: 100 }) customerName: string;

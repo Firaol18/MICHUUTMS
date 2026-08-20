@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { Message } from './entities/message.entity';
 import { CreateMessageDto } from './dto/create-message.dto';
@@ -19,20 +19,20 @@ export class MessagesController {
 
   @Get('user/:id')
   @ApiOperation({ summary: 'Get messages for a user' })
-  async getUserMessages(@Param('id', ParseIntPipe) userId: number): Promise<Message[]> {
+  async getUserMessages(@Param('id') userId: string): Promise<Message[]> {
     return this.messagesService.getMessagesForUser(userId);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a message' })
   @ApiBody({ type: UpdateMessageDto })
-  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateMessageDto): Promise<Message> {
+  async update(@Param('id') id: string, @Body() dto: UpdateMessageDto): Promise<Message> {
     return this.messagesService.updateMessage(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a message' })
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+  async delete(@Param('id') id: string): Promise<void> {
     return this.messagesService.deleteMessage(id);
   }
 }

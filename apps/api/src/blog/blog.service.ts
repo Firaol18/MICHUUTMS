@@ -29,7 +29,7 @@ export class BlogService {
     return qb.getMany();
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const post = await this.repo.findOneBy({ id });
     if (!post) throw new NotFoundException(`Blog post #${id} not found`);
     return post;
@@ -37,7 +37,7 @@ export class BlogService {
 
   async findBySlug(slug: string) {
     const post = await this.repo.findOne({
-      where: [{ slug }, { id: Number(slug) || -1 }],
+      where: { slug },
     });
     if (!post) throw new NotFoundException(`Blog post "${slug}" not found`);
     // increment view count
@@ -50,13 +50,13 @@ export class BlogService {
     return this.repo.save(post);
   }
 
-  async update(id: number, dto: Partial<CreateBlogPostDto>) {
+  async update(id: string, dto: Partial<CreateBlogPostDto>) {
     await this.findOne(id);
     await this.repo.update(id, dto);
     return this.findOne(id);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const post = await this.findOne(id);
     return this.repo.remove(post);
   }

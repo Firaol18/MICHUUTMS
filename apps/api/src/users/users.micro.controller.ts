@@ -29,9 +29,9 @@ export class UsersMicroController {
   // get single user
   @MessagePattern('get_user')
   async getUserById(
-    @Payload() id: number,
+    @Payload() id: string,
   ): Promise<User> {
-    if (typeof id !== 'number') {
+    if (typeof id !== 'string') {
       throw new RpcException('Invalid user id');
     }
     return this.usersService.getUserById(id);
@@ -49,11 +49,11 @@ export class UsersMicroController {
   @MessagePattern('update_user')
   updateUser(
     @Payload()
-    payload: { id: number; data: UpdateUserDto },
+    payload: { id: string; data: UpdateUserDto },
   ): Promise<User> {
     const { id, data } = payload;
 
-    if (typeof id !== 'number') {
+    if (typeof id !== 'string') {
       throw new RpcException('Invalid user id');
     }
 
@@ -63,9 +63,9 @@ export class UsersMicroController {
   // delete user
   @MessagePattern('delete_user')
   deleteUser(
-    @Payload() id: number,
+    @Payload() id: string,
   ): Promise<User> {
-    if (typeof id !== 'number') {
+    if (typeof id !== 'string') {
       throw new RpcException('Invalid user id');
     }
     return this.usersService.deleteUser(id);

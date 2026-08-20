@@ -5,8 +5,8 @@ import { RolePermissionResource } from './role-permission-resource.entity';
 @Entity('roles')
 export class Role {
   @ApiProperty()
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ApiProperty()
   @Column({ type: 'varchar', length: 100, unique: true })

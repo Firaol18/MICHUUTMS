@@ -22,10 +22,10 @@ export class CreateServiceAccountDto {
   @IsOptional()
   isActive?: boolean;
 
-  @ApiProperty({ example: 1, required: false })
-  @IsNumber()
+  @ApiProperty({ example: 'uuid-role-id', required: false })
+  @IsString()
   @IsOptional()
-  roleId?: number;
+  roleId?: string;
 }
 
 export class UpdateServiceAccountDto extends PartialType(CreateServiceAccountDto) {}

@@ -63,9 +63,13 @@ if (!useDatabaseUrl && !process.env.DB_PASSWORD) {
       entities: [User, Message],
       autoLoadEntities: true,
       synchronize: true,
+      // Set DROP_SCHEMA=true in env for ONE deploy to reset schema (e.g. after UUID migration)
+      // Then remove the env var immediately after
+      dropSchema: process.env.DROP_SCHEMA === 'true',
       retryAttempts: 3,
       retryDelay: 3000,
     }),
+
     UsersModule,
     MessagesModule,
     AuthModule,

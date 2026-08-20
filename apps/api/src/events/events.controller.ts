@@ -1,6 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, Query,
-  ParseIntPipe, UseGuards,
+  Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { EventsService } from './events.service';
@@ -24,7 +23,7 @@ export class EventsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get single event (public)' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.eventsService.findOne(id);
   }
 
@@ -40,7 +39,7 @@ export class EventsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update event (admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<CreateEventDto>) {
+  update(@Param('id') id: string, @Body() dto: Partial<CreateEventDto>) {
     return this.eventsService.update(id, dto);
   }
 
@@ -48,7 +47,7 @@ export class EventsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete event (admin)' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.eventsService.remove(id);
   }
 }

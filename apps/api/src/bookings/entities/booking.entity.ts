@@ -12,12 +12,12 @@ export type RefundStatus = 'none' | 'pending' | 'processed' | 'denied';
 
 @Entity('bookings')
 export class Booking {
-  @ApiProperty() @PrimaryGeneratedColumn() id: number;
+  @ApiProperty() @PrimaryGeneratedColumn('uuid') id: string;
 
   @ApiProperty() @Column({ type: 'varchar', length: 50, unique: true }) bookingReference: string;
 
-  // Tour relation
-  @ApiProperty() @Column() tourId: number;
+  // Tour relation (nullable — guest bookings may reference tours not yet in DB)
+  @ApiProperty() @Column({ type: 'uuid', nullable: true }) tourId: string | null;
   @ManyToOne(() => Tour, (t) => t.bookings, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'tourId' })
   tour: Tour;
@@ -26,7 +26,7 @@ export class Booking {
   @ApiProperty() @Column({ type: 'varchar', length: 200 }) destinationName: string;
 
   // User relation (nullable so guest bookings are allowed)
-  @ApiProperty() @Column({ nullable: true }) userId: number;
+  @ApiProperty() @Column({ type: 'uuid', nullable: true }) userId: string | null;
   @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'userId' })
   user: User;

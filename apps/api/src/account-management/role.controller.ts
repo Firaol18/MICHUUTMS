@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RoleService } from './role.service';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
@@ -26,21 +26,21 @@ export class RoleController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a role by ID with nested permissions' })
   @ApiResponse({ status: 200, type: Role })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.roleService.findOne(id);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a role and its nested permissions' })
   @ApiResponse({ status: 200, type: Role })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateRoleDto: UpdateRoleDto) {
+  update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
     return this.roleService.update(id, updateRoleDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a role by ID' })
   @ApiResponse({ status: 200 })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.roleService.remove(id);
   }
 }

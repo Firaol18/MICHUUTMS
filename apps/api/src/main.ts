@@ -1,5 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { config as dotenvConfig } from 'dotenv';
+import { resolve } from 'path';
+dotenvConfig({ path: resolve(__dirname, '../.env') });
+dotenvConfig({ path: resolve(process.cwd(), 'apps/api/.env') });
 dotenvConfig();
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';

@@ -15,7 +15,7 @@ export class ExpensesService {
     return this.repo.find({ order: { expenseDate: 'DESC' } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const expense = await this.repo.findOneBy({ id });
     if (!expense) throw new NotFoundException(`Expense #${id} not found`);
     return expense;
@@ -29,13 +29,13 @@ export class ExpensesService {
     return this.repo.save(expense);
   }
 
-  async update(id: number, data: Partial<Expense>) {
+  async update(id: string, data: Partial<Expense>) {
     await this.findOne(id);
     await this.repo.update(id, data);
     return this.findOne(id);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const expense = await this.findOne(id);
     return this.repo.remove(expense);
   }

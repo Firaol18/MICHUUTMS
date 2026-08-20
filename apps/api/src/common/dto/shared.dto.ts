@@ -41,7 +41,7 @@ export class CreateIssueDto {
   @ApiProperty() @IsString() email: string;
   @ApiProperty() @IsString() issueType: string;
   @ApiProperty() @IsString() description: string;
-  @ApiProperty() @IsOptional() @IsNumber() userId?: number;
+  @ApiProperty() @IsOptional() @IsString() userId?: string;
 }
 
 export class CreateCustomTripDto {
@@ -55,5 +55,5 @@ export class CreateCustomTripDto {
   @ApiProperty() @IsOptional() @IsString() budget?: string;
   @ApiProperty() @IsOptional() @IsArray() interests?: string[];
   @ApiProperty() @IsOptional() @IsString() specialRequirements?: string;
-  @ApiProperty() @IsOptional() @IsNumber() userId?: number;
+  @ApiProperty() @IsOptional() @IsString() userId?: string;
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PermissionService } from './permission.service';
 import {
@@ -35,7 +35,7 @@ export class PermissionController {
   @ApiOperation({ summary: 'Update a permission resource' })
   @ApiResponse({ status: 200, type: PermissionResource })
   updateResource(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdatePermissionResourceDto,
   ) {
     return this.permissionService.updateResource(id, dto);
@@ -44,7 +44,7 @@ export class PermissionController {
   @Delete('resources/:id')
   @ApiOperation({ summary: 'Delete a permission resource' })
   @ApiResponse({ status: 200 })
-  removeResource(@Param('id', ParseIntPipe) id: number) {
+  removeResource(@Param('id') id: string) {
     return this.permissionService.removeResource(id);
   }
 
@@ -68,7 +68,7 @@ export class PermissionController {
   @ApiOperation({ summary: 'Update a permission action' })
   @ApiResponse({ status: 200, type: PermissionAction })
   updateAction(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdatePermissionActionDto,
   ) {
     return this.permissionService.updateAction(id, dto);
@@ -77,7 +77,7 @@ export class PermissionController {
   @Delete('actions/:id')
   @ApiOperation({ summary: 'Delete a permission action' })
   @ApiResponse({ status: 200 })
-  removeAction(@Param('id', ParseIntPipe) id: number) {
+  removeAction(@Param('id') id: string) {
     return this.permissionService.removeAction(id);
   }
 }

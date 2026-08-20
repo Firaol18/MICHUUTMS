@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { IssuesService } from './issues.service';
 import { CreateIssueDto } from '../common/dto/shared.dto';
@@ -25,13 +25,13 @@ export class IssuesController {
 
   @Get('my')
   @ApiOperation({ summary: 'Get tickets by email or user ID' })
-  findMine(@Query('email') email?: string, @Query('userId') userId?: number) {
-    return this.issuesService.findByEmailOrUser(email, userId ? +userId : undefined);
+  findMine(@Query('email') email?: string, @Query('userId') userId?: string) {
+    return this.issuesService.findByEmailOrUser(email, userId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get single ticket' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.issuesService.findOne(id);
   }
 
@@ -40,7 +40,7 @@ export class IssuesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update ticket status (admin)' })
   updateStatus(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body('status') status: 'open' | 'in_progress' | 'resolved' | 'rejected',
     @Body('adminReason') adminReason?: string,
     @Body('resolvedBy') resolvedBy?: string,

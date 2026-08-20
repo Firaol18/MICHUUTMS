@@ -11,7 +11,7 @@ export class SuppliersService {
     return this.repo.find({ order: { name: 'ASC' } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const supplier = await this.repo.findOneBy({ id });
     if (!supplier) throw new NotFoundException(`Supplier #${id} not found`);
     return supplier;
@@ -22,13 +22,13 @@ export class SuppliersService {
     return this.repo.save(supplier);
   }
 
-  async update(id: number, data: Partial<Supplier>) {
+  async update(id: string, data: Partial<Supplier>) {
     await this.findOne(id);
     await this.repo.update(id, data);
     return this.findOne(id);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const supplier = await this.findOne(id);
     return this.repo.remove(supplier);
   }

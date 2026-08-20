@@ -5,8 +5,8 @@ import { Role } from './role.entity';
 @Entity('employees')
 export class Employee {
   @ApiProperty()
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ApiProperty()
   @Column({ type: 'varchar', length: 100 })
@@ -29,8 +29,8 @@ export class Employee {
   isActive: boolean;
 
   @ApiProperty()
-  @Column({ nullable: true })
-  roleId: number;
+  @Column({ type: 'uuid', nullable: true })
+  roleId: string;
 
   @ManyToOne(() => Role, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'roleId' })

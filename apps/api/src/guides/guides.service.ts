@@ -11,7 +11,7 @@ export class GuidesService {
     return this.repo.find({ order: { name: 'ASC' } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const guide = await this.repo.findOneBy({ id });
     if (!guide) throw new NotFoundException(`Guide #${id} not found`);
     return guide;
@@ -22,13 +22,13 @@ export class GuidesService {
     return this.repo.save(guide);
   }
 
-  async update(id: number, data: Partial<Guide>) {
+  async update(id: string, data: Partial<Guide>) {
     await this.findOne(id);
     await this.repo.update(id, data);
     return this.findOne(id);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const guide = await this.findOne(id);
     return this.repo.remove(guide);
   }

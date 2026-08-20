@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomTripsService } from './custom-trips.service';
 import { CreateCustomTripDto } from '../common/dto/shared.dto';
@@ -34,7 +34,7 @@ export class CustomTripsController {
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.customTripsService.findOne(id);
   }
 
@@ -43,7 +43,7 @@ export class CustomTripsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update custom trip status (admin)' })
   updateStatus(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body('status') status: 'pending' | 'reviewing' | 'quoted' | 'confirmed' | 'cancelled',
   ) {
     return this.customTripsService.updateStatus(id, status);

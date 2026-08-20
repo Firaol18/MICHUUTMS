@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { Payment } from './entities/payment.entity';
@@ -19,7 +19,7 @@ export class PaymentsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get payment by ID (admin)' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.paymentsService.findOne(id);
   }
 
@@ -31,7 +31,7 @@ export class PaymentsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update payment (admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<Payment>) {
+  update(@Param('id') id: string, @Body() dto: Partial<Payment>) {
     return this.paymentsService.update(id, dto);
   }
 }

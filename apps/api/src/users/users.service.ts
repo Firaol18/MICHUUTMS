@@ -30,7 +30,6 @@ export class UsersService {
     }
 
     if (search) {
-      // search by name OR email with case-insensitive partial match
       where = [
         { ...where, name: ILike(`%${search}%`) },
         { ...where, email: ILike(`%${search}%`) },
@@ -41,7 +40,7 @@ export class UsersService {
       where,
       skip,
       take: limit,
-      order: { id: 'ASC' },
+      order: { createdAt: 'ASC' },
     });
 
     return {
@@ -55,7 +54,7 @@ export class UsersService {
     };
   }
 
-  async getUserById(id: number) {
+  async getUserById(id: string) {
     const user = await this.usersRepo.findOneBy({ id });
     if (!user) throw new NotFoundException(`User with id ${id} not found`);
     return user;
@@ -69,7 +68,6 @@ export class UsersService {
     });
   }
 
-
   async createUser(user: Partial<User>) {
     const userToCreate = { ...user };
     if (userToCreate.password) {
@@ -79,7 +77,7 @@ export class UsersService {
     return this.usersRepo.save(entity);
   }
 
-  async updateUser(id: number, updates: Partial<User>) {
+  async updateUser(id: string, updates: Partial<User>) {
     const userUpdates = { ...updates };
     if (userUpdates.password) {
       userUpdates.password = await bcrypt.hash(userUpdates.password, 10);
@@ -87,7 +85,7 @@ export class UsersService {
     return this.usersRepo.save({ id, ...userUpdates });
   }
 
-  async deleteUser(id: number) {
+  async deleteUser(id: string) {
     const user = await this.getUserById(id);
     return this.usersRepo.remove(user);
   }

@@ -11,7 +11,7 @@ export type TourStatus = 'active' | 'draft' | 'sold_out';
 
 @Entity('tours')
 export class Tour {
-  @ApiProperty() @PrimaryGeneratedColumn() id: number;
+  @ApiProperty() @PrimaryGeneratedColumn('uuid') id: string;
 
   @ApiProperty() @Column({ type: 'varchar', length: 200 }) title: string;
   @ApiProperty() @Column({ type: 'varchar', length: 220, unique: true }) slug: string;

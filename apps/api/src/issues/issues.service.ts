@@ -15,12 +15,12 @@ export class IssuesService {
     return `ISS-${Math.floor(800 + Math.random() * 200)}`;
   }
 
-  async create(dto: CreateIssueDto, userId?: number) {
+  async create(dto: CreateIssueDto, userId?: string) {
     const issue = this.repo.create({
       ...dto,
       ticketId: this.generateTicketId(),
       status: 'open',
-      userId: userId ? Number(userId) : dto.userId ? Number(dto.userId) : undefined,
+      userId: userId || dto.userId || undefined,
     });
     return this.repo.save(issue);
   }
@@ -29,7 +29,7 @@ export class IssuesService {
     return this.repo.find({ order: { dateReported: 'DESC' } });
   }
 
-  async findByEmailOrUser(email?: string, userId?: number) {
+  async findByEmailOrUser(email?: string, userId?: string) {
     const where: any[] = [];
     if (email) where.push({ email });
     if (userId) where.push({ userId });
@@ -39,14 +39,14 @@ export class IssuesService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const issue = await this.repo.findOneBy({ id });
     if (!issue) throw new NotFoundException(`Issue #${id} not found`);
     return issue;
   }
 
   async updateStatus(
-    id: number,
+    id: string,
     status: 'open' | 'in_progress' | 'resolved' | 'rejected',
     adminReason?: string,
     resolvedBy?: string,

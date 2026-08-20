@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { DriversService } from './drivers.service';
 import { Driver } from './entities/driver.entity';
@@ -17,7 +17,7 @@ export class DriversController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get driver by ID' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.driversService.findOne(id);
   }
 
@@ -33,7 +33,7 @@ export class DriversController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update driver (admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<Driver>) {
+  update(@Param('id') id: string, @Body() dto: Partial<Driver>) {
     return this.driversService.update(id, dto);
   }
 
@@ -41,7 +41,7 @@ export class DriversController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete driver (admin)' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.driversService.remove(id);
   }
 }

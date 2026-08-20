@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('events')
 export class Event {
-  @ApiProperty() @PrimaryGeneratedColumn() id: number;
+  @ApiProperty() @PrimaryGeneratedColumn('uuid') id: string;
   @ApiProperty() @Column({ type: 'varchar', length: 200 }) title: string;
   @ApiProperty() @Column({ type: 'text' }) description: string;
   @ApiProperty() @Column({ type: 'date' }) eventDate: string;

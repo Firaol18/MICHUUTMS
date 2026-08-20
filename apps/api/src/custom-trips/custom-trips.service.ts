@@ -11,14 +11,14 @@ export class CustomTripsService {
     private readonly repo: Repository<CustomTrip>,
   ) {}
 
-  async create(dto: CreateCustomTripDto, userId?: number) {
+  async create(dto: CreateCustomTripDto, userId?: string) {
     const trip = this.repo.create({
       ...dto,
       phone: dto.phone || '',
       budget: dto.budget || 'mid-range',
       interests: dto.interests || [],
       status: 'pending',
-      userId: userId ? Number(userId) : dto.userId ? Number(dto.userId) : undefined,
+      userId: userId || dto.userId || undefined,
     });
     return this.repo.save(trip);
   }
@@ -27,17 +27,17 @@ export class CustomTripsService {
     return this.repo.find({ order: { createdAt: 'DESC' } });
   }
 
-  async findByUser(userId: number) {
+  async findByUser(userId: string) {
     return this.repo.find({ where: { userId }, order: { createdAt: 'DESC' } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const trip = await this.repo.findOneBy({ id });
     if (!trip) throw new NotFoundException(`Custom trip request #${id} not found`);
     return trip;
   }
 
-  async updateStatus(id: number, status: 'pending' | 'reviewing' | 'quoted' | 'confirmed' | 'cancelled') {
+  async updateStatus(id: string, status: 'pending' | 'reviewing' | 'quoted' | 'confirmed' | 'cancelled') {
     const trip = await this.findOne(id);
     trip.status = status;
     return this.repo.save(trip);

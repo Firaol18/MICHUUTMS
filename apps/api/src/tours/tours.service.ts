@@ -41,14 +41,14 @@ export class ToursService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const tour = await this.repo.findOneBy({ id });
-    if (!tour) throw new NotFoundException(`Tour #${id} not found`);
+    if (!tour) throw new NotFoundException(`Tour ${id} not found`);
     return tour;
   }
 
   async findBySlug(slug: string) {
-    const tour = await this.repo.findOne({ where: [{ slug }, { id: Number(slug) || -1 }] });
+    const tour = await this.repo.findOne({ where: { slug } });
     if (!tour) throw new NotFoundException(`Tour "${slug}" not found`);
     return tour;
   }
@@ -63,7 +63,7 @@ export class ToursService {
     return this.repo.save(tour);
   }
 
-  async update(id: number, dto: Partial<CreateTourDto>) {
+  async update(id: string, dto: Partial<CreateTourDto>) {
     await this.findOne(id);
     const updateData: any = { ...dto };
     if (dto.category) updateData.category = dto.category as TourCategory;
@@ -73,7 +73,7 @@ export class ToursService {
     return this.findOne(id);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const tour = await this.findOne(id);
     return this.repo.remove(tour);
   }

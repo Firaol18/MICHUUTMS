@@ -11,7 +11,7 @@ export class DriversService {
     return this.repo.find({ order: { name: 'ASC' } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const driver = await this.repo.findOneBy({ id });
     if (!driver) throw new NotFoundException(`Driver #${id} not found`);
     return driver;
@@ -22,13 +22,13 @@ export class DriversService {
     return this.repo.save(driver);
   }
 
-  async update(id: number, data: Partial<Driver>) {
+  async update(id: string, data: Partial<Driver>) {
     await this.findOne(id);
     await this.repo.update(id, data);
     return this.findOne(id);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const driver = await this.findOne(id);
     return this.repo.remove(driver);
   }

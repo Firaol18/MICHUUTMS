@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query,
-  ParseIntPipe, UseGuards,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ToursService } from './tours.service';
@@ -19,10 +19,11 @@ export class ToursController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get tour by ID or slug (public)' })
+  @ApiOperation({ summary: 'Get tour by ID (UUID) or slug (public)' })
   findOne(@Param('id') id: string) {
-    const numId = Number(id);
-    return isNaN(numId) ? this.toursService.findBySlug(id) : this.toursService.findOne(numId);
+    // UUID pattern check — if it looks like a UUID, do direct lookup; otherwise treat as slug
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id) ? this.toursService.findOne(id) : this.toursService.findBySlug(id);
   }
 
   @Post()
@@ -37,7 +38,7 @@ export class ToursController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update tour (admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<CreateTourDto>) {
+  update(@Param('id') id: string, @Body() dto: Partial<CreateTourDto>) {
     return this.toursService.update(id, dto);
   }
 
@@ -45,7 +46,7 @@ export class ToursController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete tour (admin)' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.toursService.remove(id);
   }
 }

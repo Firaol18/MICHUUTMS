@@ -6,7 +6,6 @@ import {
   Delete,
   Body,
   Param,
-  ParseIntPipe,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -91,7 +90,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'User found' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getUser(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
   ): Promise<User> {
     return this.usersService.getUserById(id);
   }
@@ -116,7 +115,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid update payload' })
   updateUser(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateUserDto,
   ): Promise<User> {
     return this.usersService.updateUser(id, dto);
@@ -128,7 +127,7 @@ export class UsersController {
   @ApiResponse({ status: 204, description: 'User deleted successfully' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
   ): Promise<void> {
     await this.usersService.deleteUser(id);
   }

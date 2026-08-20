@@ -29,7 +29,7 @@ export class EventsService {
     return qb.getMany();
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const event = await this.repo.findOneBy({ id });
     if (!event) throw new NotFoundException(`Event #${id} not found`);
     return event;
@@ -40,13 +40,13 @@ export class EventsService {
     return this.repo.save(event);
   }
 
-  async update(id: number, dto: Partial<CreateEventDto>) {
+  async update(id: string, dto: Partial<CreateEventDto>) {
     await this.findOne(id);
     await this.repo.update(id, dto);
     return this.findOne(id);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const event = await this.findOne(id);
     return this.repo.remove(event);
   }

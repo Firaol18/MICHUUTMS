@@ -5,12 +5,12 @@ import { Employee } from './employee.entity';
 @Entity('employee_login_histories')
 export class EmployeeLoginHistory {
   @ApiProperty()
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ApiProperty()
-  @Column()
-  employeeId: number;
+  @Column({ type: 'uuid', nullable: true })
+  employeeId: string;
 
   @ManyToOne(() => Employee, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'employeeId' })

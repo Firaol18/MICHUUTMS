@@ -4,8 +4,8 @@ import { ApiProperty } from '@nestjs/swagger';
 @Entity('permission_actions')
 export class PermissionAction {
   @ApiProperty()
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ApiProperty()
   @Column({ type: 'varchar', length: 100, unique: true })

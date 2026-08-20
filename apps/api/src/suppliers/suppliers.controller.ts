@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SuppliersService } from './suppliers.service';
 import { Supplier } from './entities/supplier.entity';
@@ -17,7 +17,7 @@ export class SuppliersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get supplier by ID' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.suppliersService.findOne(id);
   }
 
@@ -33,7 +33,7 @@ export class SuppliersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update supplier (admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<Supplier>) {
+  update(@Param('id') id: string, @Body() dto: Partial<Supplier>) {
     return this.suppliersService.update(id, dto);
   }
 
@@ -41,7 +41,7 @@ export class SuppliersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete supplier (admin)' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.suppliersService.remove(id);
   }
 }

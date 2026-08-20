@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto/employee.dto';
@@ -23,14 +23,14 @@ export class EmployeeController {
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'department', required: false, type: String })
   @ApiQuery({ name: 'isActive', required: false, type: Boolean })
-  @ApiQuery({ name: 'roleId', required: false, type: Number })
+  @ApiQuery({ name: 'roleId', required: false, type: String })
   findAll(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('search') search?: string,
     @Query('department') department?: string,
     @Query('isActive') isActive?: boolean,
-    @Query('roleId') roleId?: number,
+    @Query('roleId') roleId?: string,
   ) {
     return this.employeeService.findAll({ page, limit, search, department, isActive, roleId });
   }
@@ -38,21 +38,21 @@ export class EmployeeController {
   @Get(':id')
   @ApiOperation({ summary: 'Get an employee by ID' })
   @ApiResponse({ status: 200, type: Employee })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.employeeService.findOne(id);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Update an employee' })
   @ApiResponse({ status: 200, type: Employee })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateEmployeeDto: UpdateEmployeeDto) {
+  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeeService.update(id, updateEmployeeDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete an employee' })
   @ApiResponse({ status: 200 })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.employeeService.remove(id);
   }
 }

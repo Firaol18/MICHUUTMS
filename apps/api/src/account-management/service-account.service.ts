@@ -28,7 +28,7 @@ export class ServiceAccountService {
       clientSecret,
     });
 
-    return this.serviceAccountRepository.save(serviceAccount);
+    return (await this.serviceAccountRepository.save(serviceAccount)) as ServiceAccount;
   }
 
   async findAll(query: {
@@ -36,7 +36,7 @@ export class ServiceAccountService {
     limit?: number;
     search?: string;
     isActive?: boolean;
-    roleId?: number;
+    roleId?: string;
   }) {
     const page = Number(query.page ?? 1);
     const limit = Number(query.limit ?? 10);
@@ -44,7 +44,7 @@ export class ServiceAccountService {
 
     const queryBuilder = this.serviceAccountRepository.createQueryBuilder('sa')
       .leftJoinAndSelect('sa.role', 'role')
-      .orderBy('sa.id', 'DESC');
+      .orderBy('sa.createdAt', 'DESC');
 
     if (query.search) {
       queryBuilder.andWhere(
@@ -59,7 +59,7 @@ export class ServiceAccountService {
     }
 
     if (query.roleId) {
-      queryBuilder.andWhere('sa.roleId = :roleId', { roleId: Number(query.roleId) });
+      queryBuilder.andWhere('sa.roleId = :roleId', { roleId: query.roleId });
     }
 
     const [items, total] = await queryBuilder
@@ -76,7 +76,7 @@ export class ServiceAccountService {
     };
   }
 
-  async findOne(id: number): Promise<ServiceAccount> {
+  async findOne(id: string): Promise<ServiceAccount> {
     const sa = await this.serviceAccountRepository.findOne({
       where: { id },
       relations: ['role'],
@@ -87,13 +87,13 @@ export class ServiceAccountService {
     return sa;
   }
 
-  async update(id: number, updateDto: UpdateServiceAccountDto): Promise<ServiceAccount> {
+  async update(id: string, updateDto: UpdateServiceAccountDto): Promise<ServiceAccount> {
     const sa = await this.findOne(id);
     this.serviceAccountRepository.merge(sa, updateDto);
     return this.serviceAccountRepository.save(sa);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const sa = await this.findOne(id);
     await this.serviceAccountRepository.remove(sa);
   }

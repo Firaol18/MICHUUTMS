@@ -23,7 +23,7 @@ export class EmployeeService {
     }
 
     const employee = this.employeeRepository.create(createEmployeeDto);
-    const saved = await this.employeeRepository.save(employee);
+    const saved = (await this.employeeRepository.save(employee)) as Employee;
 
     // Create a dummy login history entry so the dashboard has active history immediately
     const loginHistory = this.loginHistoryRepository.create({
@@ -42,7 +42,7 @@ export class EmployeeService {
     search?: string;
     department?: string;
     isActive?: boolean;
-    roleId?: number;
+    roleId?: string;
   }) {
     const page = Number(query.page ?? 1);
     const limit = Number(query.limit ?? 10);
@@ -69,7 +69,7 @@ export class EmployeeService {
     }
 
     if (query.roleId) {
-      queryBuilder.andWhere('employee.roleId = :roleId', { roleId: Number(query.roleId) });
+      queryBuilder.andWhere('employee.roleId = :roleId', { roleId: query.roleId });
     }
 
     const [items, total] = await queryBuilder
@@ -86,7 +86,7 @@ export class EmployeeService {
     };
   }
 
-  async findOne(id: number): Promise<Employee> {
+  async findOne(id: string): Promise<Employee> {
     const employee = await this.employeeRepository.findOne({
       where: { id },
       relations: ['role'],
@@ -97,7 +97,7 @@ export class EmployeeService {
     return employee;
   }
 
-  async update(id: number, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee> {
+  async update(id: string, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee> {
     const employee = await this.findOne(id);
 
     if (updateEmployeeDto.email && updateEmployeeDto.email !== employee.email) {
@@ -114,7 +114,7 @@ export class EmployeeService {
     return this.findOne(id);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const employee = await this.findOne(id);
     await this.employeeRepository.remove(employee);
   }

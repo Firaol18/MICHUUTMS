@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('blog_posts')
 export class BlogPost {
-  @ApiProperty() @PrimaryGeneratedColumn() id: number;
+  @ApiProperty() @PrimaryGeneratedColumn('uuid') id: string;
   @ApiProperty() @Column({ type: 'varchar', length: 250 }) title: string;
   @ApiProperty() @Column({ type: 'varchar', length: 260, unique: true }) slug: string;
   @ApiProperty() @Column({ type: 'text' }) excerpt: string;

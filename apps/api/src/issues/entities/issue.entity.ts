@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('issues')
 export class Issue {
-  @ApiProperty() @PrimaryGeneratedColumn() id: number;
+  @ApiProperty() @PrimaryGeneratedColumn('uuid') id: string;
   @ApiProperty() @Column({ type: 'varchar', length: 20, unique: true }) ticketId: string;
   @ApiProperty() @Column({ type: 'varchar', length: 100 }) reportedBy: string;
   @ApiProperty() @Column({ type: 'varchar', length: 150 }) email: string;
@@ -13,7 +13,7 @@ export class Issue {
   @ApiProperty() @Column({ type: 'text', nullable: true }) adminReason: string;
   @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) resolvedBy: string;
   @ApiProperty() @Column({ type: 'timestamp', nullable: true }) resolvedAt: Date;
-  @ApiProperty() @Column({ type: 'int', nullable: true }) userId: number;
+  @ApiProperty() @Column({ type: 'uuid', nullable: true }) userId: string;
   @ApiProperty() @CreateDateColumn() dateReported: Date;
   @ApiProperty() @UpdateDateColumn() updatedAt: Date;
 }

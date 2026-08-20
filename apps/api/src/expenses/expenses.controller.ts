@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ExpensesService } from './expenses.service';
 import { Expense } from './entities/expense.entity';
@@ -19,7 +19,7 @@ export class ExpensesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get expense by ID (admin)' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.expensesService.findOne(id);
   }
 
@@ -31,13 +31,13 @@ export class ExpensesController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update expense (admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<Expense>) {
+  update(@Param('id') id: string, @Body() dto: Partial<Expense>) {
     return this.expensesService.update(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete expense (admin)' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.expensesService.remove(id);
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { EnquiriesService } from './enquiries.service';
 import { CreateEnquiryDto } from '../common/dto/shared.dto';
@@ -28,7 +28,7 @@ export class EnquiriesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update enquiry status (admin)' })
   updateStatus(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body('status') status: 'unread' | 'read' | 'replied',
   ) {
     return this.enquiriesService.updateStatus(id, status);
@@ -38,7 +38,7 @@ export class EnquiriesController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete enquiry (admin)' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.enquiriesService.remove(id);
   }
 }
