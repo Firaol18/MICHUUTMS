@@ -11,7 +11,7 @@ export class Event {
   @ApiProperty() @Column({ type: 'varchar', length: 200 }) location: string;
   @ApiProperty() @Column({ type: 'varchar', length: 100, default: 'cultural' }) category: string;
   @ApiProperty() @Column({ type: 'varchar', length: 500, default: '' }) imageUrl: string;
-  @ApiProperty() @Column({ type: 'float', default: 0 }) price: number;
+  @ApiProperty() @Column({ type: 'float', nullable: true, default: 0 }) price: number;
   @ApiProperty() @Column({ type: 'boolean', default: false }) isFree: boolean;
   @ApiProperty() @Column({ type: 'boolean', default: true }) isActive: boolean;
   @ApiProperty() @Column({ type: 'varchar', length: 50, default: 'upcoming' }) status: string;
