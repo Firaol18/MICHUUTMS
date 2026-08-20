@@ -67,43 +67,6 @@ const DEFAULT_PRICING_CONFIG: CustomTripPricingConfig = {
   },
 };
 
-const DEFAULT_INQUIRIES: CustomTripInquiry[] = [
-  {
-    id: 'ct-101',
-    destinations: ['wenchi', 'lalibela'],
-    destinationsNames: 'Wenchi Crater Lake + Lalibela Rock Churches',
-    tripDays: 5,
-    travelersCount: 2,
-    startDate: '2026-10-15',
-    accommodationTier: 'luxury',
-    transportType: 'landcruiser',
-    estimatedPerPerson: 1455,
-    totalEstimatedPrice: 2910,
-    customerName: 'Marcus Vance',
-    customerEmail: 'marcus.vance@example.com',
-    customerPhone: '+1 555-0192',
-    createdAt: '2026-08-10',
-    status: 'pending',
-  },
-  {
-    id: 'ct-102',
-    destinations: ['danakil', 'simien'],
-    destinationsNames: 'Danakil & Erta Ale Volcano + Simien Mountains',
-    tripDays: 7,
-    travelersCount: 4,
-    startDate: '2026-11-05',
-    accommodationTier: 'standard',
-    transportType: 'flight',
-    estimatedPerPerson: 1392,
-    totalEstimatedPrice: 5568,
-    customerName: 'Elena Rostova',
-    customerEmail: 'elena.rostova@example.org',
-    customerPhone: '+44 20 7946 0991',
-    createdAt: '2026-08-12',
-    status: 'quoted',
-  },
-];
-
 interface ContentStoreState {
   // Events
   events: EthiopianEvent[];
@@ -129,11 +92,12 @@ interface ContentStoreState {
   pricingConfig: CustomTripPricingConfig;
   updatePricingConfig: (updates: Partial<CustomTripPricingConfig>) => void;
 
-  // Custom Trip Inquiries
+  // Custom Trip Inquiries (Loaded strictly from real backend)
   customTripInquiries: CustomTripInquiry[];
   fetchCustomTripInquiries: () => Promise<void>;
   addCustomTripInquiry: (inquiry: Omit<CustomTripInquiry, 'id' | 'createdAt' | 'status'>) => Promise<CustomTripInquiry>;
   updateInquiryStatus: (id: string, status: CustomTripInquiry['status']) => Promise<void>;
+  deleteCustomTripInquiry: (id: string) => Promise<void>;
 }
 
 export const useContentStore = create<ContentStoreState>()(
@@ -398,33 +362,44 @@ export const useContentStore = create<ContentStoreState>()(
         set((state) => ({ pricingConfig: { ...state.pricingConfig, ...updates } }));
       },
 
-      // Custom Trip Inquiries
-      customTripInquiries: DEFAULT_INQUIRIES,
+      // Custom Trip Inquiries (Loaded strictly from real backend)
+      customTripInquiries: [],
 
       fetchCustomTripInquiries: async () => {
         try {
           const res = await http.get('/custom-trips');
           if (Array.isArray(res.data)) {
-            const mapped: CustomTripInquiry[] = res.data.map((c: any) => ({
-              id: String(c.id),
-              destinations: [],
-              destinationsNames: c.destination,
-              tripDays: c.durationDays,
-              travelersCount: c.groupSize,
-              startDate: c.preferredStartDate,
-              accommodationTier: 'standard',
-              transportType: 'landcruiser',
-              estimatedPerPerson: 1200,
-              totalEstimatedPrice: 1200 * c.groupSize,
-              customerName: c.name,
-              customerEmail: c.email,
-              customerPhone: c.phone,
-              createdAt: typeof c.createdAt === 'string' ? c.createdAt : new Date(c.createdAt).toISOString().split('T')[0],
-              status: c.status,
-            }));
+            const mapped: CustomTripInquiry[] = res.data.map((c: any) => {
+              const duration = c.durationDays || 5;
+              const guests = c.groupSize || 2;
+              const perPerson = c.estimatedPerPerson || (duration * 180);
+              const total = c.totalEstimatedPrice || (perPerson * guests);
+              return {
+                id: String(c.id),
+                destinations: Array.isArray(c.interests) ? c.interests : [],
+                destinationsNames: c.destination || 'Custom Ethiopian Expedition',
+                tripDays: duration,
+                travelersCount: guests,
+                startDate: typeof c.preferredStartDate === 'string' ? c.preferredStartDate.split('T')[0] : (c.preferredStartDate || '2026-10-01'),
+                accommodationTier: (c.budget === 'luxury' || c.budget === 'budget') ? c.budget : 'standard',
+                transportType: 'landcruiser',
+                estimatedPerPerson: perPerson,
+                totalEstimatedPrice: total,
+                customerName: c.name || 'Traveler',
+                customerEmail: c.email || '',
+                customerPhone: c.phone || '',
+                createdAt: typeof c.createdAt === 'string' ? c.createdAt.split('T')[0] : new Date(c.createdAt).toISOString().split('T')[0],
+                status: c.status || 'pending',
+              };
+            });
             set({ customTripInquiries: mapped });
+          } else {
+            set({ customTripInquiries: [] });
           }
-        } catch {}
+        } catch (error) {
+          console.error('Failed to fetch custom trips from backend:', error);
+          set({ customTripInquiries: [] });
+        }
       },
 
       addCustomTripInquiry: async (inquiry) => {
@@ -445,12 +420,14 @@ export const useContentStore = create<ContentStoreState>()(
               ...inquiry,
               id: String(res.data.id),
               createdAt: new Date().toISOString().split('T')[0],
-              status: 'pending',
+              status: res.data.status || 'pending',
             };
             set((state) => ({ customTripInquiries: [newInq, ...state.customTripInquiries] }));
             return newInq;
           }
-        } catch {}
+        } catch (error) {
+          console.error('Failed to submit custom trip to backend:', error);
+        }
 
         const newInq: CustomTripInquiry = {
           ...inquiry,
@@ -464,15 +441,25 @@ export const useContentStore = create<ContentStoreState>()(
 
       updateInquiryStatus: async (id, status) => {
         try {
-          const numId = Number(id);
-          if (!isNaN(numId)) {
-            await http.patch(`/custom-trips/${numId}/status`, { status });
-          }
-        } catch {}
+          await http.patch(`/custom-trips/${id}/status`, { status });
+        } catch (error) {
+          console.error('Failed to update custom trip status on backend:', error);
+        }
         set((state) => ({
           customTripInquiries: state.customTripInquiries.map((inq) =>
             inq.id === id ? { ...inq, status } : inq
           ),
+        }));
+      },
+
+      deleteCustomTripInquiry: async (id) => {
+        try {
+          await http.delete(`/custom-trips/${id}`);
+        } catch (error) {
+          console.error('Failed to delete custom trip on backend:', error);
+        }
+        set((state) => ({
+          customTripInquiries: state.customTripInquiries.filter((inq) => inq.id !== id),
         }));
       },
     }),

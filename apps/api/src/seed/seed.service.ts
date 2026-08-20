@@ -15,6 +15,7 @@ import { Payment } from '../payments/entities/payment.entity';
 import { Expense } from '../expenses/entities/expense.entity';
 import { Guide } from '../guides/entities/guide.entity';
 import { Booking } from '../bookings/entities/booking.entity';
+import { CustomTrip } from '../custom-trips/entities/custom-trip.entity';
 
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
@@ -34,6 +35,7 @@ export class SeedService implements OnApplicationBootstrap {
     @InjectRepository(Expense) private expenseRepo: Repository<Expense>,
     @InjectRepository(Guide) private guideRepo: Repository<Guide>,
     @InjectRepository(Booking) private bookingRepo: Repository<Booking>,
+    @InjectRepository(CustomTrip) private customTripRepo: Repository<CustomTrip>,
   ) {}
 
   async onApplicationBootstrap() {
@@ -50,6 +52,7 @@ export class SeedService implements OnApplicationBootstrap {
     await this.seedExpenses();
     await this.seedGuides();
     await this.seedBookings();
+    await this.seedCustomTrips();
   }
 
   private async seedUsers() {
@@ -1174,5 +1177,58 @@ export class SeedService implements OnApplicationBootstrap {
       await this.bookingRepo.save(this.bookingRepo.create(b));
     }
     this.logger.log(`✅ Seeded ${bookings.length} Bookings`);
+  }
+
+  private async seedCustomTrips() {
+    const count = await this.customTripRepo.count();
+    if (count > 0) return;
+
+    this.logger.log('🌱 Seeding Custom Trip Inquiries...');
+    const customTrips: Partial<CustomTrip>[] = [
+      {
+        name: 'Marcus Vance',
+        email: 'marcus.vance@example.com',
+        phone: '+1 555-0192',
+        destination: 'Wenchi Crater Lake + Lalibela Rock Churches',
+        durationDays: 5,
+        groupSize: 2,
+        preferredStartDate: '2026-10-15',
+        budget: 'luxury',
+        interests: ['wenchi', 'lalibela'],
+        specialRequirements: 'Private 4x4 Land Cruiser with English-speaking expert birding guide.',
+        status: 'pending',
+      },
+      {
+        name: 'Elena Rostova',
+        email: 'elena.rostova@example.org',
+        phone: '+44 20 7946 0991',
+        destination: 'Danakil & Erta Ale Volcano + Simien Mountains',
+        durationDays: 7,
+        groupSize: 4,
+        preferredStartDate: '2026-11-05',
+        budget: 'standard',
+        interests: ['danakil', 'simien'],
+        specialRequirements: 'Vegetarian meals during the Danakil expedition and altitude acclimatization.',
+        status: 'quoted',
+      },
+      {
+        name: 'David K. Osei',
+        email: 'david.osei@ghana-expeditions.com',
+        phone: '+233 24 123 4567',
+        destination: 'Bale Mountains Safari + Harar Jugol City',
+        durationDays: 6,
+        groupSize: 3,
+        preferredStartDate: '2026-12-01',
+        budget: 'luxury',
+        interests: ['bale', 'harar'],
+        specialRequirements: 'Photography permit assistance for Ethiopian Wolf habitat and Harar hyena feeding at night.',
+        status: 'confirmed',
+      },
+    ];
+
+    for (const ct of customTrips) {
+      await this.customTripRepo.save(this.customTripRepo.create(ct));
+    }
+    this.logger.log(`✅ Seeded ${customTrips.length} Custom Trip Inquiries`);
   }
 }

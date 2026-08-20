@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -33,8 +33,14 @@ export const AdminCustomTripsPage: React.FC = () => {
     pricingConfig,
     updatePricingConfig,
     customTripInquiries,
+    fetchCustomTripInquiries,
     updateInquiryStatus,
+    deleteCustomTripInquiry,
   } = useContentStore();
+
+  useEffect(() => {
+    fetchCustomTripInquiries();
+  }, [fetchCustomTripInquiries]);
 
   const [activeTab, setActiveTab] = useState<'destinations' | 'pricing' | 'inquiries'>('destinations');
 
@@ -252,10 +258,29 @@ export const AdminCustomTripsPage: React.FC = () => {
           onChange={(e) => updateInquiryStatus(row.id, e.target.value as CustomTripInquiry['status'])}
         >
           <option value="pending">PENDING</option>
+          <option value="reviewing">REVIEWING</option>
           <option value="quoted">QUOTED</option>
           <option value="confirmed">CONFIRMED</option>
           <option value="cancelled">CANCELLED</option>
         </select>
+      ),
+    },
+    {
+      header: 'Actions',
+      minWidth: '80px',
+      noWrap: true,
+      align: 'center',
+      cell: (row) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Trash2 size={14} style={{ color: 'var(--status-danger)' }} />}
+          onClick={() => {
+            if (window.confirm(`Delete inquiry for "${row.customerName}"?`)) {
+              deleteCustomTripInquiry(row.id);
+            }
+          }}
+        />
       ),
     },
   ];

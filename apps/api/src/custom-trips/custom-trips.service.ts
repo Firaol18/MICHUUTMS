@@ -42,4 +42,9 @@ export class CustomTripsService {
     trip.status = status;
     return this.repo.save(trip);
   }
+
+  async remove(id: string) {
+    const trip = await this.findOne(id);
+    return this.repo.remove(trip);
+  }
 }

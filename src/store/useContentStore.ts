@@ -66,42 +66,7 @@ const DEFAULT_PRICING_CONFIG: CustomTripPricingConfig = {
   },
 };
 
-const DEFAULT_INQUIRIES: CustomTripInquiry[] = [
-  {
-    id: 'ct-101',
-    destinations: ['wenchi', 'lalibela'],
-    destinationsNames: 'Wenchi Crater Lake + Lalibela Rock Churches',
-    tripDays: 5,
-    travelersCount: 2,
-    startDate: '2026-10-15',
-    accommodationTier: 'luxury',
-    transportType: 'landcruiser',
-    estimatedPerPerson: 1455,
-    totalEstimatedPrice: 2910,
-    customerName: 'Marcus Vance',
-    customerEmail: 'marcus.vance@example.com',
-    customerPhone: '+1 555-0192',
-    createdAt: '2026-08-10',
-    status: 'pending',
-  },
-  {
-    id: 'ct-102',
-    destinations: ['danakil', 'simien'],
-    destinationsNames: 'Danakil & Erta Ale Volcano + Simien Mountains',
-    tripDays: 7,
-    travelersCount: 4,
-    startDate: '2026-11-05',
-    accommodationTier: 'standard',
-    transportType: 'flight',
-    estimatedPerPerson: 1392,
-    totalEstimatedPrice: 5568,
-    customerName: 'Elena Rostova',
-    customerEmail: 'elena.rostova@example.org',
-    customerPhone: '+44 20 7946 0991',
-    createdAt: '2026-08-12',
-    status: 'quoted',
-  },
-];
+
 
 interface ContentStoreState {
   // Events
@@ -211,8 +176,8 @@ export const useContentStore = create<ContentStoreState>()(
         }));
       },
 
-      // Inquiries
-      customTripInquiries: DEFAULT_INQUIRIES,
+      // Inquiries (loaded from backend)
+      customTripInquiries: [],
       addCustomTripInquiry: (inquiryData) => {
         const newInquiry: CustomTripInquiry = {
           ...inquiryData,

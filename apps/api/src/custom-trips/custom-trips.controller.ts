@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomTripsService } from './custom-trips.service';
 import { CreateCustomTripDto } from '../common/dto/shared.dto';
@@ -47,5 +47,13 @@ export class CustomTripsController {
     @Body('status') status: 'pending' | 'reviewing' | 'quoted' | 'confirmed' | 'cancelled',
   ) {
     return this.customTripsService.updateStatus(id, status);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete custom trip request (admin)' })
+  remove(@Param('id') id: string) {
+    return this.customTripsService.remove(id);
   }
 }
