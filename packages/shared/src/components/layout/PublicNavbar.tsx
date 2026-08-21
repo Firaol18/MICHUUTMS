@@ -27,13 +27,13 @@ import {
   UserCircle,
   Star,
   Settings,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '@tms/shared/components/common/Button';
 import { RaiseIssueModal } from '@tms/shared/components/common/RaiseIssueModal';
 import { CartDrawer } from '@tms/shared/components/cart/CartDrawer';
 import { useCartStore } from '@tms/shared/store/useCartStore';
 import { NotificationPopover } from '@tms/shared/components/common/NotificationPopover';
-
 
 const LANGUAGE_OPTIONS: { code: LanguageCode; label: string; shortCode: string }[] = [
   { code: 'am', label: 'Amharic', shortCode: 'AM' },
@@ -139,18 +139,14 @@ export const PublicNavbar: React.FC = () => {
           height: '64px',
           display: 'flex',
           alignItems: 'center',
+          width: '100%',
+          maxWidth: '100vw',
+          boxSizing: 'border-box',
         }}
       >
-        <div
-          className="flex-between"
-          style={{
-            width: '100%',
-            padding: '0 1.5rem',
-            gap: '1rem',
-          }}
-        >
+        <div className="flex-between pub-nav-container">
           {/* Brand Logo */}
-          <Link to="/" className="flex-center" style={{ gap: '0.6rem', textDecoration: 'none', flexShrink: 0 }}>
+          <Link to="/" className="flex-center pub-nav-brand" style={{ gap: '0.5rem', textDecoration: 'none', flexShrink: 0 }}>
             <div
               className="flex-center text-gradient"
               style={{
@@ -158,15 +154,16 @@ export const PublicNavbar: React.FC = () => {
                 height: 36,
                 borderRadius: 'var(--radius-md)',
                 backgroundColor: 'var(--brand-primary-light)',
+                flexShrink: 0,
               }}
             >
               <Compass size={22} style={{ color: 'var(--brand-primary)' }} />
             </div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: 'var(--font-size-md)', letterSpacing: '-0.02em', color: 'var(--text-primary)', lineHeight: 1.1 }}>
+              <div className="pub-nav-brand-title">
                 MICHUU <span style={{ color: 'var(--brand-primary)' }}>TMS</span>
               </div>
-              <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>
+              <div className="pub-nav-brand-subtitle">
                 Ethiopian Tourism & Travel
               </div>
             </div>
@@ -236,8 +233,8 @@ export const PublicNavbar: React.FC = () => {
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex-center" style={{ gap: '0.5rem', flexShrink: 0 }}>
-            {/* ── Hamburger toggle (mobile only) ── */}
+          <div className="flex-center pub-nav-actions" style={{ gap: '0.4rem', flexShrink: 0 }}>
+            {/* ── 1. Hamburger toggle (mobile only) ── */}
             <button
               type="button"
               className="pub-nav-mobile-toggle tms-btn-ghost"
@@ -245,15 +242,17 @@ export const PublicNavbar: React.FC = () => {
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: 'var(--radius-sm)',
+                borderRadius: 'var(--radius-md)',
                 color: 'var(--text-primary)',
                 border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-tertiary)',
               }}
               aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            {/* Language Popover */}
+
+            {/* ── 2. Language Popover ── */}
             <div ref={langMenuRef} style={{ position: 'relative' }}>
               <button
                 type="button"
@@ -261,19 +260,19 @@ export const PublicNavbar: React.FC = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.35rem',
+                  gap: '0.3rem',
                   backgroundColor: 'var(--bg-tertiary)',
                   border: '1px solid var(--border-color)',
                   cursor: 'pointer',
                   color: 'var(--text-primary)',
                   fontSize: 'var(--font-size-xs)',
                   fontWeight: 700,
-                  padding: '0.3rem 0.6rem',
+                  padding: '0.3rem 0.55rem',
                   borderRadius: 'var(--radius-full)',
                   transition: 'all 0.15s ease',
                 }}
               >
-                <Languages size={15} style={{ color: 'var(--brand-primary)' }} />
+                <Languages size={14} style={{ color: 'var(--brand-primary)' }} />
                 <span>{activeLangObj.shortCode}</span>
               </button>
 
@@ -324,6 +323,16 @@ export const PublicNavbar: React.FC = () => {
               )}
             </div>
 
+            {/* ── 3. Theme Toggle ── */}
+            <button
+              onClick={toggleTheme}
+              className="tms-btn-ghost flex-center"
+              style={{ width: 34, height: 34, borderRadius: '50%', color: 'var(--text-secondary)' }}
+              title="Toggle theme"
+            >
+              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} style={{ color: '#f59e0b' }} />}
+            </button>
+
             {/* In-App Notifications Dropdown (when authenticated) */}
             {isAuthenticated && user && (
               <NotificationPopover role="customer" />
@@ -336,8 +345,8 @@ export const PublicNavbar: React.FC = () => {
                 className="flex-center"
                 style={{
                   position: 'relative',
-                  width: 36,
-                  height: 36,
+                  width: 34,
+                  height: 34,
                   borderRadius: '50%',
                   backgroundColor: 'var(--bg-tertiary)',
                   color: 'var(--text-primary)',
@@ -347,7 +356,7 @@ export const PublicNavbar: React.FC = () => {
                 }}
                 title="View Cart & Multi-Item Checkout"
               >
-                <ShoppingBag size={16} />
+                <ShoppingBag size={15} />
                 {cartItemCount > 0 && (
                   <span
                     style={{
@@ -356,10 +365,10 @@ export const PublicNavbar: React.FC = () => {
                       right: -2,
                       backgroundColor: '#ef4444',
                       color: '#ffffff',
-                      fontSize: '10px',
+                      fontSize: '9px',
                       fontWeight: 800,
-                      width: 17,
-                      height: 17,
+                      width: 16,
+                      height: 16,
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
@@ -373,16 +382,6 @@ export const PublicNavbar: React.FC = () => {
               </button>
             )}
 
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="tms-btn-ghost flex-center"
-              style={{ width: 34, height: 34, borderRadius: '50%', color: 'var(--text-secondary)' }}
-              title="Toggle theme"
-            >
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} style={{ color: '#f59e0b' }} />}
-            </button>
-
             {/* ── AUTH SECTION ── */}
             {isAuthenticated && user ? (
               <div className="flex-center" style={{ gap: '0.4rem' }}>
@@ -391,6 +390,7 @@ export const PublicNavbar: React.FC = () => {
                   <Button
                     variant="primary"
                     size="sm"
+                    className="pub-nav-admin-btn hide-md"
                     icon={<LayoutDashboard size={14} />}
                     onClick={() => navigate('/admin/dashboard')}
                   >
@@ -439,7 +439,7 @@ export const PublicNavbar: React.FC = () => {
                           border: '2px solid var(--brand-primary)',
                         }}
                       />
-                      <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                      <span className="hide-md" style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                         {user.name.split(' ')[0]}
                       </span>
                     </button>
@@ -451,19 +451,20 @@ export const PublicNavbar: React.FC = () => {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '0.25rem 0.5rem 0.25rem 0',
+                        justifyContent: 'center',
+                        padding: '0.35rem 0.4rem',
                         background: 'none',
                         border: 'none',
-                        cursor: 'pointer',
                         borderLeft: '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       <ChevronDown
-                        size={14}
+                        size={13}
                         style={{
-                          color: 'var(--text-muted)',
-                          transform: isUserMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 0.2s ease',
+                          transform: isUserMenuOpen ? 'rotate(180deg)' : 'rotate(0)',
+                          transition: 'transform 0.15s ease',
                         }}
                       />
                     </button>
@@ -476,7 +477,7 @@ export const PublicNavbar: React.FC = () => {
                         position: 'absolute',
                         top: 'calc(100% + 10px)',
                         right: 0,
-                        width: '210px',
+                        width: '220px',
                         backgroundColor: 'var(--bg-secondary)',
                         border: '1px solid var(--border-color)',
                         borderRadius: '12px',
@@ -519,21 +520,17 @@ export const PublicNavbar: React.FC = () => {
                                 color: 'var(--brand-primary)',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.06em',
-                                backgroundColor: 'var(--brand-primary-light)',
-                                padding: '0.15rem 0.4rem',
-                                borderRadius: 'var(--radius-full)',
-                                display: 'inline-block',
                               }}
                             >
-                              {user.role.replace('_', ' ')}
+                              Role: {user.role.replace('_', ' ')}
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Admin Portal link — only for admin roles */}
-                      {isAdmin && (
-                        <div style={{ padding: '0.4rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                      {/* Menu links */}
+                      <div style={{ padding: '0.35rem 0' }}>
+                        {isAdmin && (
                           <button
                             type="button"
                             onClick={() => { setIsUserMenuOpen(false); navigate('/admin/dashboard'); }}
@@ -542,13 +539,10 @@ export const PublicNavbar: React.FC = () => {
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                           >
                             <LayoutDashboard size={15} style={{ color: 'var(--brand-primary)' }} />
-                            Admin Portal
+                            <span>Admin Portal</span>
                           </button>
-                        </div>
-                      )}
+                        )}
 
-                      {/* User Account Navigation Links */}
-                      <div style={{ padding: '0.4rem 0' }}>
                         <button
                           type="button"
                           onClick={() => { setIsUserMenuOpen(false); navigate('/user/dashboard'); }}
@@ -556,9 +550,10 @@ export const PublicNavbar: React.FC = () => {
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          <UserCircle size={15} style={{ color: 'var(--brand-primary)' }} />
-                          My Dashboard
+                          <UserCircle size={15} />
+                          <span>My Dashboard</span>
                         </button>
+
                         <button
                           type="button"
                           onClick={() => { setIsUserMenuOpen(false); navigate('/my-bookings'); }}
@@ -566,9 +561,10 @@ export const PublicNavbar: React.FC = () => {
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          <Ticket size={15} style={{ color: 'var(--brand-primary)' }} />
-                          Tour History & Bookings
+                          <Ticket size={15} />
+                          <span>My Bookings</span>
                         </button>
+
                         <button
                           type="button"
                           onClick={() => { setIsUserMenuOpen(false); navigate('/user/profile'); }}
@@ -577,8 +573,9 @@ export const PublicNavbar: React.FC = () => {
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
                           <Settings size={15} style={{ color: 'var(--brand-primary)' }} />
-                          Profile & Settings
+                          <span>Profile & Settings</span>
                         </button>
+
                         <button
                           type="button"
                           onClick={() => { setIsUserMenuOpen(false); navigate('/user/reviews'); }}
@@ -586,31 +583,24 @@ export const PublicNavbar: React.FC = () => {
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          <Star size={15} style={{ color: 'var(--brand-primary)' }} />
-                          My Reviews
+                          <Star size={15} />
+                          <span>My Reviews</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => { setIsUserMenuOpen(false); navigate('/user/issues'); }}
-                          style={menuItemStyle}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                        >
-                          <HelpCircle size={15} style={{ color: 'var(--brand-primary)' }} />
-                          Support Tickets
-                        </button>
-                      </div>
 
-                      <div style={{ padding: '0.4rem', borderTop: '1px solid var(--border-color)' }}>
+                        <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '0.35rem 0' }} />
+
                         <button
                           type="button"
                           onClick={handleSignOut}
-                          style={{ ...menuItemStyle, color: '#ef4444', width: '100%', borderRadius: '8px' }}
-                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.08)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                          style={{
+                            ...menuItemStyle,
+                            color: '#ef4444',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.08)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
                           <LogOut size={15} />
-                          Sign Out
+                          <span>Sign Out</span>
                         </button>
                       </div>
                     </div>
@@ -618,8 +608,8 @@ export const PublicNavbar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* Guest: Show enhanced Sign In button only */
-              <div className="flex-center">
+              /* Guest: Show enhanced Sign In button on Desktop only (hidden on mobile) */
+              <div className="pub-nav-signin-desktop hide-md">
                 <Button
                   variant="primary"
                   size="sm"
@@ -685,64 +675,67 @@ export const PublicNavbar: React.FC = () => {
                 right: '1rem',
                 background: 'none',
                 border: 'none',
-                color: 'var(--text-muted)',
                 cursor: 'pointer',
+                color: 'var(--text-muted)',
               }}
             >
-              <X size={18} />
+              <X size={20} />
             </button>
 
             <div
               style={{
-                width: 56,
-                height: 56,
+                width: '64px',
+                height: '64px',
                 borderRadius: '50%',
                 backgroundColor: 'rgba(37,99,235,0.1)',
-                color: 'var(--brand-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 1.25rem auto',
+                margin: '0 auto 1.25rem',
+                color: 'var(--brand-primary)',
               }}
             >
-              <Lock size={28} />
+              <Lock size={30} />
             </div>
 
-            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-              Sign In Required
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+              Authentication Required
             </h3>
-            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-              Please sign in to your account to view your travel cart, manage support tickets, and proceed to multi-item expedition checkout.
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              You need an active traveler account to submit support tickets, manage your travel cart, and track booking vouchers.
             </p>
 
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <Button
+                variant="primary"
+                icon={<LogIn size={16} />}
+                onClick={() => {
+                  setIsLoginPromptOpen(false);
+                  navigate('/login?mode=signin');
+                }}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                Sign In to Your Account
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => {
                   setIsLoginPromptOpen(false);
                   navigate('/login?mode=signup');
                 }}
+                style={{ width: '100%', justifyContent: 'center' }}
               >
-                Create Account
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setIsLoginPromptOpen(false);
-                  navigate('/login?mode=signin');
-                }}
-              >
-                Sign In Now
+                Create New Traveler Account
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Multi-Item Shopping Cart Drawer */}
+      {/* Cart Drawer Modal */}
       <CartDrawer />
 
-      {/* ── Mobile Full-Screen Menu ── */}
+      {/* ── MOBILE FULL-SCREEN DRAWER (Sign In is placed prominently inside here) ── */}
       <div className={`pub-nav-mobile-menu${isMobileMenuOpen ? ' open' : ''}`}>
 
         {/* Nav Links */}
@@ -786,7 +779,7 @@ export const PublicNavbar: React.FC = () => {
                 type="button"
                 onClick={() => { setLanguage(l.code); setIsMobileMenuOpen(false); }}
                 style={{
-                  padding: '0.35rem 0.75rem',
+                  padding: '0.4rem 0.85rem',
                   borderRadius: 'var(--radius-full)',
                   fontSize: 'var(--font-size-xs)',
                   fontWeight: 700,
@@ -896,14 +889,25 @@ export const PublicNavbar: React.FC = () => {
             </button>
           </>
         ) : (
+          /* Guest: Prominent Sign In and Sign Up buttons inside mobile drawer */
           <div className="pub-nav-mobile-auth">
             <Button
               variant="primary"
-              icon={<LogIn size={16} />}
+              size="lg"
+              icon={<LogIn size={18} />}
               onClick={() => { setIsMobileMenuOpen(false); navigate('/login?mode=signin'); }}
               style={{ width: '100%', justifyContent: 'center', fontWeight: 700 }}
             >
               {t('sign_in')}
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              icon={<UserPlus size={16} />}
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/login?mode=signup'); }}
+              style={{ width: '100%', justifyContent: 'center', fontWeight: 600 }}
+            >
+              Create New Account
             </Button>
           </div>
         )}

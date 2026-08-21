@@ -27,6 +27,7 @@ import {
   UserCircle,
   Star,
   Settings,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { RaiseIssueModal } from '@/components/common/RaiseIssueModal';
@@ -232,28 +233,46 @@ export const PublicNavbar: React.FC = () => {
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex-center pub-nav-actions">
-            {/* Language Popover (Desktop / Tablet) */}
-            <div ref={langMenuRef} className="pub-nav-lang-desktop" style={{ position: 'relative' }}>
+          <div className="flex-center pub-nav-actions" style={{ gap: '0.4rem', flexShrink: 0 }}>
+            {/* ── 1. Hamburger toggle (mobile only) ── */}
+            <button
+              type="button"
+              className="pub-nav-mobile-toggle tms-btn-ghost"
+              onClick={() => setIsMobileMenuOpen((v) => !v)}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-tertiary)',
+              }}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+
+            {/* ── 2. Language Popover ── */}
+            <div ref={langMenuRef} style={{ position: 'relative' }}>
               <button
                 type="button"
                 onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.35rem',
+                  gap: '0.3rem',
                   backgroundColor: 'var(--bg-tertiary)',
                   border: '1px solid var(--border-color)',
                   cursor: 'pointer',
                   color: 'var(--text-primary)',
                   fontSize: 'var(--font-size-xs)',
                   fontWeight: 700,
-                  padding: '0.3rem 0.6rem',
+                  padding: '0.3rem 0.55rem',
                   borderRadius: 'var(--radius-full)',
                   transition: 'all 0.15s ease',
                 }}
               >
-                <Languages size={15} style={{ color: 'var(--brand-primary)' }} />
+                <Languages size={14} style={{ color: 'var(--brand-primary)' }} />
                 <span>{activeLangObj.shortCode}</span>
               </button>
 
@@ -304,6 +323,16 @@ export const PublicNavbar: React.FC = () => {
               )}
             </div>
 
+            {/* ── 3. Theme Toggle ── */}
+            <button
+              onClick={toggleTheme}
+              className="tms-btn-ghost flex-center"
+              style={{ width: 34, height: 34, borderRadius: '50%', color: 'var(--text-secondary)' }}
+              title="Toggle theme"
+            >
+              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} style={{ color: '#f59e0b' }} />}
+            </button>
+
             {/* In-App Notifications Dropdown (when authenticated) */}
             {isAuthenticated && user && (
               <NotificationPopover role="customer" />
@@ -316,8 +345,8 @@ export const PublicNavbar: React.FC = () => {
                 className="flex-center"
                 style={{
                   position: 'relative',
-                  width: 36,
-                  height: 36,
+                  width: 34,
+                  height: 34,
                   borderRadius: '50%',
                   backgroundColor: 'var(--bg-tertiary)',
                   color: 'var(--text-primary)',
@@ -327,7 +356,7 @@ export const PublicNavbar: React.FC = () => {
                 }}
                 title="View Cart & Multi-Item Checkout"
               >
-                <ShoppingBag size={16} />
+                <ShoppingBag size={15} />
                 {cartItemCount > 0 && (
                   <span
                     style={{
@@ -336,10 +365,10 @@ export const PublicNavbar: React.FC = () => {
                       right: -2,
                       backgroundColor: '#ef4444',
                       color: '#ffffff',
-                      fontSize: '10px',
+                      fontSize: '9px',
                       fontWeight: 800,
-                      width: 17,
-                      height: 17,
+                      width: 16,
+                      height: 16,
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
@@ -353,16 +382,6 @@ export const PublicNavbar: React.FC = () => {
               </button>
             )}
 
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="tms-btn-ghost flex-center"
-              style={{ width: 34, height: 34, borderRadius: '50%', color: 'var(--text-secondary)' }}
-              title="Toggle theme"
-            >
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} style={{ color: '#f59e0b' }} />}
-            </button>
-
             {/* ── AUTH SECTION ── */}
             {isAuthenticated && user ? (
               <div className="flex-center" style={{ gap: '0.4rem' }}>
@@ -371,6 +390,7 @@ export const PublicNavbar: React.FC = () => {
                   <Button
                     variant="primary"
                     size="sm"
+                    className="pub-nav-admin-btn hide-md"
                     icon={<LayoutDashboard size={14} />}
                     onClick={() => navigate('/admin/dashboard')}
                   >
@@ -419,7 +439,7 @@ export const PublicNavbar: React.FC = () => {
                           border: '2px solid var(--brand-primary)',
                         }}
                       />
-                      <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                      <span className="hide-md" style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                         {user.name.split(' ')[0]}
                       </span>
                     </button>
@@ -457,7 +477,7 @@ export const PublicNavbar: React.FC = () => {
                         position: 'absolute',
                         top: 'calc(100% + 10px)',
                         right: 0,
-                        width: '210px',
+                        width: '220px',
                         backgroundColor: 'var(--bg-secondary)',
                         border: '1px solid var(--border-color)',
                         borderRadius: '12px',
@@ -552,7 +572,7 @@ export const PublicNavbar: React.FC = () => {
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          <Settings size={15} />
+                          <Settings size={15} style={{ color: 'var(--brand-primary)' }} />
                           <span>Profile & Settings</span>
                         </button>
 
@@ -588,43 +608,27 @@ export const PublicNavbar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* Guest: Show enhanced Sign In button only */
-              <div className="flex-center">
+              /* Guest: Show enhanced Sign In button on Desktop only (hidden on mobile) */
+              <div className="pub-nav-signin-desktop hide-md">
                 <Button
                   variant="primary"
                   size="sm"
-                  className="pub-nav-signin-btn"
                   icon={<LogIn size={15} />}
                   onClick={() => navigate('/login?mode=signin')}
                   style={{
                     fontWeight: 700,
+                    padding: '0.45rem 1.15rem',
                     borderRadius: 'var(--radius-full)',
                     boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
                     display: 'inline-flex',
                     alignItems: 'center',
+                    gap: '0.4rem',
                   }}
                 >
                   {t('sign_in')}
                 </Button>
               </div>
             )}
-
-            {/* ── Hamburger toggle (mobile only) ── */}
-            <button
-              type="button"
-              className="pub-nav-mobile-toggle tms-btn-ghost"
-              onClick={() => setIsMobileMenuOpen((v) => !v)}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-color)',
-              }}
-              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-            >
-              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
           </div>
         </div>
       </header>
@@ -731,7 +735,7 @@ export const PublicNavbar: React.FC = () => {
       {/* Cart Drawer Modal */}
       <CartDrawer />
 
-      {/* ── MOBILE FULL-SCREEN DRAWER ── */}
+      {/* ── MOBILE FULL-SCREEN DRAWER (Sign In is placed prominently inside here) ── */}
       <div className={`pub-nav-mobile-menu${isMobileMenuOpen ? ' open' : ''}`}>
 
         {/* Nav Links */}
@@ -775,7 +779,7 @@ export const PublicNavbar: React.FC = () => {
                 type="button"
                 onClick={() => { setLanguage(l.code); setIsMobileMenuOpen(false); }}
                 style={{
-                  padding: '0.35rem 0.75rem',
+                  padding: '0.4rem 0.85rem',
                   borderRadius: 'var(--radius-full)',
                   fontSize: 'var(--font-size-xs)',
                   fontWeight: 700,
@@ -885,14 +889,25 @@ export const PublicNavbar: React.FC = () => {
             </button>
           </>
         ) : (
+          /* Guest: Prominent Sign In and Sign Up buttons inside mobile drawer */
           <div className="pub-nav-mobile-auth">
             <Button
               variant="primary"
-              icon={<LogIn size={16} />}
+              size="lg"
+              icon={<LogIn size={18} />}
               onClick={() => { setIsMobileMenuOpen(false); navigate('/login?mode=signin'); }}
               style={{ width: '100%', justifyContent: 'center', fontWeight: 700 }}
             >
               {t('sign_in')}
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              icon={<UserPlus size={16} />}
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/login?mode=signup'); }}
+              style={{ width: '100%', justifyContent: 'center', fontWeight: 600 }}
+            >
+              Create New Account
             </Button>
           </div>
         )}
