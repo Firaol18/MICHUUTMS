@@ -1,10 +1,11 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '@tms/shared/store/useCartStore';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { Modal } from '@tms/shared/components/common/Modal';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
+import { Badge } from '@tms/shared/components/common/Badge';
 import { ETicketModal } from '@tms/shared/components/common/ETicketModal';
 import { tourismService } from '@tms/shared/services/tourismService';
 import type { Booking } from '@tms/shared/types/booking';
@@ -20,7 +21,59 @@ import {
   ShieldCheck,
   Smartphone,
   Landmark,
+  UploadCloud,
+  Copy,
+  Check,
+  CheckCircle2,
 } from 'lucide-react';
+
+const PAYMENT_METHODS = [
+  {
+    id: 'telebirr',
+    name: 'Telebirr',
+    icon: '📱',
+    badge: 'Instant / Birr',
+    accountName: 'MICHUU TOURISM & TRAVEL PLC',
+    accountNumber: '0930222784',
+    instructions: 'Pay via Telebirr App or *127# to 0930222784, then upload the transaction confirmation screenshot below.',
+  },
+  {
+    id: 'cbe_birr',
+    name: 'Commercial Bank of Ethiopia (CBE / CBE Birr)',
+    icon: '🏦',
+    badge: 'CBE Mobile / *847#',
+    accountName: 'MICHUU TOURISM & TRAVEL PLC',
+    accountNumber: '1000299280164',
+    instructions: 'Transfer to CBE account 1000299280164, enter the FT transaction reference code, and upload the transfer receipt screenshot.',
+  },
+  {
+    id: 'bank_transfer',
+    name: 'Awash / Dashen / BOA Bank Transfer',
+    icon: '🏛️',
+    badge: 'Direct Bank Wire',
+    accountName: 'MICHUU TOURISM PLC',
+    accountNumber: 'Awash Bank: 01320495839001 | Dashen: 504938291001',
+    instructions: 'Transfer to our Awash/Dashen account, then attach a photo of your bank deposit slip or mobile screenshot.',
+  },
+  {
+    id: 'credit_card',
+    name: 'Credit / Debit Card (Visa / Mastercard)',
+    icon: '💳',
+    badge: 'Card Checkout',
+    accountName: 'MICHUU Global Checkout',
+    accountNumber: 'Encrypted 256-Bit SSL',
+    instructions: 'Enter your card authorization reference or upload a screenshot of your successful transaction slip.',
+  },
+  {
+    id: 'cash',
+    name: 'Pay Cash on Arrival / Bole Office Hub',
+    icon: '💵',
+    badge: 'Pay in Person',
+    accountName: 'MICHUU Hub — Bole Medhanialem',
+    accountNumber: 'Bole Medhanialem Tower, 4th Floor',
+    instructions: 'Your reservation is held. Please settle the remaining fee at our Bole hub or upon meeting your Ranger Guide.',
+  },
+];
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -31,6 +84,7 @@ export const CartDrawer: React.FC = () => {
     updateQuantity,
     clearCart,
     promoCode,
+    discountPercent,
     applyPromoCode,
     getSubtotal,
     getDiscountAmount,
@@ -49,7 +103,12 @@ export const CartDrawer: React.FC = () => {
   const [leadEmail, setLeadEmail] = useState(user?.email || '');
   const [leadPhone, setLeadPhone] = useState('+251 91 123 4567');
   const [leadNationality, setLeadNationality] = useState('Ethiopia');
-  const [paymentMethod, setPaymentMethod] = useState<'telebirr' | 'cbe' | 'card' | 'bank'>('telebirr');
+  const [paymentMethod, setPaymentMethod] = useState<'telebirr' | 'cbe_birr' | 'bank_transfer' | 'credit_card' | 'cash'>('telebirr');
+  const [transactionReference, setTransactionReference] = useState('');
+  const [paymentReceiptUrl, setPaymentReceiptUrl] = useState<string>('');
+  const [receiptFileName, setReceiptFileName] = useState('');
+  const [copiedAccount, setCopiedAccount] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -80,14 +139,52 @@ export const CartDrawer: React.FC = () => {
     setPromoMessage({ success: res.success, text: res.message });
   };
 
+  const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      setCheckoutError('File size must be under 8MB.');
+      return;
+    }
+    setCheckoutError('');
+    setReceiptFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPaymentReceiptUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCopyAccount = (text: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedAccount(true);
+    setTimeout(() => setCopiedAccount(false), 2000);
+  };
+
   const handleCompleteCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) return;
 
+    if (!leadName.trim() || !leadEmail.trim()) {
+      setCheckoutError('Please provide the lead traveler name and email.');
+      return;
+    }
+
+    if (paymentMethod !== 'cash' && !paymentReceiptUrl && !transactionReference.trim()) {
+      setCheckoutError('Please upload a screenshot of your payment receipt or enter the transaction reference code.');
+      return;
+    }
+
     setIsSubmitting(true);
+    setCheckoutError('');
+
     try {
       const primaryTour = items.find((i) => i.type === 'tour') || items[0];
       const tourId = primaryTour.id.replace('-cart', '');
+      const totalPrice = getTotalPrice();
+
+      const combinedTitle = items.map((i) => `${i.title} (x${i.quantity})`).join(' + ');
+      const destination = primaryTour?.details?.location || 'Ethiopia';
 
       const booking = await tourismService.createBooking(
         tourId,
@@ -100,16 +197,28 @@ export const CartDrawer: React.FC = () => {
         },
         primaryTour.date || '2026-09-20',
         primaryTour.quantity || 2,
+        primaryTour.quantity || 2,
+        0,
+        {
+          title: combinedTitle,
+          destination,
+          totalPrice,
+          status: 'confirmed',
+          paymentStatus: paymentReceiptUrl || transactionReference ? 'paid' : 'paid',
+          paymentMethod,
+          paymentReceiptUrl,
+          transactionReference,
+        }
       );
-
-      // Override calculated total price with complete cart total
-      booking.totalPrice = getTotalPrice();
 
       setCompletedBooking(booking);
       setIsCheckoutStep(false);
       clearCart();
       closeCart();
       setIsETicketOpen(true);
+    } catch (err: any) {
+      console.error('Cart checkout failed:', err);
+      setCheckoutError(err?.message || 'Failed to complete checkout on the server.');
     } finally {
       setIsSubmitting(false);
     }
@@ -120,6 +229,7 @@ export const CartDrawer: React.FC = () => {
   const subtotal = getSubtotal();
   const discountAmount = getDiscountAmount();
   const totalPrice = getTotalPrice();
+  const activePaymentOption = PAYMENT_METHODS.find((p) => p.id === paymentMethod) || PAYMENT_METHODS[0];
 
   return (
     <>
@@ -144,7 +254,7 @@ export const CartDrawer: React.FC = () => {
                   isLoading={isSubmitting}
                   icon={<ShieldCheck size={16} />}
                 >
-                  Pay Now (${totalPrice.toLocaleString()})
+                  Confirm & Pay (${totalPrice.toLocaleString()})
                 </Button>
               </div>
             ) : (
@@ -170,7 +280,7 @@ export const CartDrawer: React.FC = () => {
             <ShoppingBag size={48} style={{ color: 'var(--text-muted)' }} />
             <h3>Your travel cart is empty</h3>
             <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>
-              Explore Ethiopian tour packages, hotel stays, and 4x4 charters to add to your expedition!
+              Explore Ethiopian tour packages, hotel stays, and festival passes to add to your expedition!
             </p>
             <Button variant="primary" size="sm" onClick={closeCart}>
               Continue Browsing
@@ -178,7 +288,13 @@ export const CartDrawer: React.FC = () => {
           </div>
         ) : isCheckoutStep ? (
           /* Checkout Step Form */
-          <form onSubmit={handleCompleteCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <form onSubmit={handleCompleteCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxHeight: '75vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
+            {checkoutError && (
+              <div style={{ padding: '0.75rem 1rem', backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-sm)', color: '#dc2626', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
+                ⚠️ {checkoutError}
+              </div>
+            )}
+
             {/* Order Summary Box */}
             <div
               style={{
@@ -213,109 +329,151 @@ export const CartDrawer: React.FC = () => {
             {/* Lead Traveler Details */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700 }}>Lead Traveler Information</h4>
-              <Input label="Full Name" value={leadName} onChange={(e) => setLeadName(e.target.value)} required />
+              <Input label="Full Name *" value={leadName} onChange={(e) => setLeadName(e.target.value)} required />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <Input label="Email Address" type="email" value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} required />
-                <Input label="Phone / Telebirr Number" value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} required />
+                <Input label="Email Address *" type="email" value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} required />
+                <Input label="Phone / Telebirr Number *" value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} required />
               </div>
-              <Input label="Nationality / Country" value={leadNationality} onChange={(e) => setLeadNationality(e.target.value)} required />
+              <Input label="Nationality / Country *" value={leadNationality} onChange={(e) => setLeadNationality(e.target.value)} required />
               <Input label="Special Dietary or Accessibility Requests" value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} placeholder="e.g. Vegetarian meal plan, Airport pickup time" />
             </div>
 
-            {/* Payment Method Selector */}
-            <div>
-              <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.5rem' }}>
-                Select Payment Method
+            {/* ── PAYMENT METHOD SELECTION ── */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+              <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, color: 'var(--text-primary)', display: 'block', marginBottom: '0.6rem' }}>
+                💳 Select Payment Method *
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('telebirr')}
-                  style={{
-                    padding: '0.75rem 0.5rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: `2px solid ${paymentMethod === 'telebirr' ? '#16a34a' : 'var(--border-color)'}`,
-                    backgroundColor: paymentMethod === 'telebirr' ? 'rgba(22, 163, 74, 0.08)' : 'var(--bg-primary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: paymentMethod === 'telebirr' ? '#16a34a' : 'var(--text-secondary)',
-                  }}
-                >
-                  <Smartphone size={18} />
-                  Telebirr
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cbe')}
-                  style={{
-                    padding: '0.75rem 0.5rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: `2px solid ${paymentMethod === 'cbe' ? '#2563eb' : 'var(--border-color)'}`,
-                    backgroundColor: paymentMethod === 'cbe' ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-primary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: paymentMethod === 'cbe' ? '#2563eb' : 'var(--text-secondary)',
-                  }}
-                >
-                  <Landmark size={18} />
-                  CBE Birr
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  style={{
-                    padding: '0.75rem 0.5rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: `2px solid ${paymentMethod === 'card' ? 'var(--brand-primary)' : 'var(--border-color)'}`,
-                    backgroundColor: paymentMethod === 'card' ? 'var(--brand-primary-light)' : 'var(--bg-primary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: paymentMethod === 'card' ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                  }}
-                >
-                  <CreditCard size={18} />
-                  Card / Visa
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('bank')}
-                  style={{
-                    padding: '0.75rem 0.5rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: `2px solid ${paymentMethod === 'bank' ? '#7c3aed' : 'var(--border-color)'}`,
-                    backgroundColor: paymentMethod === 'bank' ? 'rgba(124, 58, 237, 0.08)' : 'var(--bg-primary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: paymentMethod === 'bank' ? '#7c3aed' : 'var(--text-secondary)',
-                  }}
-                >
-                  <Building2 size={18} />
-                  Bank Transfer
-                </button>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.625rem', marginBottom: '1rem' }}>
+                {PAYMENT_METHODS.map((pm) => {
+                  const isSelected = paymentMethod === pm.id;
+                  return (
+                    <div
+                      key={pm.id}
+                      onClick={() => {
+                        setPaymentMethod(pm.id as any);
+                        setCheckoutError('');
+                      }}
+                      style={{
+                        padding: '0.75rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: isSelected ? '2px solid var(--brand-primary)' : '1px solid var(--border-color)',
+                        backgroundColor: isSelected ? 'rgba(37,99,235,0.06)' : 'var(--bg-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.25rem',
+                      }}
+                    >
+                      <div className="flex-between">
+                        <span style={{ fontSize: '1.25rem' }}>{pm.icon}</span>
+                        <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: isSelected ? 'var(--brand-primary)' : 'var(--bg-tertiary)', color: isSelected ? '#fff' : 'var(--text-muted)', fontWeight: 700 }}>
+                          {pm.badge}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--brand-primary)' : 'var(--text-primary)' }}>
+                        {pm.name}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* Payment Instructions & Account Box */}
+              <div style={{ padding: '0.875rem 1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '1rem', fontSize: 'var(--font-size-xs)' }}>
+                <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.5 }}>
+                  {activePaymentOption.instructions}
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-primary)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                  <div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700 }}>TRANSFER ACCOUNT / TILL:</div>
+                    <div style={{ fontWeight: 800, color: 'var(--brand-primary)', fontFamily: 'monospace', fontSize: 'var(--font-size-sm)' }}>
+                      {activePaymentOption.accountNumber}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Name: {activePaymentOption.accountName}</div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    icon={copiedAccount ? <Check size={13} style={{ color: '#16a34a' }} /> : <Copy size={13} />}
+                    onClick={() => handleCopyAccount(activePaymentOption.accountNumber)}
+                  >
+                    {copiedAccount ? 'Copied' : 'Copy'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Transaction Reference & Screenshot Upload */}
+              {paymentMethod !== 'cash' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                  <Input
+                    label="Transaction Reference / Bank Confirmation Code (e.g. FT2609...)"
+                    placeholder="Enter TXN ID / Reference Code"
+                    value={transactionReference}
+                    onChange={(e) => setTransactionReference(e.target.value)}
+                  />
+
+                  <div>
+                    <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
+                      📸 Upload Screenshot / Photo of Payment Receipt
+                    </label>
+
+                    <div
+                      style={{
+                        border: '2px dashed var(--border-color)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '1rem',
+                        textAlign: 'center',
+                        backgroundColor: 'var(--bg-secondary)',
+                        cursor: 'pointer',
+                        position: 'relative',
+                      }}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={handleReceiptUpload}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                      />
+                      {paymentReceiptUrl ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+                          <img
+                            src={paymentReceiptUrl}
+                            alt="Receipt Preview"
+                            style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
+                          />
+                          <div style={{ textAlign: 'left', fontSize: 'var(--font-size-xs)' }}>
+                            <span style={{ fontWeight: 800, color: '#16a34a', display: 'block' }}>✓ Screenshot Attached</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{receiptFileName || 'payment_receipt.jpg'}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPaymentReceiptUrl('');
+                              setReceiptFileName('');
+                            }}
+                            style={{ color: '#ef4444' }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+                          <UploadCloud size={24} style={{ color: 'var(--brand-primary)' }} />
+                          <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700 }}>Click to browse or drop payment screenshot</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>JPEG, PNG, WebP up to 8MB</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </form>
         ) : (
@@ -368,96 +526,93 @@ export const CartDrawer: React.FC = () => {
                       >
                         {item.type}
                       </span>
-                      {item.date && (
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          • {item.date}
-                        </span>
-                      )}
+                      <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {item.title}
+                      </span>
                     </div>
 
-                    <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
-                      {item.title}
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                      {item.subtitle}
                     </div>
-                    {item.subtitle && (
-                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-                        {item.subtitle}
-                      </div>
-                    )}
+
+                    <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, color: 'var(--brand-primary)' }}>
+                      ${item.unitPrice.toLocaleString()} / unit
+                    </div>
                   </div>
 
-                  {/* Quantity Controls & Delete */}
-                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                    <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
-                      ${(item.unitPrice * item.quantity).toLocaleString()}
-                    </div>
-
+                  {/* Quantity and Remove */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <button
+                        type="button"
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: '4px',
+                          width: 24,
+                          height: 24,
+                          borderRadius: 'var(--radius-sm)',
                           border: '1px solid var(--border-color)',
                           backgroundColor: 'var(--bg-primary)',
+                          cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          cursor: 'pointer',
                         }}
                       >
                         <Minus size={12} />
                       </button>
-                      <span style={{ fontSize: '12px', fontWeight: 700, minWidth: 16, textAlign: 'center' }}>
+                      <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
                         {item.quantity}
                       </span>
                       <button
+                        type="button"
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: '4px',
+                          width: 24,
+                          height: 24,
+                          borderRadius: 'var(--radius-sm)',
                           border: '1px solid var(--border-color)',
                           backgroundColor: 'var(--bg-primary)',
+                          cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          cursor: 'pointer',
                         }}
                       >
                         <Plus size={12} />
                       </button>
-
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        style={{
-                          color: 'var(--status-danger)',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          marginLeft: '0.25rem',
-                        }}
-                        title="Remove item"
-                      >
-                        <Trash2 size={14} />
-                      </button>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--status-danger)',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        fontSize: '11px',
+                      }}
+                    >
+                      <Trash2 size={12} /> Remove
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Promo Code Form */}
-            <form onSubmit={handleApplyPromo} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <div style={{ flex: 1 }}>
-                <Input
-                  placeholder='Enter promo code (e.g. "MICHUU15")'
-                  value={inputCode}
-                  onChange={(e) => setInputCode(e.target.value)}
-                  icon={<Tag size={15} />}
-                />
-              </div>
-              <Button type="submit" variant="secondary" size="md">
+            {/* Promo Code Input */}
+            <form onSubmit={handleApplyPromo} style={{ display: 'flex', gap: '0.5rem' }}>
+              <Input
+                placeholder="PROMO CODE (e.g. MICHUU2026, EARLYBIRD)"
+                value={inputCode}
+                onChange={(e) => setInputCode(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <Button variant="secondary" size="sm" type="submit" icon={<Tag size={14} />}>
                 Apply
               </Button>
             </form>
@@ -467,14 +622,14 @@ export const CartDrawer: React.FC = () => {
                 style={{
                   fontSize: 'var(--font-size-xs)',
                   fontWeight: 600,
-                  color: promoMessage.success ? '#16a34a' : 'var(--status-danger)',
+                  color: promoMessage.success ? 'var(--status-success)' : 'var(--status-danger)',
                 }}
               >
                 {promoMessage.text}
               </div>
             )}
 
-            {/* Subtotal & Totals Box */}
+            {/* Pricing Breakdown */}
             <div
               style={{
                 backgroundColor: 'var(--bg-tertiary)',
@@ -482,19 +637,19 @@ export const CartDrawer: React.FC = () => {
                 borderRadius: 'var(--radius-md)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.4rem',
+                gap: '0.5rem',
                 fontSize: 'var(--font-size-sm)',
               }}
             >
               <div className="flex-between">
-                <span style={{ color: 'var(--text-muted)' }}>Items Subtotal:</span>
-                <span>${subtotal.toLocaleString()} USD</span>
+                <span style={{ color: 'var(--text-muted)' }}>Subtotal:</span>
+                <span style={{ fontWeight: 600 }}>${subtotal.toLocaleString()}</span>
               </div>
 
-              {discountAmount > 0 && (
-                <div className="flex-between" style={{ color: '#16a34a', fontWeight: 600 }}>
-                  <span>Promo Discount ({promoCode}):</span>
-                  <span>-${discountAmount.toLocaleString()} USD</span>
+              {promoCode && (
+                <div className="flex-between" style={{ color: 'var(--status-success)' }}>
+                  <span>Discount ({promoCode} - {discountPercent}%):</span>
+                  <span>-${discountAmount.toLocaleString()}</span>
                 </div>
               )}
 
@@ -503,12 +658,11 @@ export const CartDrawer: React.FC = () => {
                 style={{
                   borderTop: '1px solid var(--border-color)',
                   paddingTop: '0.5rem',
-                  marginTop: '0.25rem',
-                  fontSize: 'var(--font-size-md)',
                   fontWeight: 800,
+                  fontSize: 'var(--font-size-md)',
                 }}
               >
-                <span>Total Amount:</span>
+                <span>Total Expedition Price:</span>
                 <span style={{ color: 'var(--brand-primary)' }}>${totalPrice.toLocaleString()} USD</span>
               </div>
             </div>
@@ -516,18 +670,17 @@ export const CartDrawer: React.FC = () => {
         )}
       </Modal>
 
-      {/* Instant E-Ticket Confirmation Modal */}
-      <ETicketModal
-        isOpen={isETicketOpen}
-        onClose={() => setIsETicketOpen(false)}
-        booking={completedBooking}
-        multiItems={items.map((i) => ({
-          type: i.type,
-          title: i.title,
-          quantity: i.quantity,
-          unitPrice: i.unitPrice,
-        }))}
-      />
+      {/* E-Ticket Modal preview after checkout */}
+      {completedBooking && (
+        <ETicketModal
+          isOpen={isETicketOpen}
+          onClose={() => {
+            setIsETicketOpen(false);
+            navigate('/my-bookings');
+          }}
+          booking={completedBooking}
+        />
+      )}
     </>
   );
 };

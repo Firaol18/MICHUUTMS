@@ -45,8 +45,8 @@ const PAYMENT_METHODS = [
     icon: '📱',
     badge: 'Instant / Birr',
     accountName: 'MICHUU TOURISM & TRAVEL PLC',
-    accountNumber: '+251 91 123 4567 (Merchant Till: 889922)',
-    instructions: 'Pay via Telebirr App or *127#, then upload the transaction confirmation screenshot below.',
+    accountNumber: '0930222784',
+    instructions: 'Pay via Telebirr App or *127# to 0930222784, then upload the transaction confirmation screenshot below.',
   },
   {
     id: 'cbe_birr',
@@ -54,8 +54,8 @@ const PAYMENT_METHODS = [
     icon: '🏦',
     badge: 'CBE Mobile / *847#',
     accountName: 'MICHUU TOURISM & TRAVEL PLC',
-    accountNumber: '1000 4567 8901 2345',
-    instructions: 'Transfer to CBE account 1000456789012345, enter the FT transaction reference code, and upload the transfer receipt screenshot.',
+    accountNumber: '1000299280164',
+    instructions: 'Transfer to CBE account 1000299280164, enter the FT transaction reference code, and upload the transfer receipt screenshot.',
   },
   {
     id: 'bank_transfer',
