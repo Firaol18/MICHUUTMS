@@ -6,7 +6,7 @@ import { Modal } from '@/components/common/Modal';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useReviewStore } from '@/store/useReviewStore';
 import {
-  Star, ShieldCheck, Bus, Hotel, UserCheck, MessageSquarePlus, Send, CheckCircle2,
+  Star, ShieldCheck, Bus, Hotel, UserCheck, MessageSquarePlus, Send, CheckCircle2, ChevronDown, ChevronUp,
 } from 'lucide-react';
 
 interface TourReviewsSectionProps {
@@ -68,7 +68,7 @@ export const TourReviewsSection: React.FC<TourReviewsSectionProps> = ({
   const reviews = getReviewsForTour(tourId);
   const averages = getAverageRatingsForTour(tourId);
 
-  // Review Modal Form State
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(3);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [overallRating, setOverallRating] = useState(5);
   const [guideRating, setGuideRating] = useState(5);
@@ -201,60 +201,106 @@ export const TourReviewsSection: React.FC<TourReviewsSectionProps> = ({
 
       {/* Reviews Cards List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        {reviews.map((rev) => (
-          <Card key={rev.id} glass style={{ padding: '1.5rem', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-            
-            {/* Reviewer Header */}
-            <div className="flex-between" style={{ flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.875rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <img
-                  src={rev.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.authorName)}&background=2563eb&color=fff`}
-                  alt={rev.authorName}
-                  style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brand-primary)' }}
-                />
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
-                    {rev.authorName}
+        {reviews.length === 0 ? (
+          <Card glass style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
+            <Star size={36} style={{ color: 'var(--text-muted)', margin: '0 auto 0.75rem auto' }} />
+            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, margin: 0 }}>Be the first to review!</h3>
+            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: '1rem' }}>
+              Share your experience and photos with the traveler community.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)}>
+              Write Review
+            </Button>
+          </Card>
+        ) : (
+          reviews.slice(0, visibleReviewsCount).map((rev) => (
+            <Card key={rev.id} glass style={{ padding: '1.5rem', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+              
+              {/* Reviewer Header */}
+              <div className="flex-between" style={{ flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.875rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <img
+                    src={rev.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.authorName)}&background=2563eb&color=fff`}
+                    alt={rev.authorName}
+                    style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brand-primary)' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
+                      {rev.authorName}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: 2 }}>
+                      <span>{rev.date}</span>
+                      {rev.isVerifiedBooking && (
+                        <span style={{ color: '#16a34a', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          <ShieldCheck size={12} /> Verified Traveler
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: 2 }}>
-                    <span>{rev.date}</span>
-                    {rev.isVerifiedBooking && (
-                      <span style={{ color: '#16a34a', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                        <ShieldCheck size={12} /> Verified Traveler
-                      </span>
-                    )}
-                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#fbbf24', fontSize: '1.2rem' }}>
+                  {'★'.repeat(rev.overallRating)}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#fbbf24', fontSize: '1.2rem' }}>
-                {'★'.repeat(rev.overallRating)}
+              {/* Detailed Category Badges */}
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.875rem' }}>
+                <Badge variant="warning" style={{ fontWeight: 700 }}>
+                  ★ {rev.overallRating}/5 Overall
+                </Badge>
+                {rev.guideRating && (
+                  <Badge variant="info" style={{ fontWeight: 700 }}>
+                    👤 Guide ({rev.guideName || assignedGuideName}): ★{rev.guideRating}/5
+                  </Badge>
+                )}
+                {rev.transportRating && (
+                  <Badge variant="success" style={{ fontWeight: 700 }}>
+                    🚐 Transport: ★{rev.transportRating}/5
+                  </Badge>
+                )}
+                {rev.accommodationRating && (
+                  <Badge variant="info" style={{ fontWeight: 700 }}>
+                    🏨 Stay: ★{rev.accommodationRating}/5
+                  </Badge>
+                )}
               </div>
-            </div>
 
-            {/* Detailed Category Badges requested by user */}
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.875rem' }}>
-              <Badge variant="warning" style={{ fontWeight: 700 }}>
-                ★ {rev.overallRating}/5 Overall
-              </Badge>
-              <Badge variant="info" style={{ fontWeight: 700 }}>
-                👤 Guide ({rev.guideName || assignedGuideName}): ★{rev.guideRating || 5}/5
-              </Badge>
-              <Badge variant="success" style={{ fontWeight: 700 }}>
-                🚐 Transportation: ★{rev.transportRating || 4}/5
-              </Badge>
-              <Badge variant="info" style={{ fontWeight: 700 }}>
-                🏨 Accommodation: ★{rev.accommodationRating || 5}/5
-              </Badge>
-            </div>
-
-            {/* Review Text */}
-            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
-              "{rev.comment}"
-            </p>
-          </Card>
-        ))}
+              {/* Review Text */}
+              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
+                "{rev.comment}"
+              </p>
+            </Card>
+          ))
+        )}
       </div>
+
+      {/* ── See More / Show Less Button ── */}
+      {reviews.length > 3 && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem', gap: '0.75rem' }}>
+          {visibleReviewsCount < reviews.length ? (
+            <Button
+              variant="outline"
+              size="md"
+              icon={<ChevronDown size={16} />}
+              onClick={() => setVisibleReviewsCount((prev) => Math.min(prev + 3, reviews.length))}
+              style={{ fontWeight: 700 }}
+            >
+              See More Reviews ({reviews.length - visibleReviewsCount} remaining)
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="md"
+              icon={<ChevronUp size={16} />}
+              onClick={() => setVisibleReviewsCount(3)}
+              style={{ fontWeight: 700 }}
+            >
+              Show Less
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Write a Review Modal */}
       <Modal
@@ -264,7 +310,7 @@ export const TourReviewsSection: React.FC<TourReviewsSectionProps> = ({
         footer={
           <div className="flex-between" style={{ width: '100%' }}>
             <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button variant="primary" size="sm" onClick={handleSubmitReview} icon={<Send size={14} />} isLoading={isSubmitting} disabled={isSubmitting}>
+            <Button variant="primary" size="sm" onClick={handleSubmitReview} icon={<Send size={14} />}>
               Publish Review
             </Button>
           </div>

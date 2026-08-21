@@ -46,6 +46,8 @@ import {
   Globe,
   ShoppingCart,
   ArrowRight,
+  UploadCloud,
+  Copy,
 } from 'lucide-react';
 
 const CATEGORY_LABELS: Record<EthiopianEvent['category'], string> = {
@@ -169,6 +171,54 @@ export function getEventPackages(evt?: EthiopianEvent | null): EventPackageOptio
   ];
 }
 
+const PAYMENT_METHODS = [
+  {
+    id: 'telebirr',
+    name: 'Telebirr',
+    icon: '📱',
+    badge: 'Instant / Birr',
+    accountName: 'MICHUU TOURISM & TRAVEL PLC',
+    accountNumber: '+251 91 123 4567 (Merchant Till: 889922)',
+    instructions: 'Pay via Telebirr App or *127#, then upload the transaction confirmation screenshot below.',
+  },
+  {
+    id: 'cbe_birr',
+    name: 'Commercial Bank of Ethiopia (CBE / CBE Birr)',
+    icon: '🏦',
+    badge: 'CBE Mobile / *847#',
+    accountName: 'MICHUU TOURISM & TRAVEL PLC',
+    accountNumber: '1000 4567 8901 2345',
+    instructions: 'Transfer to CBE account 1000456789012345, enter the FT transaction reference code, and upload the transfer receipt screenshot.',
+  },
+  {
+    id: 'bank_transfer',
+    name: 'Awash / Dashen / BOA Bank Transfer',
+    icon: '🏛️',
+    badge: 'Direct Bank Wire',
+    accountName: 'MICHUU TOURISM PLC',
+    accountNumber: 'Awash Bank: 01320495839001 | Dashen: 504938291001',
+    instructions: 'Transfer to our Awash/Dashen account, then attach a photo of your bank deposit slip or mobile screenshot.',
+  },
+  {
+    id: 'credit_card',
+    name: 'Credit / Debit Card (Visa / Mastercard)',
+    icon: '💳',
+    badge: 'Card Checkout',
+    accountName: 'MICHUU Global Checkout',
+    accountNumber: 'Encrypted 256-Bit SSL',
+    instructions: 'Enter your card authorization reference or upload a screenshot of your successful transaction slip.',
+  },
+  {
+    id: 'cash',
+    name: 'Pay Cash on Arrival / Bole Office Hub',
+    icon: '💵',
+    badge: 'Pay in Person',
+    accountName: 'MICHUU Hub — Bole Medhanialem',
+    accountNumber: 'Bole Medhanialem Tower, 4th Floor',
+    instructions: 'Your reservation is held. Please settle the remaining fee at our Bole hub or upon meeting your Ranger Guide.',
+  },
+];
+
 export const EventsCalendarPage: React.FC = () => {
   const navigate = useNavigate();
   const { events, fetchEvents } = useContentStore();
@@ -206,6 +256,13 @@ export const EventsCalendarPage: React.FC = () => {
   const [travelerPhone, setTravelerPhone] = useState<string>('');
   const [travelerNationality, setTravelerNationality] = useState<string>('Ethiopia');
   const [specialRequests, setSpecialRequests] = useState<string>('');
+
+  // Payment Selection & Screenshot Upload State
+  const [paymentMethod, setPaymentMethod] = useState<'telebirr' | 'cbe_birr' | 'bank_transfer' | 'credit_card' | 'cash'>('telebirr');
+  const [transactionReference, setTransactionReference] = useState('');
+  const [paymentReceiptUrl, setPaymentReceiptUrl] = useState<string>('');
+  const [receiptFileName, setReceiptFileName] = useState('');
+  const [copiedAccount, setCopiedAccount] = useState(false);
 
   // Live direct booking submission state
   const [isDirectSubmitting, setIsDirectSubmitting] = useState<boolean>(false);
@@ -429,6 +486,28 @@ export const EventsCalendarPage: React.FC = () => {
   const totalPerGuest = selectedPkg.pricePerPerson + addonsTotalPerPerson;
   const bookingGrandTotal = totalPerGuest * totalTravelers;
 
+  const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      setBookingError('File size must be under 8MB.');
+      return;
+    }
+    setBookingError(null);
+    setReceiptFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPaymentReceiptUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCopyAccount = (text: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedAccount(true);
+    setTimeout(() => setCopiedAccount(false), 2000);
+  };
+
   // Direct Live Backend Booking Submission (Same as Tour flow)
   const handleDirectBookingSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -440,6 +519,11 @@ export const EventsCalendarPage: React.FC = () => {
     }
     if (!travelerEmail.trim()) {
       setBookingError('Please enter a valid contact email address.');
+      return;
+    }
+
+    if (paymentMethod !== 'cash' && !paymentReceiptUrl && !transactionReference.trim()) {
+      setBookingError('Please upload a screenshot of your payment receipt or enter the transaction reference code.');
       return;
     }
 
@@ -473,7 +557,11 @@ export const EventsCalendarPage: React.FC = () => {
           title: packageTitle,
           destination: destination,
           totalPrice: bookingGrandTotal,
-          status: 'pending',
+          status: 'confirmed',
+          paymentStatus: paymentReceiptUrl || transactionReference ? 'paid' : 'paid',
+          paymentMethod,
+          paymentReceiptUrl,
+          transactionReference,
         }
       );
 
@@ -1426,11 +1514,27 @@ export const EventsCalendarPage: React.FC = () => {
                   <span style={{ fontWeight: 800, color: 'var(--brand-primary)', fontSize: 'var(--font-size-md)' }}>${confirmedDirectBooking.totalPrice.toLocaleString()} USD</span>
                 </div>
                 <div className="flex-between">
-                  <span style={{ color: 'var(--text-muted)' }}>Assigned Guide:</span>
-                  <span style={{ fontWeight: 600, color: confirmedDirectBooking.assignedGuideName ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                    {confirmedDirectBooking.assignedGuideName || 'None (Pending Admin Assignment)'}
-                  </span>
+                  <span style={{ color: 'var(--text-muted)' }}>Payment Method:</span>
+                  <Badge variant="info">{(confirmedDirectBooking.paymentMethod || paymentMethod).toUpperCase()}</Badge>
                 </div>
+                {confirmedDirectBooking.transactionReference && (
+                  <div className="flex-between">
+                    <span style={{ color: 'var(--text-muted)' }}>Transaction Reference:</span>
+                    <code style={{ color: 'var(--brand-primary)', fontWeight: 700 }}>{confirmedDirectBooking.transactionReference}</code>
+                  </div>
+                )}
+                {confirmedDirectBooking.paymentReceiptUrl && (
+                  <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#16a34a', display: 'block', marginBottom: '0.35rem' }}>
+                      ✓ Attached Payment Receipt:
+                    </span>
+                    <img
+                      src={confirmedDirectBooking.paymentReceiptUrl}
+                      alt="Receipt Attachment"
+                      style={{ maxHeight: 110, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}
+                    />
+                  </div>
+                )}
                 <div className="flex-between">
                   <span style={{ color: 'var(--text-muted)' }}>Status:</span>
                   <Badge variant={confirmedDirectBooking.status === 'confirmed' ? 'success' : 'warning'}>
@@ -1440,10 +1544,10 @@ export const EventsCalendarPage: React.FC = () => {
               </Card>
             </div>
           ) : (
-            <form onSubmit={handleDirectBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <form onSubmit={handleDirectBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxHeight: '75vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
               {bookingError && (
                 <div style={{ padding: '0.75rem 1rem', backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-sm)', color: '#dc2626', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
-                  ⚠ {bookingError}
+                  ⚠️ {bookingError}
                 </div>
               )}
 
@@ -1642,6 +1746,149 @@ export const EventsCalendarPage: React.FC = () => {
                   value={specialRequests}
                   onChange={(e) => setSpecialRequests(e.target.value)}
                 />
+              </div>
+
+              {/* ── PAYMENT METHOD SELECTION ── */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, color: 'var(--text-primary)', display: 'block', marginBottom: '0.6rem' }}>
+                  💳 Select Payment Method *
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.625rem', marginBottom: '1rem' }}>
+                  {PAYMENT_METHODS.map((pm) => {
+                    const isSelected = paymentMethod === pm.id;
+                    return (
+                      <div
+                        key={pm.id}
+                        onClick={() => {
+                          setPaymentMethod(pm.id as any);
+                          setBookingError(null);
+                        }}
+                        style={{
+                          padding: '0.75rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: isSelected ? '2px solid var(--brand-primary)' : '1px solid var(--border-color)',
+                          backgroundColor: isSelected ? 'rgba(37,99,235,0.06)' : 'var(--bg-secondary)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.25rem',
+                        }}
+                      >
+                        <div className="flex-between">
+                          <span style={{ fontSize: '1.25rem' }}>{pm.icon}</span>
+                          <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: isSelected ? 'var(--brand-primary)' : 'var(--bg-tertiary)', color: isSelected ? '#fff' : 'var(--text-muted)', fontWeight: 700 }}>
+                            {pm.badge}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--brand-primary)' : 'var(--text-primary)' }}>
+                          {pm.name}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Payment Instructions & Account Box */}
+                {(() => {
+                  const activePaymentOption = PAYMENT_METHODS.find((p) => p.id === paymentMethod) || PAYMENT_METHODS[0];
+                  return (
+                    <div style={{ padding: '0.875rem 1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '1rem', fontSize: 'var(--font-size-xs)' }}>
+                      <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.5 }}>
+                        {activePaymentOption.instructions}
+                      </div>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-primary)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                        <div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700 }}>TRANSFER ACCOUNT / TILL:</div>
+                          <div style={{ fontWeight: 800, color: 'var(--brand-primary)', fontFamily: 'monospace', fontSize: 'var(--font-size-sm)' }}>
+                            {activePaymentOption.accountNumber}
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Name: {activePaymentOption.accountName}</div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          icon={copiedAccount ? <Check size={13} style={{ color: '#16a34a' }} /> : <Copy size={13} />}
+                          onClick={() => handleCopyAccount(activePaymentOption.accountNumber)}
+                        >
+                          {copiedAccount ? 'Copied' : 'Copy'}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Transaction Reference & Screenshot Upload */}
+                {paymentMethod !== 'cash' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                    <Input
+                      label="Transaction Reference / Bank Confirmation Code (e.g. FT2609...)"
+                      placeholder="Enter TXN ID / Reference Code"
+                      value={transactionReference}
+                      onChange={(e) => setTransactionReference(e.target.value)}
+                    />
+
+                    <div>
+                      <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
+                        📸 Upload Screenshot / Photo of Payment Receipt
+                      </label>
+
+                      <div
+                        style={{
+                          border: '2px dashed var(--border-color)',
+                          borderRadius: 'var(--radius-md)',
+                          padding: '1rem',
+                          textAlign: 'center',
+                          backgroundColor: 'var(--bg-secondary)',
+                          cursor: 'pointer',
+                          position: 'relative',
+                        }}
+                      >
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleReceiptUpload}
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                        />
+                        {paymentReceiptUrl ? (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+                            <img
+                              src={paymentReceiptUrl}
+                              alt="Receipt Preview"
+                              style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
+                            />
+                            <div style={{ textAlign: 'left', fontSize: 'var(--font-size-xs)' }}>
+                              <span style={{ fontWeight: 800, color: '#16a34a', display: 'block' }}>✓ Screenshot Attached</span>
+                              <span style={{ color: 'var(--text-muted)' }}>{receiptFileName || 'payment_receipt.jpg'}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPaymentReceiptUrl('');
+                                setReceiptFileName('');
+                              }}
+                              style={{ color: '#ef4444' }}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+                            <UploadCloud size={24} style={{ color: 'var(--brand-primary)' }} />
+                            <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700 }}>Click to browse or drop payment screenshot</span>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>JPEG, PNG, WebP up to 8MB</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </form>
           )}

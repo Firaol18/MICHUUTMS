@@ -352,6 +352,65 @@ export const AdminBookingsPage: React.FC = () => {
               <div><span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>Assigned Guide</span><strong>{detailBooking.assignedGuideName || '—'}</strong></div>
             </div>
 
+            {/* Payment & Receipt Verification Section */}
+            <div style={{ padding: '0.875rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontWeight: 700, marginBottom: '0.625rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  💳 Payment Verification & Transfer Slip
+                </span>
+                <Badge variant={detailBooking.paymentStatus === 'paid' ? 'success' : 'warning'}>
+                  {(detailBooking.paymentStatus || 'pending').toUpperCase()}
+                </Badge>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem', fontSize: 'var(--font-size-xs)', marginBottom: '0.75rem' }}>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>Payment Method</span>
+                  <strong>{(detailBooking.paymentMethod || 'Telebirr').toUpperCase()}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>Transaction Ref / TXN ID</span>
+                  <strong style={{ color: 'var(--brand-primary)', fontFamily: 'monospace' }}>
+                    {detailBooking.transactionReference || 'N/A (Direct Mobile/Cash)'}
+                  </strong>
+                </div>
+              </div>
+
+              {detailBooking.paymentReceiptUrl ? (
+                <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>
+                    📸 Customer Payment Screenshot Attachment:
+                  </span>
+                  <a
+                    href={detailBooking.paymentReceiptUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: 'inline-block' }}
+                  >
+                    <img
+                      src={detailBooking.paymentReceiptUrl}
+                      alt="Customer Payment Receipt"
+                      style={{
+                        maxHeight: 180,
+                        maxWidth: '100%',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '2px solid var(--brand-primary)',
+                        objectFit: 'contain',
+                        cursor: 'zoom-in',
+                      }}
+                    />
+                  </a>
+                  <span style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Click image to open full resolution screenshot
+                  </span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 4 }}>
+                  No payment screenshot uploaded for this booking.
+                </div>
+              )}
+            </div>
+
             {/* Traveler info */}
             <div>
               <div style={{ fontWeight: 700, marginBottom: '0.625rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>

@@ -86,6 +86,9 @@ function mapBackendBooking(b: any): Booking {
     totalPrice: Number(b.totalPrice),
     status: b.status,
     paymentStatus: b.paymentStatus,
+    paymentMethod: b.paymentMethod,
+    paymentReceiptUrl: b.paymentReceiptUrl,
+    transactionReference: b.transactionReference,
     bookingDate: typeof b.bookingDate === 'string' ? b.bookingDate : new Date(b.bookingDate).toISOString().split('T')[0],
     assignedGuideId: b.assignedGuideId,
     assignedGuideName: b.assignedGuideName,
@@ -239,8 +242,16 @@ class TourismService {
     traveler: TravelerInfo,
     travelDate: string,
     numberOfTravelers: number,
-    numberOfAdults?: number,
-    numberOfChildren?: number,
+    options?: {
+      title?: string;
+      destination?: string;
+      totalPrice?: number;
+      status?: string;
+      paymentStatus?: string;
+      paymentMethod?: string;
+      paymentReceiptUrl?: string;
+      transactionReference?: string;
+    },
   ): Promise<Booking> {
     const adults = numberOfAdults ?? numberOfTravelers;
     const children = numberOfChildren ?? 0;
@@ -252,6 +263,7 @@ class TourismService {
       numberOfTravelers,
       numberOfAdults: adults,
       numberOfChildren: children,
+      ...(options || {}),
     };
 
     const res = await http.post('/bookings', payload);
@@ -379,6 +391,10 @@ class TourismService {
     issueType?: string;
     branch?: string;
     search?: string;
+    paymentMethod?: string;
+    paymentReceiptUrl?: string;
+    transactionReference?: string;
+    paymentStatus?: string;
   }): Promise<IssueTicket[]> {
     const params: Record<string, string> = {};
     if (filters?.status && filters.status !== 'all' && filters.status !== 'All Status')

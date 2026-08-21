@@ -50,6 +50,10 @@ export class Booking {
   @ApiProperty() @Column({ type: 'varchar', length: 30, default: 'unpaid' }) paymentStatus: PaymentStatus;
   @ApiProperty() @Column({ type: 'varchar', length: 30, default: 'none' }) refundStatus: RefundStatus;
 
+  @ApiProperty() @Column({ type: 'varchar', length: 50, nullable: true, default: 'telebirr' }) paymentMethod?: string | null;
+  @ApiProperty() @Column({ type: 'text', nullable: true }) paymentReceiptUrl?: string | null;
+  @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) transactionReference?: string | null;
+
   @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) assignedGuideId?: string | null;
   @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) assignedGuideName?: string | null;
   @ApiProperty() @Column({ type: 'text', nullable: true }) cancellationReason?: string | null;

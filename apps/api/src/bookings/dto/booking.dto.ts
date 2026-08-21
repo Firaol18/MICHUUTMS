@@ -19,6 +19,9 @@ export class CreateBookingDto {
   @ApiPropertyOptional() @IsOptional() @IsNumber() totalPrice?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() status?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() paymentStatus?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() paymentMethod?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() paymentReceiptUrl?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() transactionReference?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() assignedGuideName?: string;
 }
 

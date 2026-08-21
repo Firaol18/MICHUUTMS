@@ -81,8 +81,11 @@ export class BookingsService {
       numberOfChildren: children,
       totalPrice,
       status,
-      paymentStatus: (dto.paymentStatus as any) || 'paid',
+      paymentStatus: (dto.paymentStatus as any) || (dto.paymentReceiptUrl ? 'paid' : 'paid'),
       refundStatus: 'none',
+      paymentMethod: dto.paymentMethod || 'telebirr',
+      paymentReceiptUrl: dto.paymentReceiptUrl || null,
+      transactionReference: dto.transactionReference || null,
       assignedGuideName,
       userId: userId ?? null,
     });

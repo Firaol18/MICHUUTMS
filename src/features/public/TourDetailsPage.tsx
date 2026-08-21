@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -27,7 +27,64 @@ import {
   ChevronUp,
   Tag,
   RotateCw,
+  UploadCloud,
+  FileImage,
+  Copy,
+  Check,
+  CreditCard,
+  Building2,
+  Smartphone,
+  Banknote,
+  Receipt,
 } from 'lucide-react';
+
+const PAYMENT_METHODS = [
+  {
+    id: 'telebirr',
+    name: 'Telebirr',
+    icon: '📱',
+    badge: 'Instant / Birr',
+    accountName: 'MICHUU TOURISM & TRAVEL PLC',
+    accountNumber: '+251 91 123 4567 (Merchant Till: 889922)',
+    instructions: 'Pay via Telebirr App or *127#, then upload the transaction confirmation screenshot below.',
+  },
+  {
+    id: 'cbe_birr',
+    name: 'Commercial Bank of Ethiopia (CBE / CBE Birr)',
+    icon: '🏦',
+    badge: 'CBE Mobile / *847#',
+    accountName: 'MICHUU TOURISM & TRAVEL PLC',
+    accountNumber: '1000 4567 8901 2345',
+    instructions: 'Transfer to CBE account 1000456789012345, enter the FT transaction reference code, and upload the transfer receipt screenshot.',
+  },
+  {
+    id: 'bank_transfer',
+    name: 'Awash / Dashen / BOA Bank Transfer',
+    icon: '🏛️',
+    badge: 'Direct Bank Wire',
+    accountName: 'MICHUU TOURISM PLC',
+    accountNumber: 'Awash Bank: 01320495839001 | Dashen: 504938291001',
+    instructions: 'Transfer to our Awash/Dashen account, then attach a photo of your bank deposit slip or mobile screenshot.',
+  },
+  {
+    id: 'credit_card',
+    name: 'Credit / Debit Card (Visa / Mastercard)',
+    icon: '💳',
+    badge: 'Card Checkout',
+    accountName: 'MICHUU Global Checkout',
+    accountNumber: 'Encrypted 256-Bit SSL',
+    instructions: 'Enter your card authorization reference or upload a screenshot of your successful transaction slip.',
+  },
+  {
+    id: 'cash',
+    name: 'Pay Cash on Arrival / Bole Office Hub',
+    icon: '💵',
+    badge: 'Pay in Person',
+    accountName: 'MICHUU Hub — Bole Medhanialem',
+    accountNumber: 'Bole Medhanialem Tower, 4th Floor',
+    instructions: 'Your reservation is held. Please settle the remaining fee at our Bole hub or upon meeting your Ranger Guide.',
+  },
+];
 
 export const TourDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,8 +104,20 @@ export const TourDetailsPage: React.FC = () => {
   const [travelDate, setTravelDate] = useState('2026-09-20');
   const [travelerName, setTravelerName] = useState(user?.name || '');
   const [travelerEmail, setTravelerEmail] = useState(user?.email || '');
-  const [travelerPhone, setTravelerPhone] = useState('+1 (555) 321-7890');
-  const [travelerNationality, setTravelerNationality] = useState('United States');
+  const [travelerPhone, setTravelerPhone] = useState('+251 91 123 4567');
+  const [travelerNationality, setTravelerNationality] = useState('Ethiopia');
+  const [specialRequests, setSpecialRequests] = useState('');
+
+  // Payment State & Receipt Attachment
+  const [paymentMethod, setPaymentMethod] = useState<'telebirr' | 'cbe_birr' | 'bank_transfer' | 'credit_card' | 'cash'>('telebirr');
+  const [transactionReference, setTransactionReference] = useState('');
+  const [paymentReceiptUrl, setPaymentReceiptUrl] = useState<string>('');
+  const [receiptFileName, setReceiptFileName] = useState('');
+  const [copiedAccount, setCopiedAccount] = useState(false);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -56,6 +125,20 @@ export const TourDetailsPage: React.FC = () => {
       setTravelerEmail(user.email);
     }
   }, [user]);
+
+  useEffect(() => {
+    const fetchTourDetails = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      try {
+        const data = await tourismService.getTourById(id);
+        setTour(data);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTourDetails();
+  }, [id]);
 
   const handleBookNow = () => {
     if (!isAuthenticated) {
@@ -87,24 +170,28 @@ export const TourDetailsPage: React.FC = () => {
     });
     useCartStore.getState().openCart();
   };
-  const [specialRequests, setSpecialRequests] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bookingError, setBookingError] = useState('');
-  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
-  useEffect(() => {
-    const fetchTourDetails = async () => {
-      if (!id) return;
-      setIsLoading(true);
-      try {
-        const data = await tourismService.getTourById(id);
-        setTour(data);
-      } finally {
-        setIsLoading(false);
-      }
+  const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      setBookingError('File size must be under 8MB.');
+      return;
+    }
+    setBookingError('');
+    setReceiptFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPaymentReceiptUrl(reader.result as string);
     };
-    fetchTourDetails();
-  }, [id]);
+    reader.readAsDataURL(file);
+  };
+
+  const handleCopyAccount = (text: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedAccount(true);
+    setTimeout(() => setCopiedAccount(false), 2000);
+  };
 
   if (isLoading) {
     return <LoadingSpinner label="Loading itinerary details..." />;
@@ -122,8 +209,9 @@ export const TourDetailsPage: React.FC = () => {
   }
 
   const totalTravelers = adultsCount + childrenCount;
-  const isOverCapacity = totalTravelers > tour.maxGroupSize;
   const spotsRemaining = tour.maxGroupSize - totalTravelers;
+  const isOverCapacity = spotsRemaining < 0;
+  const totalPrice = tour.pricePerPerson * totalTravelers;
 
   const originalPrice = tour.originalPrice
     ? tour.originalPrice
@@ -131,11 +219,25 @@ export const TourDetailsPage: React.FC = () => {
     ? Math.round(tour.pricePerPerson / (1 - tour.discountPercent / 100))
     : null;
 
+  const activePaymentOption = PAYMENT_METHODS.find((p) => p.id === paymentMethod) || PAYMENT_METHODS[0];
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isOverCapacity) return;
+
+    if (!travelerName || !travelerEmail) {
+      setBookingError('Please provide your full name and email address.');
+      return;
+    }
+
+    if (paymentMethod !== 'cash' && !paymentReceiptUrl && !transactionReference.trim()) {
+      setBookingError('Please upload a screenshot of your payment receipt or enter the transaction reference code.');
+      return;
+    }
+
     setBookingError('');
     setIsSubmitting(true);
+
     try {
       const bkg = await tourismService.createBooking(
         tour.id,
@@ -149,7 +251,17 @@ export const TourDetailsPage: React.FC = () => {
         travelDate,
         totalTravelers,
         adultsCount,
-        childrenCount
+        childrenCount,
+        {
+          title: tour.title,
+          destination: tour.destination.name,
+          totalPrice,
+          status: 'confirmed',
+          paymentStatus: paymentReceiptUrl || transactionReference ? 'paid' : (paymentMethod === 'cash' ? 'unpaid' : 'paid'),
+          paymentMethod,
+          paymentReceiptUrl,
+          transactionReference,
+        }
       );
       setConfirmedBooking(bkg);
     } catch (err: unknown) {
@@ -161,6 +273,16 @@ export const TourDetailsPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
+      
+      {/* Top Breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Home</Link>
+        <span>/</span>
+        <Link to="/tours" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Tours</Link>
+        <span>/</span>
+        <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{tour.title}</span>
+      </div>
+
       {/* Title & Location Header */}
       <div style={{ marginBottom: '1.5rem' }}>
         <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -179,14 +301,15 @@ export const TourDetailsPage: React.FC = () => {
           {tour.title}
         </h1>
 
-        <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '1.5rem', marginTop: '0.75rem', fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>
-          <div className="flex-center" style={{ gap: '0.375rem', color: '#fbbf24', fontWeight: 700 }}>
-            <Star size={16} fill="#fbbf24" /> <span>{tour.rating}</span>
-            <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({tour.reviewCount} customer reviews)</span>
+        <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '1.5rem', marginTop: '0.5rem', fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+          <div className="flex-center" style={{ gap: '0.375rem' }}>
+            <Clock size={16} /> <span>{tour.durationDays} Days / {tour.durationDays - 1} Nights</span>
           </div>
 
           <div className="flex-center" style={{ gap: '0.375rem' }}>
-            <Clock size={16} /> <span>{tour.durationDays} Days / {tour.durationDays - 1} Nights</span>
+            <Star size={16} style={{ color: 'var(--status-warning)', fill: 'var(--status-warning)' }} />
+            <span style={{ fontWeight: 600 }}>{tour.rating}</span>
+            <span style={{ color: 'var(--text-muted)' }}>({tour.reviewCount ?? 18} reviews)</span>
           </div>
 
           <div className="flex-center" style={{ gap: '0.375rem' }}>
@@ -224,14 +347,23 @@ export const TourDetailsPage: React.FC = () => {
       )}
 
       {/* Image Gallery Hero Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '2.5rem', height: '420px', position: 'relative' }}>
-        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div
+        className="tour-gallery-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '1rem',
+          marginBottom: '2.5rem',
+          minHeight: '340px',
+          position: 'relative',
+        }}
+      >
+        <div style={{ position: 'relative', width: '100%', height: '340px' }}>
           <img
             src={tour.imageUrl}
             alt={tour.title}
             style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-lg)' }}
           />
-          {/* Virtual 360° Panorama Trigger Button */}
           <button
             type="button"
             onClick={() => setIs360Open(true)}
@@ -257,22 +389,23 @@ export const TourDetailsPage: React.FC = () => {
             <RotateCw size={16} /> 360° Virtual Panorama View
           </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '340px' }}>
           {tour.galleryImages.slice(0, 2).map((img, idx) => (
             <img
               key={idx}
               src={img}
               alt={`Gallery ${idx}`}
-              style={{ width: '100%', height: '50%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
+              style={{ width: '100%', height: 'calc(50% - 0.5rem)', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
             />
           ))}
         </div>
       </div>
 
-      {/* Page Body Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2.5rem' }}>
+      {/* ── 2-Column Section (Left Details + Right Sticky Sidebar) ── */}
+      <div className="tour-details-layout" style={{ display: 'flex', gap: '2.5rem', alignItems: 'flex-start' }}>
+        
         {/* Main Content Area */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           {/* Summary */}
           <Card glass>
             <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, marginBottom: '0.75rem' }}>Expedition Overview</h3>
@@ -337,12 +470,12 @@ export const TourDetailsPage: React.FC = () => {
           </div>
 
           {/* Inclusions & Exclusions */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
             <Card glass>
               <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: '1rem', color: 'var(--status-success)' }}>
                 ✓ What's Included
               </h4>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.625rem', fontSize: 'var(--font-size-sm)' }}>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.625rem', fontSize: 'var(--font-size-sm)', padding: 0 }}>
                 {tour.included.map((item, idx) => (
                   <li key={idx} className="flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem' }}>
                     <CheckCircle2 size={16} style={{ color: 'var(--status-success)', flexShrink: 0 }} />
@@ -356,7 +489,7 @@ export const TourDetailsPage: React.FC = () => {
               <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: '1rem', color: 'var(--status-danger)' }}>
                 ✕ What's Excluded
               </h4>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.625rem', fontSize: 'var(--font-size-sm)' }}>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.625rem', fontSize: 'var(--font-size-sm)', padding: 0 }}>
                 {tour.excluded.map((item, idx) => (
                   <li key={idx} className="flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem' }}>
                     <XCircle size={16} style={{ color: 'var(--status-danger)', flexShrink: 0 }} />
@@ -366,34 +499,15 @@ export const TourDetailsPage: React.FC = () => {
               </ul>
             </Card>
           </div>
-
-          {/* Interactive Expedition Location Map */}
-          <div>
-            <InteractiveLocationMap
-              title={`Interactive Location Map & Route — ${tour.title}`}
-              tourTitle={tour.title}
-              tourId={tour.id}
-              isEditable={false}
-            />
-          </div>
-
-          {/* Reviews & Ratings Section */}
-          <div>
-            <TourReviewsSection
-              tourId={tour.id}
-              tourTitle={tour.title}
-              assignedGuideName={tour.assignedGuideName}
-            />
-          </div>
         </div>
 
-        {/* Sidebar Sticky Booking Card */}
-        <div>
+        {/* Sidebar Sticky Booking Card & Trust Assurances */}
+        <div className="tour-details-sidebar" style={{ width: '380px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <Card
             glass
             style={{
               position: 'sticky',
-              top: 100,
+              top: 90,
               display: 'flex',
               flexDirection: 'column',
               gap: '1.25rem',
@@ -402,10 +516,10 @@ export const TourDetailsPage: React.FC = () => {
             }}
           >
             <div>
-              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
                 {tour.hasOffer ? 'Special Discounted Price' : 'Package Price'}
               </span>
-              <div style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 800, color: tour.hasOffer ? '#16a34a' : 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 800, color: tour.hasOffer ? '#16a34a' : 'var(--text-primary)', letterSpacing: '-0.02em', marginTop: 4 }}>
                 {originalPrice && (
                   <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', marginRight: '0.5rem', fontWeight: 500 }}>
                     ${originalPrice.toLocaleString()}
@@ -418,7 +532,7 @@ export const TourDetailsPage: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: 'var(--font-size-sm)' }}>
               <div className="flex-between">
                 <span style={{ color: 'var(--text-muted)' }}>Duration:</span>
-                <span style={{ fontWeight: 600 }}>{tour.durationDays} Days</span>
+                <span style={{ fontWeight: 700 }}>{tour.durationDays} Days</span>
               </div>
               <div className="flex-between">
                 <span style={{ color: 'var(--text-muted)' }}>Difficulty:</span>
@@ -426,12 +540,16 @@ export const TourDetailsPage: React.FC = () => {
               </div>
               <div className="flex-between">
                 <span style={{ color: 'var(--text-muted)' }}>Group Size:</span>
-                <span style={{ fontWeight: 600 }}>Max {tour.maxGroupSize} Guests</span>
+                <span style={{ fontWeight: 700 }}>Max {tour.maxGroupSize} Guests</span>
+              </div>
+              <div className="flex-between">
+                <span style={{ color: 'var(--text-muted)' }}>Lead Ranger:</span>
+                <span style={{ fontWeight: 700, color: 'var(--brand-primary)' }}>{tour.assignedGuideName || 'Abebe Bekele'}</span>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              <Button variant="primary" size="lg" icon={<Ticket size={18} />} onClick={handleBookNow}>
+              <Button variant="primary" size="lg" icon={<Ticket size={18} />} onClick={handleBookNow} style={{ width: '100%', fontWeight: 800 }}>
                 Book This Expedition Now
               </Button>
 
@@ -439,26 +557,65 @@ export const TourDetailsPage: React.FC = () => {
                 variant="outline"
                 size="md"
                 onClick={handleAddToCart}
+                style={{ width: '100%' }}
               >
                 🛒 Add to Cart (Multi-Item Package)
               </Button>
             </div>
 
-            <div className="flex-center" style={{ gap: '0.5rem', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>
-              <ShieldCheck size={16} style={{ color: 'var(--status-success)' }} /> Instant confirmation & 100% money-back guarantee
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '11px', color: 'var(--text-muted)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <ShieldCheck size={14} style={{ color: '#16a34a' }} /> 100% Verified licensed Ethiopian operator
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <ShieldCheck size={14} style={{ color: '#16a34a' }} /> Free reschedule up to 7 days prior
+              </div>
+            </div>
+          </Card>
+
+          {/* Expert Guide Card */}
+          <Card glass style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'var(--bg-secondary)' }}>
+            <img
+              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120"
+              alt="Lead Guide"
+              style={{ width: 50, height: 50, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brand-primary)' }}
+            />
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Assigned Ranger Guide</div>
+              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 800, color: 'var(--text-primary)' }}>{tour.assignedGuideName || 'Abebe Bekele'}</div>
+              <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>★ 5.0 (98 Expeditions Guided)</div>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* Interactive Booking Modal */}
+      {/* ── Full Width Interactive Expedition Location Map ── */}
+      <div style={{ marginTop: '3.5rem' }}>
+        <InteractiveLocationMap
+          title={`Interactive Location Map & Route — ${tour.title}`}
+          tourTitle={tour.title}
+          tourId={tour.id}
+          isEditable={false}
+        />
+      </div>
+
+      {/* ── Full Width Reviews & Ratings Section ── */}
+      <div style={{ marginTop: '3.5rem' }}>
+        <TourReviewsSection
+          tourId={tour.id}
+          tourTitle={tour.title}
+          assignedGuideName={tour.assignedGuideName}
+        />
+      </div>
+
+      {/* ── Enhanced Interactive Booking Modal with Payment & Screenshot Upload ── */}
       <Modal
         isOpen={isBookingModalOpen}
         onClose={() => {
           setIsBookingModalOpen(false);
           setConfirmedBooking(null);
         }}
-        title={confirmedBooking ? 'Reservation Confirmed!' : `Book Tour - ${tour.title}`}
+        title={confirmedBooking ? 'Reservation Confirmed! 🎟️' : `Book Tour - ${tour.title}`}
         footer={
           confirmedBooking ? (
             <Button variant="primary" size="sm" onClick={() => navigate('/my-bookings')}>
@@ -477,7 +634,7 @@ export const TourDetailsPage: React.FC = () => {
                 icon={<Ticket size={16} />}
                 disabled={isOverCapacity}
               >
-                Confirm Booking (${(tour.pricePerPerson * totalTravelers).toLocaleString()})
+                Confirm Booking & Payment (${totalPrice.toLocaleString()})
               </Button>
             </div>
           )
@@ -487,26 +644,46 @@ export const TourDetailsPage: React.FC = () => {
           <div className="flex-center" style={{ flexDirection: 'column', gap: '1.25rem', textAlign: 'center', padding: '1rem 0' }}>
             <div
               className="flex-center"
-              style={{ width: 64, height: 64, borderRadius: '50%', backgroundColor: 'var(--status-success-bg)', color: 'var(--status-success)' }}
+              style={{ width: 64, height: 64, borderRadius: '50%', backgroundColor: 'rgba(22, 163, 74, 0.1)', color: '#16a34a' }}
             >
-              <CheckCircle2 size={36} />
+              <CheckCircle2 size={40} />
             </div>
             <div>
-              <h3 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800 }}>Booking Reference #{confirmedBooking.bookingReference}</h3>
+              <h3 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800 }}>Booking Confirmed! #{confirmedBooking.bookingReference}</h3>
               <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                Thank you {confirmedBooking.traveler.name}! Your reservation for <strong>{confirmedBooking.tourTitle}</strong> is confirmed.
+                Thank you <strong>{confirmedBooking.traveler.name}</strong>! Your expedition reservation is officially recorded.
               </p>
             </div>
 
-            <Card glass style={{ width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
+            <Card glass style={{ width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.625rem', fontSize: 'var(--font-size-sm)', backgroundColor: 'var(--bg-secondary)' }}>
+              <div><strong>Tour:</strong> {confirmedBooking.tourTitle}</div>
               <div><strong>Travel Date:</strong> {confirmedBooking.travelDate}</div>
               <div><strong>Travelers:</strong> {confirmedBooking.numberOfTravelers} Guests</div>
-              <div><strong>Total Paid:</strong> ${confirmedBooking.totalPrice.toLocaleString()}</div>
-              <div><strong>Assigned Ranger Guide:</strong> {confirmedBooking.assignedGuideName}</div>
+              <div><strong>Total Amount:</strong> ${confirmedBooking.totalPrice.toLocaleString()}</div>
+              <div>
+                <strong>Payment Method:</strong> <Badge variant="info">{(confirmedBooking.paymentMethod || paymentMethod).toUpperCase()}</Badge>
+              </div>
+              {confirmedBooking.transactionReference && (
+                <div><strong>Transaction Reference:</strong> <code style={{ color: 'var(--brand-primary)', fontWeight: 700 }}>{confirmedBooking.transactionReference}</code></div>
+              )}
+              {confirmedBooking.paymentReceiptUrl && (
+                <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#16a34a', display: 'block', marginBottom: '0.35rem' }}>
+                    ✓ Payment Receipt Attached:
+                  </span>
+                  <img
+                    src={confirmedBooking.paymentReceiptUrl}
+                    alt="Payment Slip"
+                    style={{ maxHeight: 120, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}
+                  />
+                </div>
+              )}
+              <div><strong>Status:</strong> <Badge variant="success">CONFIRMED & VERIFIED</Badge></div>
             </Card>
           </div>
         ) : (
-          <form onSubmit={handleBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <form onSubmit={handleBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxHeight: '75vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
+            
             {/* Capacity indicator */}
             <div
               style={{
@@ -526,7 +703,7 @@ export const TourDetailsPage: React.FC = () => {
               <span>{isOverCapacity ? `⚠ Over capacity by ${Math.abs(spotsRemaining)}` : `✓ ${spotsRemaining} spot${spotsRemaining !== 1 ? 's' : ''} remaining`}</span>
             </div>
 
-            {/* Adults + Children */}
+            {/* Traveler Details Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
               <Input
                 label="Adults"
@@ -554,26 +731,166 @@ export const TourDetailsPage: React.FC = () => {
               />
             </div>
 
-            <Input label="Lead Traveler Full Name" value={travelerName} onChange={(e) => setTravelerName(e.target.value)} required />
+            <Input label="Lead Traveler Full Name *" value={travelerName} onChange={(e) => setTravelerName(e.target.value)} required />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <Input label="Email Address" type="email" value={travelerEmail} onChange={(e) => setTravelerEmail(e.target.value)} required />
-              <Input label="Phone Number" type="tel" value={travelerPhone} onChange={(e) => setTravelerPhone(e.target.value)} required />
+              <Input label="Email Address *" type="email" value={travelerEmail} onChange={(e) => setTravelerEmail(e.target.value)} required />
+              <Input label="Phone Number *" type="tel" value={travelerPhone} onChange={(e) => setTravelerPhone(e.target.value)} required />
             </div>
 
-            <Input label="Nationality / Passport Country" value={travelerNationality} onChange={(e) => setTravelerNationality(e.target.value)} required />
-            <Input label="Special Dietary / Access Requests" placeholder="e.g. Vegetarian meal plan, Wheelchair access" value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <Input label="Nationality *" value={travelerNationality} onChange={(e) => setTravelerNationality(e.target.value)} required />
+              <Input label="Special Dietary / Access Requests" placeholder="e.g. Vegan, wheelchair, translator" value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} />
+            </div>
+
+            {/* ── PAYMENT METHOD SELECTION ── */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+              <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, color: 'var(--text-primary)', display: 'block', marginBottom: '0.6rem' }}>
+                💳 Select Payment Method *
+              </label>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.625rem', marginBottom: '1rem' }}>
+                {PAYMENT_METHODS.map((pm) => {
+                  const isSelected = paymentMethod === pm.id;
+                  return (
+                    <div
+                      key={pm.id}
+                      onClick={() => {
+                        setPaymentMethod(pm.id as any);
+                        setBookingError('');
+                      }}
+                      style={{
+                        padding: '0.75rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: isSelected ? '2px solid var(--brand-primary)' : '1px solid var(--border-color)',
+                        backgroundColor: isSelected ? 'rgba(37,99,235,0.06)' : 'var(--bg-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.25rem',
+                      }}
+                    >
+                      <div className="flex-between">
+                        <span style={{ fontSize: '1.25rem' }}>{pm.icon}</span>
+                        <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: isSelected ? 'var(--brand-primary)' : 'var(--bg-tertiary)', color: isSelected ? '#fff' : 'var(--text-muted)', fontWeight: 700 }}>
+                          {pm.badge}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--brand-primary)' : 'var(--text-primary)' }}>
+                        {pm.name}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Payment Instructions & Account Box */}
+              <div style={{ padding: '0.875rem 1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '1rem', fontSize: 'var(--font-size-xs)' }}>
+                <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.5 }}>
+                  {activePaymentOption.instructions}
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-primary)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                  <div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700 }}>TRANSFER ACCOUNT / TILL:</div>
+                    <div style={{ fontWeight: 800, color: 'var(--brand-primary)', fontFamily: 'monospace', fontSize: 'var(--font-size-sm)' }}>
+                      {activePaymentOption.accountNumber}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Name: {activePaymentOption.accountName}</div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    icon={copiedAccount ? <Check size={13} style={{ color: '#16a34a' }} /> : <Copy size={13} />}
+                    onClick={() => handleCopyAccount(activePaymentOption.accountNumber)}
+                  >
+                    {copiedAccount ? 'Copied' : 'Copy'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Transaction Reference & Screenshot Upload */}
+              {paymentMethod !== 'cash' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                  <Input
+                    label="Transaction Reference / Bank Confirmation Code (e.g. FT2609...)"
+                    placeholder="Enter TXN ID / Reference Code"
+                    value={transactionReference}
+                    onChange={(e) => setTransactionReference(e.target.value)}
+                  />
+
+                  <div>
+                    <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
+                      📸 Upload Screenshot / Photo of Payment Receipt
+                    </label>
+
+                    <div
+                      style={{
+                        border: '2px dashed var(--border-color)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '1rem',
+                        textAlign: 'center',
+                        backgroundColor: 'var(--bg-secondary)',
+                        cursor: 'pointer',
+                        position: 'relative',
+                      }}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={handleReceiptUpload}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                      />
+                      {paymentReceiptUrl ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+                          <img
+                            src={paymentReceiptUrl}
+                            alt="Receipt Preview"
+                            style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
+                          />
+                          <div style={{ textAlign: 'left', fontSize: 'var(--font-size-xs)' }}>
+                            <span style={{ fontWeight: 800, color: '#16a34a', display: 'block' }}>✓ Screenshot Attached</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{receiptFileName || 'payment_receipt.jpg'}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPaymentReceiptUrl('');
+                              setReceiptFileName('');
+                            }}
+                            style={{ color: '#ef4444' }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+                          <UploadCloud size={24} style={{ color: 'var(--brand-primary)' }} />
+                          <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700 }}>Click to browse or drop payment screenshot</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>JPEG, PNG, WebP up to 8MB</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {bookingError && (
               <div style={{ padding: '0.75rem 1rem', backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-sm)', color: '#dc2626', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
-                ⚠ {bookingError}
+                ⚠️ {bookingError}
               </div>
             )}
 
             <div className="flex-between" style={{ padding: '0.875rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', marginTop: '0.5rem' }}>
               <span>Total ({totalTravelers} guest{totalTravelers !== 1 ? 's' : ''} · {adultsCount}A/{childrenCount}C):</span>
               <span style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, color: 'var(--brand-primary)' }}>
-                ${(tour.pricePerPerson * totalTravelers).toLocaleString()}
+                ${totalPrice.toLocaleString()}
               </span>
             </div>
           </form>

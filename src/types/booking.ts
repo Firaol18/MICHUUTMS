@@ -24,6 +24,9 @@ export interface Booking {
   totalPrice: number;
   status: BookingStatus;
   paymentStatus: PaymentStatus;
+  paymentMethod?: string;
+  paymentReceiptUrl?: string;
+  transactionReference?: string;
   bookingDate: string;
   assignedGuideId?: string;
   assignedGuideName?: string;
