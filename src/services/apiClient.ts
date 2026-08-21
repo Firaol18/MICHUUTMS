@@ -18,7 +18,7 @@ http.interceptors.request.use(
   (config) => {
     try {
       const token = localStorage.getItem('tms_token');
-      if (token && config.headers) {
+      if (token && typeof token === 'string' && token.split('.').length === 3 && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch {

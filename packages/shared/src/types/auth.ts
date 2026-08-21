@@ -9,6 +9,23 @@ export interface User {
   role: Role;
   avatarUrl?: string;
   department?: string;
+  phone?: string;
+  nationality?: string;
+  ecName?: string;
+  ecRelationship?: string;
+  ecPhone?: string;
+  ecEmail?: string;
+  passportType?: string;
+  passportNumber?: string;
+  passportCountry?: string;
+  passportExpiry?: string;
+  dietaryNeeds?: string;
+  languages?: string;
+  accessibility?: string;
+  preferredCurrency?: string;
+  accommodation?: string;
+  tourTypes?: string[];
+  completedTripsCount?: number;
 }
 
 export interface AuthState {

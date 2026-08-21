@@ -32,6 +32,77 @@ export class User {
   @JoinColumn({ name: 'roleId' })
   role: Role;
 
+  @ApiProperty({ example: '+251 91 123 4567', description: 'Phone number', required: false })
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  phone?: string;
+
+  @ApiProperty({ example: 'Ethiopia', description: 'Nationality or country', required: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  nationality?: string;
+
+  @ApiProperty({ description: 'Profile avatar image URL or data URI', required: false })
+  @Column({ type: 'text', nullable: true })
+  avatarUrl?: string;
+
+  // ── Emergency Contact ──
+  @ApiProperty({ description: 'Emergency Contact Name', required: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  ecName?: string;
+
+  @ApiProperty({ description: 'Emergency Contact Relationship', required: false })
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  ecRelationship?: string;
+
+  @ApiProperty({ description: 'Emergency Contact Phone', required: false })
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  ecPhone?: string;
+
+  @ApiProperty({ description: 'Emergency Contact Email', required: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  ecEmail?: string;
+
+  // ── Travel Documents ──
+  @ApiProperty({ example: 'passport', description: 'Document type', required: false })
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  passportType?: string;
+
+  @ApiProperty({ description: 'Document number', required: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  passportNumber?: string;
+
+  @ApiProperty({ description: 'Issuing Country', required: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  passportCountry?: string;
+
+  @ApiProperty({ description: 'Document expiry date', required: false })
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  passportExpiry?: string;
+
+  // ── Travel Preferences ──
+  @ApiProperty({ description: 'Dietary or medical notes', required: false })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  dietaryNeeds?: string;
+
+  @ApiProperty({ description: 'Languages spoken', required: false })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  languages?: string;
+
+  @ApiProperty({ description: 'Accessibility requirements', required: false })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  accessibility?: string;
+
+  @ApiProperty({ example: 'USD ($)', description: 'Preferred currency', required: false })
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  preferredCurrency?: string;
+
+  @ApiProperty({ description: 'Preferred accommodation type', required: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  accommodation?: string;
+
+  @ApiProperty({ description: 'Preferred tour types list', required: false })
+  @Column({ type: 'simple-array', nullable: true })
+  tourTypes?: string[];
+
   @ApiProperty({ description: 'User creation timestamp' })
   @CreateDateColumn()
   createdAt: Date;

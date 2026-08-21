@@ -140,15 +140,40 @@ export const CartDrawer: React.FC = () => {
   const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      setCheckoutError('File size must be under 8MB.');
+    if (file.size > 15 * 1024 * 1024) {
+      setCheckoutError('File size must be under 15MB.');
       return;
     }
     setCheckoutError('');
     setReceiptFileName(file.name);
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setPaymentReceiptUrl(reader.result as string);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          setPaymentReceiptUrl(canvas.toDataURL('image/jpeg', 0.85));
+        } else {
+          setPaymentReceiptUrl(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };

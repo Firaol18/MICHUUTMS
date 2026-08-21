@@ -26,6 +26,7 @@ import {
   Home,
   UserCircle,
   Star,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@tms/shared/components/common/Button';
 import { RaiseIssueModal } from '@tms/shared/components/common/RaiseIssueModal';
@@ -546,8 +547,18 @@ export const PublicNavbar: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Tour History + Sign Out */}
+                      {/* User Account Navigation Links */}
                       <div style={{ padding: '0.4rem 0' }}>
+                        <button
+                          type="button"
+                          onClick={() => { setIsUserMenuOpen(false); navigate('/user/dashboard'); }}
+                          style={menuItemStyle}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <UserCircle size={15} style={{ color: 'var(--brand-primary)' }} />
+                          My Dashboard
+                        </button>
                         <button
                           type="button"
                           onClick={() => { setIsUserMenuOpen(false); navigate('/my-bookings'); }}
@@ -556,7 +567,27 @@ export const PublicNavbar: React.FC = () => {
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
                           <Ticket size={15} style={{ color: 'var(--brand-primary)' }} />
-                          Tour History
+                          Tour History & Bookings
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setIsUserMenuOpen(false); navigate('/user/profile'); }}
+                          style={menuItemStyle}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <Settings size={15} style={{ color: 'var(--brand-primary)' }} />
+                          Profile & Settings
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setIsUserMenuOpen(false); navigate('/user/reviews'); }}
+                          style={menuItemStyle}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <Star size={15} style={{ color: 'var(--brand-primary)' }} />
+                          My Reviews
                         </button>
                         <button
                           type="button"
@@ -837,6 +868,13 @@ export const PublicNavbar: React.FC = () => {
               onClick={() => { setIsMobileMenuOpen(false); navigate('/my-bookings'); }}
             >
               <Ticket size={18} style={{ color: 'var(--brand-primary)' }} /> My Bookings
+            </button>
+            <button
+              type="button"
+              className="pub-nav-mobile-link"
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/user/profile'); }}
+            >
+              <Settings size={18} style={{ color: 'var(--brand-primary)' }} /> Profile & Settings
             </button>
             <button
               type="button"

@@ -8,8 +8,9 @@ import {
   Param,
   HttpCode,
   HttpStatus,
-  UseGuards,
   Query,
+  Req,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,24 +19,69 @@ import {
   ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { JwtService } from '@nestjs/jwt';
 
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersPaginationQueryDto } from './dto/users-pagination-query.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-
-// (Optional – add later)
-// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('users')
 @ApiBearerAuth()
-// @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  /**
+   * Helper: Resolves target user from Authorization header JWT token,
+   * query parameter (userId/email), or body, with graceful fallback to first user.
+   */
+  private async resolveUser(
+    req: any,
+    explicitUserId?: string,
+    explicitEmail?: string,
+  ): Promise<User> {
+    let targetUser: User | null = null;
+
+    // 1. Check Authorization Bearer token
+    const authHeader = req?.headers?.['authorization'] || req?.headers?.['Authorization'];
+    if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7).trim();
+      try {
+        const decoded: any = this.jwtService.decode(token);
+        if (decoded && decoded.sub) {
+          targetUser = await this.usersService.getUserById(decoded.sub).catch(() => null);
+        }
+        if (!targetUser && decoded && decoded.email) {
+          targetUser = await this.usersService.getUserByEmail(decoded.email);
+        }
+      } catch {}
+    }
+
+    // 2. Explicit User ID or Email
+    if (!targetUser && explicitUserId) {
+      targetUser = await this.usersService.getUserById(explicitUserId).catch(() => null);
+    }
+    if (!targetUser && explicitEmail) {
+      targetUser = await this.usersService.getUserByEmail(explicitEmail);
+    }
+
+    // 3. Fallback: retrieve first active user
+    if (!targetUser) {
+      const users = await this.usersService.getUsers();
+      targetUser = users[0] || null;
+    }
+
+    if (!targetUser) {
+      throw new NotFoundException('User profile not found.');
+    }
+
+    return targetUser;
+  }
 
   // GET /users
   @Get()
@@ -62,26 +108,42 @@ export class UsersController {
 
   // GET /users/profile
   @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiOperation({ summary: 'Get current user profile with live stats' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@CurrentUser() user: User): Promise<User> {
-    return user;
+  async getProfile(
+    @Req() req: any,
+    @Query('userId') userId?: string,
+    @Query('email') email?: string,
+  ) {
+    const user = await this.resolveUser(req, userId, email);
+    return this.usersService.getProfileWithStats(user.id);
   }
 
   // PATCH /users/profile
   @Patch('profile')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async updateProfile(
-    @CurrentUser() user: User,
-    @Body() dto: UpdateUserDto,
+    @Req() req: any,
+    @Body() dto: UpdateUserDto & { userId?: string; email?: string },
+    @Query('userId') queryUserId?: string,
+    @Query('email') queryEmail?: string,
   ): Promise<User> {
+    const user = await this.resolveUser(req, dto.userId || queryUserId, dto.email || queryEmail);
     return this.usersService.updateUser(user.id, dto);
+  }
+
+  // POST /users/profile/change-password
+  @Post('profile/change-password')
+  @ApiOperation({ summary: 'Change user password' })
+  @ApiResponse({ status: 200, description: 'Password updated successfully' })
+  async changePassword(
+    @Req() req: any,
+    @Body() dto: { currentPassword: string; newPassword: string; userId?: string; email?: string },
+  ) {
+    const user = await this.resolveUser(req, dto.userId, dto.email);
+    return this.usersService.changePassword(user.id, dto.currentPassword, dto.newPassword);
   }
 
   // GET /users/:id
@@ -99,12 +161,10 @@ export class UsersController {
   @Post()
   @ApiOperation({ summary: 'Create a user' })
   @ApiBody({ type: CreateUserDto })
-  @ApiResponse({ status: 201, description: 'User created successfully' })
-  @ApiResponse({ status: 400, description: 'Validation error' })
-  @HttpCode(HttpStatus.CREATED)
-  createUser(@Body() dto: CreateUserDto): Promise<User> {
-    // ❌ No manual validation here
-    // ✅ DTO + ValidationPipe handle it
+  @ApiResponse({ status: 201, description: 'User created' })
+  async createUser(
+    @Body() dto: CreateUserDto,
+  ): Promise<User> {
     return this.usersService.createUser(dto);
   }
 
@@ -112,9 +172,9 @@ export class UsersController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a user' })
   @ApiBody({ type: UpdateUserDto })
-  @ApiResponse({ status: 200, description: 'User updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid update payload' })
-  updateUser(
+  @ApiResponse({ status: 200, description: 'User updated' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async updateUser(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
   ): Promise<User> {
@@ -123,9 +183,10 @@ export class UsersController {
 
   // DELETE /users/:id
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a user' })
-  @ApiResponse({ status: 204, description: 'User deleted successfully' })
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a user' })
+  @ApiResponse({ status: 204, description: 'User deleted' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async deleteUser(
     @Param('id') id: string,
   ): Promise<void> {

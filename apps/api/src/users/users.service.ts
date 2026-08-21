@@ -1,18 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
+    @InjectRepository(Booking)
+    private readonly bookingsRepo: Repository<Booking>,
   ) {}
 
   getUsers() {
-    return this.usersRepo.find();
+    return this.usersRepo.find({ relations: ['role'] });
   }
 
   async getUsersPaginated(
@@ -40,6 +43,7 @@ export class UsersService {
       where,
       skip,
       take: limit,
+      relations: ['role'],
       order: { createdAt: 'ASC' },
     });
 
@@ -63,7 +67,10 @@ export class UsersService {
       throw new NotFoundException(`Invalid user ID format: ${id}`);
     }
     try {
-      const user = await this.usersRepo.findOneBy({ id });
+      const user = await this.usersRepo.findOne({
+        where: { id },
+        relations: ['role'],
+      });
       if (!user) throw new NotFoundException(`User with id ${id} not found`);
       return user;
     } catch {
@@ -75,8 +82,31 @@ export class UsersService {
     const cleanEmail = email.trim();
     return this.usersRepo.findOne({
       where: [{ email: cleanEmail }, { email: ILike(cleanEmail) }],
-      select: ['id', 'name', 'email', 'password', 'isActive', 'createdAt', 'updatedAt'],
+      relations: ['role'],
+      select: [
+        'id', 'name', 'email', 'password', 'isActive', 'roleId',
+        'phone', 'nationality', 'avatarUrl', 'ecName', 'ecRelationship', 'ecPhone', 'ecEmail',
+        'passportType', 'passportNumber', 'passportCountry', 'passportExpiry',
+        'dietaryNeeds', 'languages', 'accessibility', 'preferredCurrency', 'accommodation', 'tourTypes',
+        'createdAt', 'updatedAt'
+      ],
     });
+  }
+
+  async getProfileWithStats(userId: string) {
+    const user = await this.getUserById(userId);
+
+    // Count real user bookings from database
+    const completedBookingsCount = await this.bookingsRepo
+      .createQueryBuilder('booking')
+      .where('booking.userId = :userId', { userId: user.id })
+      .orWhere("booking.traveler ->> 'email' = :email", { email: user.email })
+      .getCount();
+
+    return {
+      ...user,
+      completedTripsCount: completedBookingsCount,
+    };
   }
 
   async createUser(user: Partial<User>) {
@@ -93,7 +123,29 @@ export class UsersService {
     if (userUpdates.password) {
       userUpdates.password = await bcrypt.hash(userUpdates.password, 10);
     }
-    return this.usersRepo.save({ id, ...userUpdates });
+    await this.usersRepo.update(id, userUpdates);
+    return this.getUserById(id);
+  }
+
+  async changePassword(userId: string, currentPass: string, newPass: string) {
+    const user = await this.usersRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'password'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isMatch = await bcrypt.compare(currentPass, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Current password does not match');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPass, 10);
+    await this.usersRepo.update(userId, { password: hashedPassword });
+
+    return { success: true, message: 'Password updated successfully' };
   }
 
   async deleteUser(id: string) {
