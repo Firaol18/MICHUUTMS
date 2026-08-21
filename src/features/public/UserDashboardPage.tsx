@@ -33,7 +33,7 @@ export const UserDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout, login, isAuthenticated } = useAuthStore();
   const { wishlist, toggleWishlist } = useWishlistStore();
-  const { reviews, addReview } = useReviewStore();
+  const { reviews, addReview, fetchReviews } = useReviewStore();
 
   const [activeTab, setActiveTab] = useState<'trips' | 'invoices' | 'wishlist' | 'reviews' | 'profile'>('trips');
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -64,6 +64,7 @@ export const UserDashboardPage: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
+    fetchReviews();
     const fetchCustomerBookings = async () => {
       setIsLoading(true);
       try {
@@ -74,7 +75,7 @@ export const UserDashboardPage: React.FC = () => {
       }
     };
     fetchCustomerBookings();
-  }, []);
+  }, [fetchReviews]);
 
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,28 +93,32 @@ export const UserDashboardPage: React.FC = () => {
     }
   };
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewComment.trim()) return;
 
-    addReview({
-      tourId: reviewTourId,
-      tourTitle: reviewTourId === 'tour-101' ? 'Wenchi Crater Lake Expedition' : 'Danakil Depression Expedition',
-      authorName: profileName,
-      authorEmail: profileEmail,
-      rating: reviewRating,
-      overallRating: reviewRating,
-      guideRating: 5,
-      transportRating: 5,
-      accommodationRating: 5,
-      comment: reviewComment,
-      category: 'tour',
-      isVerifiedBooking: true,
-    });
+    try {
+      await addReview({
+        tourId: reviewTourId,
+        tourTitle: reviewTourId === 'tour-101' ? 'Wenchi Crater Lake Expedition' : 'Danakil Depression Expedition',
+        authorName: profileName,
+        authorEmail: profileEmail,
+        rating: reviewRating,
+        overallRating: reviewRating,
+        guideRating: 5,
+        transportRating: 5,
+        accommodationRating: 5,
+        comment: reviewComment,
+        category: 'tour',
+        isVerifiedBooking: true,
+      });
 
-    setReviewComment('');
-    setReviewSuccess(true);
-    setTimeout(() => setReviewSuccess(false), 3500);
+      setReviewComment('');
+      setReviewSuccess(true);
+      setTimeout(() => setReviewSuccess(false), 3500);
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+    }
   };
 
   return (

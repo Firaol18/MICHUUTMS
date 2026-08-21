@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
@@ -26,17 +26,18 @@ export const UserDashboardOverview: React.FC = () => {
   const navigate = useNavigate();
   const { user: _user } = useAuthStore();
   const { wishlist } = useWishlistStore();
-  const { reviews } = useReviewStore();
+  const { reviews, fetchReviews } = useReviewStore();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    fetchReviews();
     tourismService.getBookings('all').then((data) => {
       setBookings(data);
       setIsLoading(false);
     });
-  }, []);
+  }, [fetchReviews]);
 
   const statCards = [
     {

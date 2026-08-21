@@ -1,10 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { useReviewStore } from '@tms/shared/store/useReviewStore';
-import { Star, Send } from 'lucide-react';
+import { tourismService } from '@tms/shared/services/tourismService';
+import type { TourPackage } from '@tms/shared/types/tour';
+import { Star, Send, Loader2 } from 'lucide-react';
 
 const StarPickerRow: React.FC<{
   label: string;
@@ -37,45 +39,73 @@ const StarPickerRow: React.FC<{
 
 export const ReviewsPage: React.FC = () => {
   const { user } = useAuthStore();
-  const { reviews, addReview } = useReviewStore();
+  const { reviews, addReview, fetchReviews, isLoading } = useReviewStore();
 
-  const [reviewTourId, setReviewTourId] = useState('tour-101');
+  const [tours, setTours] = useState<TourPackage[]>([]);
+  const [selectedTourId, setSelectedTourId] = useState<string>('');
   const [overallRating, setOverallRating] = useState(5);
   const [guideRating, setGuideRating] = useState(5);
-  const [guideName] = useState('Abebe Bekele');
+  const [guideName, setGuideName] = useState('Abebe Bekele');
   const [transportRating, setTransportRating] = useState(4);
   const [accommodationRating, setAccommodationRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchReviews();
+    tourismService.getTours().then((t) => {
+      setTours(t);
+      if (t.length > 0) {
+        setSelectedTourId(t[0].id);
+        if (t[0].assignedGuideName) setGuideName(t[0].assignedGuideName);
+      }
+    }).catch(() => {});
+  }, [fetchReviews]);
+
+  const handleTourChange = (id: string) => {
+    setSelectedTourId(id);
+    const selected = tours.find((t) => t.id === id);
+    if (selected?.assignedGuideName) {
+      setGuideName(selected.assignedGuideName);
+    }
+  };
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewComment.trim()) return;
 
-    const tourTitleMap: Record<string, string> = {
-      'tour-101': 'Wenchi Crater Lake Expedition',
-      'tour-102': 'Lalibela Monolithic Rock Churches',
-      'tour-104': 'Danakil Depression & Erta Ale Volcano',
-    };
+    setIsSubmitting(true);
+    setErrorMsg(null);
 
-    addReview({
-      tourId: reviewTourId,
-      tourTitle: tourTitleMap[reviewTourId] || 'Ethiopian Expedition',
-      authorName: user?.name || 'Traveler',
-      authorEmail: user?.email || '',
-      avatarUrl: user?.avatarUrl,
-      overallRating,
-      guideRating,
-      guideName,
-      transportRating,
-      accommodationRating,
-      comment: reviewComment,
-      isVerifiedBooking: true,
-    });
+    const selectedTour = tours.find((t) => t.id === selectedTourId);
+    const tourTitle = selectedTour?.title || 'Ethiopian Expedition';
 
-    setReviewComment('');
-    setReviewSuccess(true);
-    setTimeout(() => setReviewSuccess(false), 3500);
+    try {
+      await addReview({
+        tourId: selectedTourId || '',
+        tourTitle,
+        authorName: user?.name || 'Verified Traveler',
+        authorEmail: user?.email || 'traveler@example.com',
+        avatarUrl: user?.avatarUrl,
+        overallRating,
+        guideRating,
+        guideName,
+        transportRating,
+        accommodationRating,
+        comment: reviewComment,
+        isVerifiedBooking: true,
+      });
+
+      setReviewComment('');
+      setReviewSuccess(true);
+      setTimeout(() => setReviewSuccess(false), 4000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to submit review to backend.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -103,18 +133,34 @@ export const ReviewsPage: React.FC = () => {
                 marginBottom: '1rem',
               }}
             >
-              ✓ Thank you! Your multi-aspect review has been published publicly.
+              ✓ Thank you! Your review was successfully saved to the backend database and published publicly.
+            </div>
+          )}
+
+          {errorMsg && (
+            <div
+              style={{
+                padding: '0.75rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'rgba(239,68,68,0.1)',
+                color: '#ef4444',
+                fontSize: 'var(--font-size-xs)',
+                fontWeight: 700,
+                marginBottom: '1rem',
+              }}
+            >
+              ⚠️ {errorMsg}
             </div>
           )}
 
           <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
             <div>
               <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
-                Select Completed Expedition
+                Select Expedition
               </label>
               <select
-                value={reviewTourId}
-                onChange={(e) => setReviewTourId(e.target.value)}
+                value={selectedTourId}
+                onChange={(e) => handleTourChange(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -124,9 +170,19 @@ export const ReviewsPage: React.FC = () => {
                   color: 'var(--text-primary)',
                 }}
               >
-                <option value="tour-101">Wenchi Crater Lake & Thermal Springs Expedition</option>
-                <option value="tour-102">Lalibela Monolithic Rock Churches Pilgrimage</option>
-                <option value="tour-104">Danakil Depression & Erta Ale Volcano Expedition</option>
+                {tours.length > 0 ? (
+                  tours.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="tour-101">Wenchi Crater Lake & Thermal Springs Expedition</option>
+                    <option value="tour-102">Lalibela Monolithic Rock Churches Pilgrimage</option>
+                    <option value="tour-104">Danakil Depression & Erta Ale Volcano Expedition</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -149,7 +205,7 @@ export const ReviewsPage: React.FC = () => {
                 rows={4}
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
-                placeholder="Excellent experience! Guide Abebe was outstanding, transportation 4/5, accommodation 5/5..."
+                placeholder="Excellent experience! The tour was outstanding, transportation was comfortable, and accommodations were great..."
                 style={{
                   width: '100%',
                   padding: '0.625rem',
@@ -165,8 +221,8 @@ export const ReviewsPage: React.FC = () => {
               />
             </div>
 
-            <Button type="submit" variant="primary" icon={<Send size={16} />}>
-              Publish Review to Catalog
+            <Button type="submit" variant="primary" icon={isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting Review...' : 'Publish Review to Catalog'}
             </Button>
           </form>
         </Card>
@@ -176,11 +232,15 @@ export const ReviewsPage: React.FC = () => {
           <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, marginBottom: '1rem' }}>
             Published Reviews Feed ({reviews.length})
           </h3>
-          {reviews.length === 0 ? (
+          {isLoading ? (
+            <Card glass style={{ textAlign: 'center', padding: '2rem' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>Loading live reviews from backend...</p>
+            </Card>
+          ) : reviews.length === 0 ? (
             <Card glass style={{ textAlign: 'center', padding: '2rem' }}>
               <Star size={32} style={{ color: 'var(--text-muted)', margin: '0 auto 0.75rem auto' }} />
               <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>
-                No reviews yet. Submit your first review using the form.
+                No reviews yet in database. Submit your first review using the form.
               </p>
             </Card>
           ) : (

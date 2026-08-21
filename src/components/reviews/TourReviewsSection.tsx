@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/common/Card';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
@@ -59,7 +59,11 @@ export const TourReviewsSection: React.FC<TourReviewsSectionProps> = ({
   assignedGuideName = 'Abebe Bekele',
 }) => {
   const { user } = useAuthStore();
-  const { getReviewsForTour, getAverageRatingsForTour, addReview } = useReviewStore();
+  const { getReviewsForTour, getAverageRatingsForTour, addReview, fetchReviews } = useReviewStore();
+
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
   const reviews = getReviewsForTour(tourId);
   const averages = getAverageRatingsForTour(tourId);
@@ -72,32 +76,40 @@ export const TourReviewsSection: React.FC<TourReviewsSectionProps> = ({
   const [accommodationRating, setAccommodationRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmitReview = (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!comment.trim()) return;
 
-    addReview({
-      tourId,
-      tourTitle,
-      authorName: user?.name || 'Verified Traveler',
-      authorEmail: user?.email || 'traveler@example.com',
-      avatarUrl: user?.avatarUrl,
-      overallRating,
-      guideRating,
-      guideName: assignedGuideName,
-      transportRating,
-      accommodationRating,
-      comment,
-      isVerifiedBooking: true,
-    });
+    setIsSubmitting(true);
+    try {
+      await addReview({
+        tourId,
+        tourTitle,
+        authorName: user?.name || 'Verified Traveler',
+        authorEmail: user?.email || 'traveler@example.com',
+        avatarUrl: user?.avatarUrl,
+        overallRating,
+        guideRating,
+        guideName: assignedGuideName,
+        transportRating,
+        accommodationRating,
+        comment,
+        isVerifiedBooking: true,
+      });
 
-    setSubmitSuccess(true);
-    setTimeout(() => {
-      setSubmitSuccess(false);
-      setIsModalOpen(false);
-      setComment('');
-    }, 1500);
+      setSubmitSuccess(true);
+      setTimeout(() => {
+        setSubmitSuccess(false);
+        setIsModalOpen(false);
+        setComment('');
+      }, 1500);
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -252,7 +264,7 @@ export const TourReviewsSection: React.FC<TourReviewsSectionProps> = ({
         footer={
           <div className="flex-between" style={{ width: '100%' }}>
             <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button variant="primary" size="sm" onClick={handleSubmitReview} icon={<Send size={14} />}>
+            <Button variant="primary" size="sm" onClick={handleSubmitReview} icon={<Send size={14} />} isLoading={isSubmitting} disabled={isSubmitting}>
               Publish Review
             </Button>
           </div>

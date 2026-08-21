@@ -154,23 +154,6 @@ export const AdminSidebar: React.FC = () => {
             {!sidebarCollapsed && <span>{item.label}</span>}
           </NavLink>
         ))}
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.5rem 0.75rem',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: 'var(--font-size-sm)',
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
-                transition: 'all var(--transition-fast)',
-                textDecoration: 'none',
-              })}
-            >
-              <span style={{ display: 'flex', alignItems: 'center' }}>{item.icon}</span>
-              {!sidebarCollapsed && <span>{item.label}</span>}
-            </NavLink>
-          );
-        })}
 
         {/* ── RBAC Authorization Governance Section (Display at Bottom) ── */}
         <div style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>

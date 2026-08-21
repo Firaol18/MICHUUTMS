@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/common/Card';
 import { Badge } from '@/components/common/Badge';
 import {
   TrendingUp, MapPin, Package, Users,
 } from 'lucide-react';
+import {
+  analyticsService,
+  type MonthlyDataPoint,
+  type DestinationStat,
+  type PackageStat,
+  type CategoryProfitability,
+} from '@/services/analyticsService';
 
-// ── Mock Time-Series Analytics Data ──────────────────────────────────────────
-export const MONTHLY_REVENUE_DATA = [
+// Default initial state while loading
+const DEFAULT_MONTHLY_DATA: MonthlyDataPoint[] = [
   { month: 'Jan', revenue: 14200, expenses: 8100, profit: 6100, bookings: 12, customers: 280 },
   { month: 'Feb', revenue: 16500, expenses: 9200, profit: 7300, bookings: 15, customers: 310 },
   { month: 'Mar', revenue: 19800, expenses: 10400, profit: 9400, bookings: 18, customers: 345 },
@@ -17,7 +24,7 @@ export const MONTHLY_REVENUE_DATA = [
   { month: 'Aug', revenue: 24850, expenses: 13420, profit: 11430, bookings: 24, customers: 436 },
 ];
 
-export const POPULAR_DESTINATIONS = [
+const DEFAULT_DESTINATIONS: DestinationStat[] = [
   { name: 'Lalibela Rock Churches', region: 'Amhara', bookings: 68, revenue: 57800, share: 32, color: 'var(--brand-primary)' },
   { name: 'Wenchi Crater Lake', region: 'Oromia', bookings: 54, revenue: 24300, share: 25, color: '#10b981' },
   { name: 'Danakil & Erta Ale', region: 'Afar', bookings: 42, revenue: 52500, share: 20, color: '#f59e0b' },
@@ -25,14 +32,14 @@ export const POPULAR_DESTINATIONS = [
   { name: 'Bale Mountains Eco Park', region: 'Oromia', bookings: 18, revenue: 16200, share: 8, color: '#ec4899' },
 ];
 
-export const POPULAR_PACKAGES = [
+const DEFAULT_PACKAGES: PackageStat[] = [
   { title: 'Wenchi Crater Lake Eco-Resort', category: 'Luxury Eco', price: '$450', bookings: 54, revenue: '$24,300', margin: '54%' },
   { title: 'Danakil & Erta Ale Lava Lake Expedition', category: 'Extreme Adventure', price: '$1,250', bookings: 42, revenue: '$52,500', margin: '48%' },
   { title: 'Lalibela World Heritage Pilgrimage', category: 'Cultural Heritage', price: '$850', bookings: 68, revenue: '$57,800', margin: '51%' },
   { title: 'Simien Gelada Baboon & Summit Trek', category: 'Mountain Trekking', price: '$1,300', bookings: 31, revenue: '$40,300', margin: '42%' },
 ];
 
-export const PROFITABILITY_BY_CATEGORY = [
+const DEFAULT_PROFITABILITY: CategoryProfitability[] = [
   { category: 'Luxury Eco & Spa', revenue: 48500, expenses: 22300, margin: 54, color: '#10b981' },
   { category: 'Cultural Heritage', revenue: 72400, expenses: 35400, margin: 51, color: 'var(--brand-primary)' },
   { category: 'Extreme & Desert', revenue: 65000, expenses: 33800, margin: 48, color: '#f59e0b' },
@@ -41,21 +48,35 @@ export const PROFITABILITY_BY_CATEGORY = [
 
 // ── 1. Revenue Over Time (Area Chart) ─────────────────────────────────────────
 export const RevenueOverTimeChart: React.FC = () => {
+  const [data, setData] = useState<MonthlyDataPoint[]>(DEFAULT_MONTHLY_DATA);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
-  const maxVal = 30000;
+  useEffect(() => {
+    analyticsService.getMonthlyRevenue().then((res) => {
+      if (res && res.length > 0) setData(res);
+    }).catch(() => {});
+  }, []);
+
+  const maxVal = Math.max(...data.map((d) => d.revenue), 30000);
   const height = 220;
   const width = 500;
   const padding = 35;
 
-  const points = MONTHLY_REVENUE_DATA.map((d, i) => {
-    const x = padding + (i / (MONTHLY_REVENUE_DATA.length - 1)) * (width - 2 * padding);
+  const points = data.map((d, i) => {
+    const x = padding + (i / Math.max(data.length - 1, 1)) * (width - 2 * padding);
     const y = height - padding - (d.revenue / maxVal) * (height - 2 * padding);
     return { x, y, data: d };
   });
 
-  const pathD = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map((p) => `L ${p.x} ${p.y}`).join(' ');
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+  const pathD = points.length > 0
+    ? `M ${points[0].x} ${points[0].y} ` + points.slice(1).map((p) => `L ${p.x} ${p.y}`).join(' ')
+    : '';
+  const areaD = points.length > 0
+    ? `${pathD} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`
+    : '';
+
+  const latestRevenue = data[data.length - 1]?.revenue ?? 0;
+  const latestMonth = data[data.length - 1]?.month ?? 'Recent';
 
   return (
     <Card glass style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -70,8 +91,10 @@ export const RevenueOverTimeChart: React.FC = () => {
           </p>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--brand-primary)' }}>$24,850</span>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block' }}>Aug 2026 Peak</span>
+          <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--brand-primary)' }}>
+            ${latestRevenue.toLocaleString()}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block' }}>{latestMonth} Total</span>
         </div>
       </div>
 
@@ -96,10 +119,10 @@ export const RevenueOverTimeChart: React.FC = () => {
           })}
 
           {/* Fill Area */}
-          <path d={areaD} fill="url(#revGrad)" />
+          {areaD && <path d={areaD} fill="url(#revGrad)" />}
 
           {/* Stroke Line */}
-          <path d={pathD} fill="none" stroke="var(--brand-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          {pathD && <path d={pathD} fill="none" stroke="var(--brand-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
 
           {/* Interactive Data Points */}
           {points.map((p, idx) => (
@@ -118,7 +141,7 @@ export const RevenueOverTimeChart: React.FC = () => {
         </svg>
 
         {/* Hover Tooltip */}
-        {hoveredIdx !== null && (
+        {hoveredIdx !== null && points[hoveredIdx] && (
           <div
             style={{
               position: 'absolute',
@@ -137,7 +160,7 @@ export const RevenueOverTimeChart: React.FC = () => {
               whiteSpace: 'nowrap',
             }}
           >
-            {MONTHLY_REVENUE_DATA[hoveredIdx].month}: ${MONTHLY_REVENUE_DATA[hoveredIdx].revenue.toLocaleString()}
+            {data[hoveredIdx].month}: ${data[hoveredIdx].revenue.toLocaleString()}
           </div>
         )}
       </div>
@@ -147,8 +170,17 @@ export const RevenueOverTimeChart: React.FC = () => {
 
 // ── 2. Bookings Over Time (Bar Chart) ────────────────────────────────────────
 export const BookingsOverTimeChart: React.FC = () => {
-  const maxBookings = 30;
+  const [data, setData] = useState<MonthlyDataPoint[]>(DEFAULT_MONTHLY_DATA);
+
+  useEffect(() => {
+    analyticsService.getMonthlyRevenue().then((res) => {
+      if (res && res.length > 0) setData(res);
+    }).catch(() => {});
+  }, []);
+
+  const maxBookings = Math.max(...data.map((d) => d.bookings), 30);
   const height = 200;
+  const currentMonthBookings = data[data.length - 1]?.bookings ?? 0;
 
   return (
     <Card glass style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -159,11 +191,11 @@ export const BookingsOverTimeChart: React.FC = () => {
             Monthly expedition volume trends
           </p>
         </div>
-        <Badge variant="info">24 Bookings This Month</Badge>
+        <Badge variant="info">{currentMonthBookings} Bookings This Month</Badge>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: height - 40, paddingTop: '1rem', borderBottom: '1px solid var(--border-color)', gap: '0.5rem' }}>
-        {MONTHLY_REVENUE_DATA.map((d, idx) => {
+        {data.map((d, idx) => {
           const barHeight = (d.bookings / maxBookings) * (height - 60);
           return (
             <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '0.35rem' }}>
@@ -172,11 +204,11 @@ export const BookingsOverTimeChart: React.FC = () => {
                 style={{
                   width: '100%',
                   maxWidth: 28,
-                  height: barHeight,
-                  backgroundColor: idx === MONTHLY_REVENUE_DATA.length - 1 ? 'var(--brand-primary)' : 'var(--brand-primary-light)',
+                  height: Math.max(barHeight, 4),
+                  backgroundColor: idx === data.length - 1 ? 'var(--brand-primary)' : 'var(--brand-primary-light)',
                   borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0',
                   transition: 'height 0.4s ease',
-                  border: idx === MONTHLY_REVENUE_DATA.length - 1 ? '1px solid var(--brand-primary)' : 'none',
+                  border: idx === data.length - 1 ? '1px solid var(--brand-primary)' : 'none',
                 }}
               />
               <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>{d.month}</span>
@@ -190,13 +222,24 @@ export const BookingsOverTimeChart: React.FC = () => {
 
 // ── 3. Revenue vs Expenses Comparison (Grouped Bar Chart) ──────────────────────
 export const RevenueVsExpensesChart: React.FC = () => {
+  const [data, setData] = useState<MonthlyDataPoint[]>(DEFAULT_MONTHLY_DATA);
+
+  useEffect(() => {
+    analyticsService.getMonthlyRevenue().then((res) => {
+      if (res && res.length > 0) setData(res);
+    }).catch(() => {});
+  }, []);
+
+  const latest = data.slice(-4);
+  const maxVal = Math.max(...data.map((d) => Math.max(d.revenue, d.expenses)), 30000);
+
   return (
     <Card glass style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div className="flex-between">
         <div>
           <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700 }}>Revenue vs. Expenses</h3>
           <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: 2 }}>
-            Gross Income ($24.8k) vs Operating Costs ($13.4k)
+            Gross Income vs Operating Costs Breakdown
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', fontSize: 11 }}>
@@ -210,15 +253,15 @@ export const RevenueVsExpensesChart: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-        {MONTHLY_REVENUE_DATA.slice(-4).map((d) => (
+        {latest.map((d) => (
           <div key={d.month} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 600 }}>
-              <span>{d.month} 2026</span>
-              <span>Net Profit: <strong style={{ color: '#16a34a' }}>+${d.profit.toLocaleString()}</strong></span>
+              <span>{d.month}</span>
+              <span>Net Profit: <strong style={{ color: d.profit >= 0 ? '#16a34a' : '#ef4444' }}>+${d.profit.toLocaleString()}</strong></span>
             </div>
             <div style={{ display: 'flex', gap: 4, height: 14, width: '100%', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-              <div style={{ width: `${(d.revenue / 30000) * 100}%`, height: '100%', backgroundColor: '#10b981', borderRadius: 'var(--radius-full)' }} title={`Revenue: $${d.revenue}`} />
-              <div style={{ width: `${(d.expenses / 30000) * 100}%`, height: '100%', backgroundColor: '#ef4444', borderRadius: 'var(--radius-full)' }} title={`Expenses: $${d.expenses}`} />
+              <div style={{ width: `${(d.revenue / maxVal) * 100}%`, height: '100%', backgroundColor: '#10b981', borderRadius: 'var(--radius-full)' }} title={`Revenue: $${d.revenue}`} />
+              <div style={{ width: `${(d.expenses / maxVal) * 100}%`, height: '100%', backgroundColor: '#ef4444', borderRadius: 'var(--radius-full)' }} title={`Expenses: $${d.expenses}`} />
             </div>
           </div>
         ))}
@@ -229,6 +272,14 @@ export const RevenueVsExpensesChart: React.FC = () => {
 
 // ── 4. Popular Destinations (Horizontal Ranking) ──────────────────────────────
 export const PopularDestinationsChart: React.FC = () => {
+  const [destinations, setDestinations] = useState<DestinationStat[]>(DEFAULT_DESTINATIONS);
+
+  useEffect(() => {
+    analyticsService.getPopularDestinations().then((res) => {
+      if (res && res.length > 0) setDestinations(res);
+    }).catch(() => {});
+  }, []);
+
   return (
     <Card glass style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div className="flex-between">
@@ -242,7 +293,7 @@ export const PopularDestinationsChart: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-        {POPULAR_DESTINATIONS.map((d, i) => (
+        {destinations.map((d, i) => (
           <div key={d.name} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-xs)' }}>
               <span style={{ fontWeight: 700 }}>
@@ -255,7 +306,7 @@ export const PopularDestinationsChart: React.FC = () => {
             <div style={{ height: 8, width: '100%', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
               <div
                 style={{
-                  width: `${d.share * 2.8}%`,
+                  width: `${Math.min(d.share * 2.8, 100)}%`,
                   height: '100%',
                   backgroundColor: d.color,
                   borderRadius: 'var(--radius-full)',
@@ -272,6 +323,14 @@ export const PopularDestinationsChart: React.FC = () => {
 
 // ── 5. Popular Packages Performance Table ─────────────────────────────────────
 export const PopularPackagesCard: React.FC = () => {
+  const [packages, setPackages] = useState<PackageStat[]>(DEFAULT_PACKAGES);
+
+  useEffect(() => {
+    analyticsService.getPopularPackages().then((res) => {
+      if (res && res.length > 0) setPackages(res);
+    }).catch(() => {});
+  }, []);
+
   return (
     <Card glass style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div className="flex-between">
@@ -285,7 +344,7 @@ export const PopularPackagesCard: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {POPULAR_PACKAGES.map((pkg, idx) => (
+        {packages.map((pkg, idx) => (
           <div
             key={pkg.title}
             style={{
@@ -325,6 +384,17 @@ export const PopularPackagesCard: React.FC = () => {
 
 // ── 6. Customer Growth Curve ──────────────────────────────────────────────────
 export const CustomerGrowthChart: React.FC = () => {
+  const [data, setData] = useState<MonthlyDataPoint[]>(DEFAULT_MONTHLY_DATA);
+
+  useEffect(() => {
+    analyticsService.getMonthlyRevenue().then((res) => {
+      if (res && res.length > 0) setData(res);
+    }).catch(() => {});
+  }, []);
+
+  const latestCustomers = data[data.length - 1]?.customers ?? 0;
+  const maxCustomers = Math.max(...data.map((d) => d.customers), 500);
+
   return (
     <Card glass style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div className="flex-between">
@@ -334,15 +404,15 @@ export const CustomerGrowthChart: React.FC = () => {
             Active registered traveler accounts
           </p>
         </div>
-        <Badge variant="success" icon={<Users size={12} />}>436 Active Users</Badge>
+        <Badge variant="success" icon={<Users size={12} />}>{latestCustomers} Active Users</Badge>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-        {MONTHLY_REVENUE_DATA.slice(-5).map((d) => (
+        {data.slice(-5).map((d) => (
           <div key={d.month} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: 'var(--font-size-xs)' }}>
             <span style={{ width: 35, fontWeight: 700, color: 'var(--text-muted)' }}>{d.month}</span>
             <div style={{ flex: 1, height: 10, backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-              <div style={{ width: `${(d.customers / 500) * 100}%`, height: '100%', backgroundColor: 'var(--brand-primary)', borderRadius: 'var(--radius-full)' }} />
+              <div style={{ width: `${(d.customers / maxCustomers) * 100}%`, height: '100%', backgroundColor: 'var(--brand-primary)', borderRadius: 'var(--radius-full)' }} />
             </div>
             <span style={{ width: 60, textAlign: 'right', fontWeight: 700 }}>{d.customers} users</span>
           </div>
@@ -354,6 +424,14 @@ export const CustomerGrowthChart: React.FC = () => {
 
 // ── 7. Tour Profitability Breakdown ───────────────────────────────────────────
 export const TourProfitabilityChart: React.FC = () => {
+  const [categories, setCategories] = useState<CategoryProfitability[]>(DEFAULT_PROFITABILITY);
+
+  useEffect(() => {
+    analyticsService.getProfitability().then((res) => {
+      if (res && res.length > 0) setCategories(res);
+    }).catch(() => {});
+  }, []);
+
   return (
     <Card glass style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div className="flex-between">
@@ -363,11 +441,11 @@ export const TourProfitabilityChart: React.FC = () => {
             Net profit margin % by tour category
           </p>
         </div>
-        <Badge variant="info">46% Avg Margin</Badge>
+        <Badge variant="info">Profit Margin Analysis</Badge>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-        {PROFITABILITY_BY_CATEGORY.map((cat) => (
+        {categories.map((cat) => (
           <div key={cat.category} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-xs)' }}>
               <span style={{ fontWeight: 700 }}>{cat.category}</span>
@@ -376,7 +454,7 @@ export const TourProfitabilityChart: React.FC = () => {
               </span>
             </div>
             <div style={{ height: 10, width: '100%', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-              <div style={{ width: `${cat.margin * 1.5}%`, height: '100%', backgroundColor: cat.color, borderRadius: 'var(--radius-full)' }} />
+              <div style={{ width: `${Math.min(cat.margin * 1.5, 100)}%`, height: '100%', backgroundColor: cat.color, borderRadius: 'var(--radius-full)' }} />
             </div>
           </div>
         ))}

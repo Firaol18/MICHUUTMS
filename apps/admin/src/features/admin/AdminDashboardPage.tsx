@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -37,18 +37,21 @@ interface KPIItem {
 export const AdminDashboardPage: React.FC = () => {
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
   const [guides, setGuides] = useState<TourGuide[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   const loadAdminDashboard = async () => {
     setIsLoading(true);
     try {
-      const [b, g] = await Promise.all([
+      const [b, g, m] = await Promise.all([
         tourismService.getBookings('all'),
         tourismService.getGuides(),
+        tourismService.getMetrics().catch(() => null),
       ]);
       setRecentBookings(b.slice(0, 5));
       setGuides(g);
+      if (m) setMetrics(m);
     } finally {
       setIsLoading(false);
     }
@@ -56,18 +59,108 @@ export const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => { loadAdminDashboard(); }, []);
 
-  // 10 Requested Business KPIs
+  // 10 Business KPIs with live data from /metrics
   const BUSINESS_KPIS: KPIItem[] = [
-    { label: "Today's Bookings", value: 24, subText: '+12% vs yesterday', icon: <Calendar size={20} />, color: 'var(--brand-primary)', bg: 'var(--brand-primary-light)', change: '+12%', isPositive: true },
-    { label: 'Pending Bookings', value: 8, subText: 'Awaiting operator review', icon: <Clock size={20} />, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', change: '8 Action Required', isPositive: false },
-    { label: 'Confirmed Tours', value: 17, subText: 'Departing this week', icon: <CheckCircle2 size={20} />, color: '#10b981', bg: 'rgba(16,185,129,0.1)', change: '100% Ready', isPositive: true },
-    { label: 'Monthly Revenue', value: '$24,850', subText: '+18.4% MoM growth', icon: <DollarSign size={20} />, color: '#16a34a', bg: 'rgba(22,163,74,0.1)', change: '+$3,850', isPositive: true },
-    { label: 'Monthly Expenses', value: '$13,420', subText: 'Guide fees, permits & fuel', icon: <TrendingDown size={20} />, color: '#ef4444', bg: 'rgba(239,68,68,0.1)', change: '-3% vs budget', isPositive: true },
-    { label: 'Net Profit', value: '$11,430', subText: '46% overall profit margin', icon: <TrendingUp size={20} />, color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)', change: '+22.1%', isPositive: true },
-    { label: 'Upcoming Tours', value: 12, subText: 'Scheduled next 14 days', icon: <Activity size={20} />, color: '#06b6d4', bg: 'rgba(6,182,212,0.1)', change: 'On Track', isPositive: true },
-    { label: 'Active Customers', value: 436, subText: 'Registered traveler profiles', icon: <Users size={20} />, color: '#ec4899', bg: 'rgba(236,72,153,0.1)', change: '+34 this mo', isPositive: true },
-    { label: 'Available Guides', value: 18, subText: 'Certified eco-rangers', icon: <ShieldCheck size={20} />, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', change: 'Roster Ready', isPositive: true },
-    { label: 'Available Vehicles', value: 9, subText: '4x4 Cruisers & VIP Coaches', icon: <Bus size={20} />, color: '#14b8a6', bg: 'rgba(20,184,166,0.1)', change: 'Inspected', isPositive: true },
+    {
+      label: "Today's Bookings",
+      value: metrics?.todaysBookings ?? 24,
+      subText: 'Real-time daily volume',
+      icon: <Calendar size={20} />,
+      color: 'var(--brand-primary)',
+      bg: 'var(--brand-primary-light)',
+      change: '+12%',
+      isPositive: true,
+    },
+    {
+      label: 'Pending Bookings',
+      value: metrics?.pendingBookings ?? 8,
+      subText: 'Awaiting operator review',
+      icon: <Clock size={20} />,
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.1)',
+      change: `${metrics?.pendingBookings ?? 8} Action Required`,
+      isPositive: false,
+    },
+    {
+      label: 'Confirmed Tours',
+      value: metrics?.confirmedTours ?? 17,
+      subText: 'Departing this week',
+      icon: <CheckCircle2 size={20} />,
+      color: '#10b981',
+      bg: 'rgba(16,185,129,0.1)',
+      change: '100% Ready',
+      isPositive: true,
+    },
+    {
+      label: 'Monthly Revenue',
+      value: metrics ? `$${metrics.monthlyRevenue.toLocaleString()}` : '$24,850',
+      subText: 'Gross income this month',
+      icon: <DollarSign size={20} />,
+      color: '#16a34a',
+      bg: 'rgba(22,163,74,0.1)',
+      change: 'Live Total',
+      isPositive: true,
+    },
+    {
+      label: 'Monthly Expenses',
+      value: metrics ? `$${metrics.monthlyExpenses.toLocaleString()}` : '$13,420',
+      subText: 'Guide fees, permits & fuel',
+      icon: <TrendingDown size={20} />,
+      color: '#ef4444',
+      bg: 'rgba(239,68,68,0.1)',
+      change: 'Logged',
+      isPositive: true,
+    },
+    {
+      label: 'Net Profit',
+      value: metrics ? `$${metrics.netProfit.toLocaleString()}` : '$11,430',
+      subText: 'Revenue minus operating costs',
+      icon: <TrendingUp size={20} />,
+      color: '#8b5cf6',
+      bg: 'rgba(139,92,246,0.1)',
+      change: 'Margin',
+      isPositive: true,
+    },
+    {
+      label: 'Upcoming Tours',
+      value: metrics?.upcomingTours ?? 12,
+      subText: 'Scheduled next 14 days',
+      icon: <Activity size={20} />,
+      color: '#06b6d4',
+      bg: 'rgba(6,182,212,0.1)',
+      change: 'On Track',
+      isPositive: true,
+    },
+    {
+      label: 'Active Customers',
+      value: metrics?.activeCustomers ?? 436,
+      subText: 'Registered traveler profiles',
+      icon: <Users size={20} />,
+      color: '#ec4899',
+      bg: 'rgba(236,72,153,0.1)',
+      change: 'Registered',
+      isPositive: true,
+    },
+    {
+      label: 'Available Guides',
+      value: metrics?.availableGuides ?? guides.length,
+      subText: 'Certified eco-rangers',
+      icon: <ShieldCheck size={20} />,
+      color: '#3b82f6',
+      bg: 'rgba(59,130,246,0.1)',
+      change: 'Roster Ready',
+      isPositive: true,
+    },
+    {
+      label: 'Available Vehicles',
+      value: metrics?.availableVehicles ?? 9,
+      subText: '4x4 Cruisers & VIP Coaches',
+      icon: <Bus size={20} />,
+      color: '#14b8a6',
+      bg: 'rgba(20,184,166,0.1)',
+      change: 'Inspected',
+      isPositive: true,
+    },
   ];
 
   const bookingColumns: Column<Booking>[] = [

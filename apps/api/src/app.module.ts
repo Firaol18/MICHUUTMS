@@ -23,6 +23,11 @@ import { VehiclesModule } from './vehicles/vehicles.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { PaymentsModule } from './payments/payments.module';
+import { MetricsModule } from './metrics/metrics.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { CmsModule } from './cms/cms.module';
 
 const useDatabaseUrl = !!process.env.DATABASE_URL;
 
@@ -87,6 +92,11 @@ if (!useDatabaseUrl && !process.env.DB_PASSWORD) {
     SuppliersModule,
     ExpensesModule,
     PaymentsModule,
+    MetricsModule,
+    ReviewsModule,
+    NotificationsModule,
+    AnalyticsModule,
+    CmsModule,
     SeedModule,
   ],
   controllers: [AppController],

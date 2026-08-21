@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -6,52 +6,67 @@ import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
-import { Edit } from 'lucide-react';
-
-interface CMSPage {
-  id: string;
-  title: string;
-  type: string;
-  slug: string;
-  lastUpdated: string;
-  status: 'published' | 'draft';
-}
-
-const INITIAL_PAGES: CMSPage[] = [
-  { id: 'page-1', title: 'About Us & Company History', type: 'aboutus', slug: '/about', lastUpdated: '2026-08-01', status: 'published' },
-  { id: 'page-2', title: 'Terms & Conditions of Travel', type: 'terms', slug: '/terms', lastUpdated: '2026-07-28', status: 'published' },
-  { id: 'page-3', title: 'Privacy & Cookie Policy', type: 'privacy', slug: '/privacy', lastUpdated: '2026-07-20', status: 'published' },
-  { id: 'page-4', title: 'Contact Us & Concierge Desk', type: 'contactus', slug: '/contact', lastUpdated: '2026-08-05', status: 'published' },
-];
+import { Edit, RefreshCw } from 'lucide-react';
+import { cmsService, type CmsPage } from '@tms/shared/services/cmsService';
 
 export const AdminPagesPage: React.FC = () => {
-  const [pages, setPages] = useState<CMSPage[]>(INITIAL_PAGES);
-  const [selectedPage, setSelectedPage] = useState<CMSPage | null>(null);
+  const [pages, setPages] = useState<CmsPage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedPage, setSelectedPage] = useState<CmsPage | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleEditClick = (pg: CMSPage) => {
+  const loadPages = async () => {
+    setIsLoading(true);
+    try {
+      const data = await cmsService.getAll();
+      setPages(data);
+    } catch {
+      // Keep existing
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPages();
+  }, []);
+
+  const handleEditClick = (pg: CmsPage) => {
     setSelectedPage(pg);
     setEditTitle(pg.title);
+    setEditContent(pg.content || '');
     setIsModalOpen(true);
   };
 
-  const handleSavePage = (e: React.FormEvent) => {
+  const handleSavePage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedPage) {
-      setPages(pages.map((p) => (p.id === selectedPage.id ? { ...p, title: editTitle, lastUpdated: new Date().toISOString().split('T')[0] } : p)));
+    if (!selectedPage) return;
+    setIsSaving(true);
+    try {
+      const updated = await cmsService.update(selectedPage.id, {
+        title: editTitle,
+        content: editContent,
+      });
+      setPages(pages.map((p) => (p.id === updated.id ? updated : p)));
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Failed to update CMS page', err);
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
   };
 
-  const columns: Column<CMSPage>[] = [
+  const columns: Column<CmsPage>[] = [
     {
       header: 'Page Title',
       cell: (row) => <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{row.title}</span>,
     },
     { header: 'Type / Code', accessorKey: 'type' },
     { header: 'URL Slug', accessorKey: 'slug' },
-    { header: 'Last Modified', accessorKey: 'lastUpdated' },
+    { header: 'Last Modified', accessorKey: 'updatedAt' },
     {
       header: 'Status',
       cell: (row) => <Badge variant={row.status === 'published' ? 'success' : 'warning'}>{row.status.toUpperCase()}</Badge>,
@@ -71,9 +86,14 @@ export const AdminPagesPage: React.FC = () => {
       <PageHeader
         title="Manage Pages (CMS Content)"
         description="Update static content pages including About Us, Terms & Conditions, Privacy Policy, and Contact pages."
+        actions={
+          <Button variant="secondary" size="sm" icon={<RefreshCw size={14} />} onClick={loadPages}>
+            Refresh
+          </Button>
+        }
       />
 
-      <DataTable columns={columns} data={pages} keyExtractor={(item) => item.id} />
+      <DataTable columns={columns} data={pages} keyExtractor={(item) => item.id} isLoading={isLoading} />
 
       <Modal
         isOpen={isModalOpen}
@@ -84,7 +104,7 @@ export const AdminPagesPage: React.FC = () => {
             <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="primary" size="sm" onClick={handleSavePage}>
+            <Button variant="primary" size="sm" onClick={handleSavePage} isLoading={isSaving}>
               Save Page Changes
             </Button>
           </div>
@@ -97,7 +117,9 @@ export const AdminPagesPage: React.FC = () => {
             <textarea
               className="tms-input"
               rows={6}
-              defaultValue={`<h3>Welcome to ${selectedPage?.title}</h3><p>Official Wanderlust Tourism Management System legal and information content.</p>`}
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="Enter HTML or text content..."
             />
           </div>
         </form>
