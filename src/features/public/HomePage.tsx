@@ -416,38 +416,271 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Value Proposition Highlights */}
-      <section style={{ backgroundColor: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', padding: '4rem 1.5rem' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
-          <Card glass style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div className="flex-center" style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', backgroundColor: 'var(--brand-primary-light)', color: 'var(--brand-primary)' }}>
-              <Compass size={24} />
-            </div>
-            <div>
-              <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: '0.25rem' }}>Authentic Local Expeditions</h4>
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>Curated travel schedules balance high-end eco-lodges with wild volcanic and mountain exploration.</p>
-            </div>
-          </Card>
+      {/* ─── WHY TRAVEL WITH US / ETHIOPIAN VALUE PROPOSITION ─── */}
+      <section
+        style={{
+          position: 'relative',
+          backgroundColor: 'var(--bg-secondary)',
+          borderTop: '1px solid var(--border-color)',
+          borderBottom: '1px solid var(--border-color)',
+          padding: '5rem 1.5rem',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Subtle Ambient Ethiopian Glow */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '800px',
+            height: '240px',
+            background: 'radial-gradient(circle, rgba(37,99,235,0.06) 0%, rgba(245,158,11,0.04) 50%, transparent 70%)',
+            pointerEvents: 'none',
+          }}
+        />
 
-          <Card glass style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div className="flex-center" style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', backgroundColor: 'var(--status-success-bg)', color: 'var(--status-success)' }}>
-              <ShieldCheck size={24} />
+        <div style={{ maxWidth: '1280px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          {/* Section Header */}
+          <div style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 3.5rem auto' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.35rem 0.85rem',
+                borderRadius: 'var(--radius-full)',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-color)',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'var(--brand-primary)',
+                marginBottom: '1rem',
+              }}
+            >
+              <Sparkles size={12} style={{ color: '#f59e0b' }} />
+              Why Travel With MICHUU TMS
             </div>
-            <div>
-              <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: '0.25rem' }}>Certified Ethiopian Guides</h4>
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>Native Ethiopian guides fluent in Amharic, Oromiffa, Afar & English ensure safety and heritage mastery.</p>
-            </div>
-          </Card>
 
-          <Card glass style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div className="flex-center" style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', backgroundColor: 'var(--status-warning-bg)', color: 'var(--status-warning)' }}>
-              <Award size={24} />
+            <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.35rem)', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)', lineHeight: 1.25, marginBottom: '0.75rem' }}>
+              Authentic Experiences. Local Expertise.{' '}
+              <span className="text-gradient">Unforgettable Ethiopia.</span>
+            </h2>
+
+            <p style={{ fontSize: 'var(--font-size-md)', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Crafted around deep indigenous heritage, certified mountain rangers, and direct community-first tourism.
+            </p>
+          </div>
+
+          {/* 3 Value Proposition Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+            {/* Card 1: Authentic Local Expeditions */}
+            <div
+              className="tms-feature-card"
+              onClick={() => navigate('/tours')}
+              style={{
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '20px',
+                padding: '2rem 1.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                transition: 'all 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'pointer',
+                position: 'relative',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-5px)';
+                e.currentTarget.style.boxShadow = '0 20px 35px -10px rgba(37,99,235,0.12), 0 0 0 1px rgba(37,99,235,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '16px',
+                    background: 'linear-gradient(135deg, rgba(37,99,235,0.15), rgba(6,182,212,0.15))',
+                    border: '1px solid rgba(37,99,235,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--brand-primary)',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <Compass size={26} />
+                </div>
+
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.6rem', letterSpacing: '-0.01em' }}>
+                  Authentic Local Expeditions
+                </h3>
+
+                <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                  Explore Ethiopia beyond the usual tourist routes, from Danakil’s glowing volcanic lava lakes to breathtaking Simien & Bale mountain trails.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: 700,
+                  color: 'var(--brand-primary)',
+                }}
+              >
+                <span>Explore expeditions</span>
+                <ArrowRight size={14} />
+              </div>
             </div>
-            <div>
-              <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: '0.25rem' }}>Best Local Price Guarantee</h4>
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>Transparent ETB & USD booking options with zero hidden charges and instant E-Tickets.</p>
+
+            {/* Card 2: Certified Ethiopian Guides */}
+            <div
+              className="tms-feature-card"
+              onClick={() => navigate('/tours?category=cultural')}
+              style={{
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '20px',
+                padding: '2rem 1.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                transition: 'all 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'pointer',
+                position: 'relative',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-5px)';
+                e.currentTarget.style.boxShadow = '0 20px 35px -10px rgba(16,185,129,0.12), 0 0 0 1px rgba(16,185,129,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '16px',
+                    background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15))',
+                    border: '1px solid rgba(16,185,129,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#10b981',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <ShieldCheck size={26} />
+                </div>
+
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.6rem', letterSpacing: '-0.01em' }}>
+                  Certified Ethiopian Guides
+                </h3>
+
+                <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                  Travel with native, accredited local guides who bring Ethiopia's ancient 3,000-year history, living cultures, and hidden gems to life.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: 700,
+                  color: '#10b981',
+                }}
+              >
+                <span>Meet our guides</span>
+                <ArrowRight size={14} />
+              </div>
             </div>
-          </Card>
+
+            {/* Card 3: Best Local Price Guarantee */}
+            <div
+              className="tms-feature-card"
+              onClick={() => navigate('/tours')}
+              style={{
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '20px',
+                padding: '2rem 1.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                transition: 'all 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'pointer',
+                position: 'relative',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-5px)';
+                e.currentTarget.style.boxShadow = '0 20px 35px -10px rgba(245,158,11,0.12), 0 0 0 1px rgba(245,158,11,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '16px',
+                    background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(217,119,6,0.15))',
+                    border: '1px solid rgba(245,158,11,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#f59e0b',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <Award size={26} />
+                </div>
+
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.6rem', letterSpacing: '-0.01em' }}>
+                  Best Local Price Guarantee
+                </h3>
+
+                <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                  Transparent ETB and USD pricing with zero hidden fees, flexible Ethiopian mobile payment support, and instant verified e-tickets.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: 700,
+                  color: '#f59e0b',
+                }}
+              >
+                <span>View all packages</span>
+                <ArrowRight size={14} />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>

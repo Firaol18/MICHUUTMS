@@ -46,6 +46,30 @@ const LANGUAGE_OPTIONS: { code: LanguageCode; label: string; shortCode: string }
   { code: 'om', label: 'Afaan Oromoo', shortCode: 'OM' },
 ];
 
+const CURATED_AVATARS = [
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
+];
+
+export function getTravelerAvatar(user?: { name?: string; email?: string; avatarUrl?: string } | null): string {
+  if (user?.avatarUrl && !user.avatarUrl.includes('ui-avatars.com')) {
+    return user.avatarUrl;
+  }
+  if (!user?.name && !user?.email) {
+    return CURATED_AVATARS[0];
+  }
+  const key = `${user.name || ''}_${user.email || ''}`;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash + key.charCodeAt(i) * (i + 1)) % CURATED_AVATARS.length;
+  }
+  return CURATED_AVATARS[Math.abs(hash) % CURATED_AVATARS.length];
+}
+
 export const PublicNavbar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuthStore();
   const { theme, toggleTheme } = useUIStore();
@@ -613,24 +637,40 @@ export const PublicNavbar: React.FC = () => {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.4rem',
-                        padding: '0.25rem 0.5rem 0.25rem 0.25rem',
+                        gap: '0.45rem',
+                        padding: '0.2rem 0.55rem 0.2rem 0.25rem',
                         background: 'none',
                         border: 'none',
                         cursor: 'pointer',
                       }}
                     >
-                      <img
-                        src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563eb&color=fff&size=64`}
-                        alt={user.name}
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '2px solid var(--brand-primary)',
-                        }}
-                      />
+                      <div style={{ position: 'relative', width: 30, height: 30, flexShrink: 0 }}>
+                        <img
+                          src={getTravelerAvatar(user)}
+                          alt={user.name}
+                          style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid var(--brand-primary)',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                          }}
+                        />
+                        <span
+                          style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            right: 0,
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            backgroundColor: '#10b981',
+                            border: '1.5px solid var(--bg-primary)',
+                          }}
+                          title="Online"
+                        />
+                      </div>
                       <span className="hide-md" style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                         {user.name.split(' ')[0]}
                       </span>
@@ -688,11 +728,26 @@ export const PublicNavbar: React.FC = () => {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <img
-                            src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563eb&color=fff&size=64`}
-                            alt={user.name}
-                            style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brand-primary)', flexShrink: 0 }}
-                          />
+                          <div style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
+                            <img
+                              src={getTravelerAvatar(user)}
+                              alt={user.name}
+                              style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brand-primary)', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}
+                            />
+                            <span
+                              style={{
+                                position: 'absolute',
+                                bottom: 1,
+                                right: 1,
+                                width: 9,
+                                height: 9,
+                                borderRadius: '50%',
+                                backgroundColor: '#10b981',
+                                border: '2px solid var(--bg-secondary)',
+                              }}
+                              title="Active Traveler"
+                            />
+                          </div>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {user.name}
@@ -985,11 +1040,26 @@ export const PublicNavbar: React.FC = () => {
             {isAuthenticated && user ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', marginBottom: '0.25rem' }}>
-                  <img
-                    src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563eb&color=fff&size=64`}
-                    alt={user.name}
-                    style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brand-primary)' }}
-                  />
+                  <div style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
+                    <img
+                      src={getTravelerAvatar(user)}
+                      alt={user.name}
+                      style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brand-primary)' }}
+                    />
+                    <span
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        width: 9,
+                        height: 9,
+                        borderRadius: '50%',
+                        backgroundColor: '#10b981',
+                        border: '2px solid var(--bg-tertiary)',
+                      }}
+                      title="Online"
+                    />
+                  </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>{user.name}</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{user.email}</div>
