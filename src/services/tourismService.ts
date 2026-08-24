@@ -487,6 +487,31 @@ class TourismService {
     const res = await http.get(`/reviews/${tourId}/ratings`);
     return res.data;
   }
+
+  // ── Events & Festivals ───────────────────────────────────────────────────────
+
+  async getEvents(query?: { category?: string; search?: string; status?: string }) {
+    try {
+      const params: Record<string, string> = {};
+      if (query?.category && query.category !== 'all') params.category = query.category;
+      if (query?.search) params.search = query.search;
+      if (query?.status) params.status = query.status;
+
+      const res = await http.get('/events', { params });
+      return Array.isArray(res.data) ? res.data : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async getEventById(id: string) {
+    try {
+      const res = await http.get(`/events/${id}`);
+      return res.data;
+    } catch {
+      return null;
+    }
+  }
 }
 
 export const tourismService = new TourismService();

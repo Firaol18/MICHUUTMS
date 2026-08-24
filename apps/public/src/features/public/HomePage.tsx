@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TourCard } from '@tms/shared/components/data-display/TourCard';
 import { Card } from '@tms/shared/components/common/Card';
+import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { tourismService } from '@tms/shared/services/tourismService';
 import type { TourPackage, Destination } from '@tms/shared/types/tour';
 import { useLanguageStore } from '@tms/shared/store/useLanguageStore';
 import { DestinationWeatherWidget } from '@tms/shared/components/data-display/DestinationWeatherWidget';
-import { Search, Compass, ShieldCheck, Award, MapPin, Sparkles, ArrowRight, DollarSign, Smartphone } from 'lucide-react';
+import { Search, Compass, ShieldCheck, Award, MapPin, Sparkles, ArrowRight, DollarSign, Smartphone, CalendarDays, Tag, Clock, Heart, Star, Users } from 'lucide-react';
 
 // Ethiopian destination background images for hero slideshow
 const HERO_IMAGES = [
@@ -20,10 +21,68 @@ const HERO_IMAGES = [
   'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&q=80&w=1600',  // Harar
 ];
 
+const FALLBACK_FESTIVALS = [
+  {
+    id: 'timkat-gondar',
+    title: 'Timkat (Epiphany) Festival Celebration',
+    date: '2026-01-19',
+    ethiopianDate: 'Tir 11 (ጥር ፲፩)',
+    location: 'Gondar & Lalibela, Ethiopia',
+    category: 'religious',
+    description: 'Ethiopia’s most colorful Orthodox festival featuring sacred Tabot processions, ceremonial bath immersions, and white Netela robes.',
+    imageUrl: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=800',
+    price: 45,
+    isFree: false,
+    hasOffer: true,
+    offerTag: '15% Off with MICHUU15',
+  },
+  {
+    id: 'meskel-addis',
+    title: 'Meskel Festival (Finding of the True Cross)',
+    date: '2026-09-27',
+    ethiopianDate: 'Meskerem 17 (መስከረም ፲፯)',
+    location: 'Meskel Square, Addis Ababa',
+    category: 'cultural',
+    description: 'UNESCO-inscribed ancient bonfire celebration with tens of thousands of worshippers gathering around the massive Demera pyre.',
+    imageUrl: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&q=80&w=800',
+    price: 0,
+    isFree: true,
+    hasOffer: false,
+  },
+  {
+    id: 'irreecha-bishoftu',
+    title: 'Irreecha Oromo Thanksgiving Celebration',
+    date: '2026-10-04',
+    ethiopianDate: 'Birraa / Autumn (ቢራ)',
+    location: 'Lake Hora Arsadi, Bishoftu',
+    category: 'cultural',
+    description: 'The premier Oromo thanksgiving festival welcoming the spring harvest with wet green grass blessings and colorful traditional attire.',
+    imageUrl: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=800',
+    price: 30,
+    isFree: false,
+    hasOffer: true,
+    offerTag: 'Festival Pass',
+  },
+  {
+    id: 'great-ethiopian-run',
+    title: 'Great Ethiopian Run International 10K',
+    date: '2026-11-15',
+    ethiopianDate: 'Hidar 6 (ኅዳር ፮)',
+    location: 'Addis Ababa City Center',
+    category: 'sport',
+    description: 'Africa’s biggest road race founded by Haile Gebrselassie, uniting 45,000 runners in an energetic street carnival atmosphere.',
+    imageUrl: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&q=80&w=800',
+    price: 55,
+    isFree: false,
+    hasOffer: false,
+  },
+];
+
 export const HomePage: React.FC = () => {
   const { t } = useLanguageStore();
   const [featuredTours, setFeaturedTours] = useState<TourPackage[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const [heroIndex, setHeroIndex] = useState(0);
@@ -32,12 +91,18 @@ export const HomePage: React.FC = () => {
 
   useEffect(() => {
     const loadHomeData = async () => {
-      const [tours, dests] = await Promise.all([
+      const [tours, dests, eventList] = await Promise.all([
         tourismService.getTours('all'),
         tourismService.getDestinations(),
+        tourismService.getEvents(),
       ]);
       setFeaturedTours(tours);
       setDestinations(dests);
+      if (Array.isArray(eventList) && eventList.length > 0) {
+        setEvents(eventList.slice(0, 4));
+      } else {
+        setEvents(FALLBACK_FESTIVALS);
+      }
     };
     loadHomeData();
   }, []);
@@ -416,6 +481,240 @@ export const HomePage: React.FC = () => {
           {featuredTours.map((tour) => (
             <TourCard key={tour.id} tour={tour} />
           ))}
+        </div>
+      </section>
+
+      {/* ─── UPCOMING ETHIOPIAN FESTIVALS & CULTURAL EVENTS ─── */}
+      <section
+        style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '0 1.5rem 5rem 1.5rem',
+        }}
+      >
+        <div className="flex-between section-header-between" style={{ marginBottom: '2rem' }}>
+          <div>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '11px',
+                fontWeight: 800,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--brand-primary)',
+                marginBottom: '0.4rem',
+              }}
+            >
+              <Sparkles size={12} style={{ color: '#f59e0b' }} />
+              <span>Ethiopian Cultural Calendar & Festivities</span>
+            </div>
+            <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--text-primary)' }}>
+              Upcoming Ethiopian Festivals & Events
+            </h2>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>
+              Immerse yourself in centuries-old Orthodox ceremonies, Oromo Thanksgiving, and energetic cultural carnivals
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<ArrowRight size={14} />}
+            onClick={() => navigate('/events')}
+            style={{ borderRadius: '12px' }}
+          >
+            Explore Events Calendar
+          </Button>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: '1.75rem',
+          }}
+        >
+          {events.map((event) => {
+            const formattedDate = event.eventDate || event.date;
+            const displayDate = formattedDate
+              ? new Date(formattedDate).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })
+              : 'Upcoming';
+
+            return (
+              <Card
+                key={event.id}
+                glass
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: 0,
+                  overflow: 'hidden',
+                  height: '100%',
+                  transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+                  cursor: 'pointer',
+                  border: event.hasOffer ? '1.5px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-color)',
+                }}
+                onClick={() => navigate('/events')}
+              >
+                {/* Cover Image Container */}
+                <div style={{ position: 'relative', height: 210, width: '100%', overflow: 'hidden' }}>
+                  <img
+                    src={event.imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800'}
+                    alt={event.title}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transition: 'transform 0.4s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                  />
+
+                  {/* Category Pill Badges */}
+                  <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+                    <Badge variant="info">{(event.category || 'cultural').toUpperCase()}</Badge>
+                    {event.hasOffer ? (
+                      <Badge variant="danger" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Tag size={10} /> {event.offerTag || '15% OFF OFFER'}
+                      </Badge>
+                    ) : event.isFree || !event.price ? (
+                      <Badge variant="success" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        FREE ENTRY
+                      </Badge>
+                    ) : null}
+                  </div>
+
+                  {/* Wishlist Heart Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('/events');
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: 12,
+                      right: 12,
+                      width: 34,
+                      height: 34,
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                      backdropFilter: 'blur(4px)',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#ffffff',
+                      transition: 'transform 0.2s ease, color 0.2s ease',
+                    }}
+                    title="Explore Event"
+                  >
+                    <Heart size={18} />
+                  </button>
+
+                  {/* Rating / Festival Status Overlay */}
+                  <div
+                    className="flex-center"
+                    style={{
+                      position: 'absolute',
+                      bottom: 12,
+                      right: 12,
+                      backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                      backdropFilter: 'blur(4px)',
+                      padding: '0.25rem 0.625rem',
+                      borderRadius: 'var(--radius-full)',
+                      color: '#fbbf24',
+                      fontSize: 'var(--font-size-xs)',
+                      fontWeight: 700,
+                      gap: '0.25rem',
+                    }}
+                  >
+                    <Star size={13} fill="#fbbf24" />
+                    <span>4.95</span>
+                    <span style={{ color: '#94a3b8', fontWeight: 500 }}>(Festival)</span>
+                  </div>
+                </div>
+
+                {/* Card Content Body */}
+                <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1, gap: '0.75rem' }}>
+                  {/* Location Tag */}
+                  <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '0.375rem', fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', fontWeight: 600 }}>
+                    <MapPin size={14} />
+                    <span>{event.location}</span>
+                  </div>
+
+                  {/* Event Title */}
+                  <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35 }}>
+                    {event.title}
+                  </h3>
+
+                  {/* Summary */}
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {event.description}
+                  </p>
+
+                  {/* Event Specs (Date / Ethiopian Calendar & Public Passes) */}
+                  <div
+                    className="flex-between"
+                    style={{
+                      marginTop: 'auto',
+                      paddingTop: '0.75rem',
+                      borderTop: '1px solid var(--border-color)',
+                      fontSize: 'var(--font-size-xs)',
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    <div className="flex-center" style={{ gap: '0.375rem' }}>
+                      <CalendarDays size={14} style={{ color: 'var(--text-muted)' }} />
+                      <span>{event.ethiopianDate || displayDate}</span>
+                    </div>
+
+                    <div className="flex-center" style={{ gap: '0.375rem' }}>
+                      <Users size={14} style={{ color: 'var(--text-muted)' }} />
+                      <span>Public & Passes</span>
+                    </div>
+                  </div>
+
+                  {/* Price & CTA Button */}
+                  <div className="flex-between" style={{ paddingTop: '0.5rem' }}>
+                    <div>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                        {event.hasOffer ? 'Special Offer Pass' : event.isFree || !event.price ? 'Admission' : 'From'}
+                      </span>
+                      <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, color: event.hasOffer || event.isFree || !event.price ? '#16a34a' : 'var(--text-primary)' }}>
+                        {event.isFree || !event.price ? (
+                          'Free Entry'
+                        ) : (
+                          <>
+                            ${event.price} <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 400, color: 'var(--text-muted)' }}>/ guest</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={<ArrowRight size={14} />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/events');
+                      }}
+                    >
+                      Details
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
