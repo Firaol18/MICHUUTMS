@@ -13,6 +13,7 @@ export type NotificationType =
   | 'issue_resolved'
   | 'issue_rejected'
   | 'issue_update'
+  | 'promotion'
   | 'system';
 
 export interface AppNotification {

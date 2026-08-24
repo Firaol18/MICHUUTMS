@@ -28,6 +28,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { CmsModule } from './cms/cms.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 
 const useDatabaseUrl = !!process.env.DATABASE_URL;
 
@@ -97,6 +98,7 @@ if (!useDatabaseUrl && !process.env.DB_PASSWORD) {
     NotificationsModule,
     AnalyticsModule,
     CmsModule,
+    NewsletterModule,
     SeedModule,
   ],
   controllers: [AppController],

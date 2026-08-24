@@ -155,7 +155,7 @@ export const AdminEmployeesPage: React.FC = () => {
     setEditingEmployee(null);
     setFormName('');
     setFormUsername(`${Math.floor(1000000000000000 + Math.random() * 9000000000000000)}`);
-    setFormPhone('+251911000000');
+    setFormPhone('+251920443110');
     setFormEmail('');
     setFormBranch(AVAILABLE_BRANCHES[0]);
     setFormOrgUnit('Land Development and Administration Bureau');
@@ -201,7 +201,7 @@ export const AdminEmployeesPage: React.FC = () => {
         });
       }
       await fetchEmployeesData();
-    } catch {}
+    } catch { }
 
     setIsAddEditModalOpen(false);
   };
@@ -215,7 +215,7 @@ export const AdminEmployeesPage: React.FC = () => {
         isActive: target.status !== 'Active',
       });
       await fetchEmployeesData();
-    } catch {}
+    } catch { }
   };
 
   // Delete Employee
@@ -224,7 +224,7 @@ export const AdminEmployeesPage: React.FC = () => {
       try {
         await http.delete(`/users/${id}`);
         await fetchEmployeesData();
-      } catch {}
+      } catch { }
     }
   };
 
@@ -429,7 +429,7 @@ export const AdminEmployeesPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      
+
       {/* ── HEADER ── */}
       <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
         <div>

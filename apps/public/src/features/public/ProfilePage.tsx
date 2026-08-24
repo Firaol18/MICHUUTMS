@@ -74,7 +74,7 @@ const TAB_STYLE = (active: boolean): React.CSSProperties => ({
 export const ProfilePage: React.FC = () => {
   const { user, login, token } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'personal' | 'documents' | 'preferences' | 'security' | 'loyalty'>('personal');
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
@@ -425,7 +425,7 @@ export const ProfilePage: React.FC = () => {
           ══════════════════════════════════════════════════ */}
           {activeTab !== 'security' && activeTab !== 'loyalty' && (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              
+
               {/* TAB 1: PERSONAL INFO */}
               {activeTab === 'personal' && (
                 <>
@@ -668,7 +668,7 @@ export const ProfilePage: React.FC = () => {
                       label="Languages Spoken"
                       value={profile.languages}
                       onChange={(e) => update('languages', e.target.value)}
-                      placeholder="e.g. English, Amharic, Afaan Oromoo, French"
+                      placeholder="e.g. English, Amharic, Oromo, French"
                     />
                   </div>
 

@@ -43,7 +43,7 @@ import { NotificationPopover } from '@tms/shared/components/common/NotificationP
 const LANGUAGE_OPTIONS: { code: LanguageCode; label: string; shortCode: string }[] = [
   { code: 'am', label: 'Amharic (አማርኛ)', shortCode: 'AM' },
   { code: 'en', label: 'English', shortCode: 'EN' },
-  { code: 'om', label: 'Afaan Oromoo', shortCode: 'OM' },
+  { code: 'om', label: 'Oromo', shortCode: 'OM' },
 ];
 
 const CURATED_AVATARS = [

@@ -7,8 +7,10 @@ import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { tourismService } from '@/services/tourismService';
+import { newsletterService } from '@/services/newsletterService';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { toast } from '@/store/useToastStore';
 import { Virtual360Modal } from '@/components/common/Virtual360Modal';
 import { TourReviewsSection } from '@/components/reviews/TourReviewsSection';
 import { InteractiveLocationMap } from '@/components/common/InteractiveLocationMap';
@@ -189,16 +191,46 @@ export const TourDetailsPage: React.FC = () => {
     );
   }
 
+  // Promotional Offer & Voucher State
+  const cartPromoCode = useCartStore((s) => s.promoCode);
+  const cartDiscountPercent = useCartStore((s) => s.discountPercent);
+  const [promoCodeInput, setPromoCodeInput] = useState(cartPromoCode || '');
+  const [promoDiscountPercent, setPromoDiscountPercent] = useState(cartDiscountPercent || 0);
+
+  useEffect(() => {
+    if (cartPromoCode) {
+      setPromoCodeInput(cartPromoCode);
+      setPromoDiscountPercent(cartDiscountPercent || 15);
+    }
+  }, [cartPromoCode, cartDiscountPercent]);
+
+  const handleApplyPromo = async () => {
+    if (!promoCodeInput.trim()) {
+      toast.warning('Please enter a valid promo code.', 'Promo Code');
+      return;
+    }
+    try {
+      const res = await newsletterService.validateOffer(promoCodeInput.trim(), travelerEmail);
+      setPromoDiscountPercent(res.discountPercent);
+      useCartStore.getState().applyPromoCode(res.promoCode);
+      toast.success(`${res.discountPercent}% Welcome Promo applied to this tour!`, 'Offer Applied 🎉');
+    } catch (err: any) {
+      toast.warning(err.message || 'Invalid promo code.', 'Promo Code');
+    }
+  };
+
   const totalTravelers = adultsCount + childrenCount;
   const spotsRemaining = tour.maxGroupSize - totalTravelers;
   const isOverCapacity = spotsRemaining < 0;
-  const totalPrice = tour.pricePerPerson * totalTravelers;
+  const basePrice = tour.pricePerPerson * totalTravelers;
+  const discountAmount = promoDiscountPercent > 0 ? Math.round((tour.pricePerPerson * promoDiscountPercent) / 100) : 0;
+  const totalPrice = Math.max(0, basePrice - discountAmount);
 
   const originalPrice = tour.originalPrice
     ? tour.originalPrice
     : tour.discountPercent
-    ? Math.round(tour.pricePerPerson / (1 - tour.discountPercent / 100))
-    : null;
+      ? Math.round(tour.pricePerPerson / (1 - tour.discountPercent / 100))
+      : null;
 
   const activePaymentOption = PAYMENT_METHODS.find((p) => p.id === paymentMethod) || PAYMENT_METHODS[0];
 
@@ -254,7 +286,7 @@ export const TourDetailsPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
-      
+
       {/* Top Breadcrumb */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
         <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Home</Link>
@@ -384,7 +416,7 @@ export const TourDetailsPage: React.FC = () => {
 
       {/* ── 2-Column Section (Left Details + Right Sticky Sidebar) ── */}
       <div className="tour-details-layout" style={{ display: 'flex', gap: '2.5rem', alignItems: 'flex-start' }}>
-        
+
         {/* Main Content Area */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           {/* Summary */}
@@ -531,7 +563,7 @@ export const TourDetailsPage: React.FC = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
               <Button variant="primary" size="lg" icon={<Ticket size={18} />} onClick={handleBookNow} style={{ width: '100%', fontWeight: 800 }}>
-                Book This Expedition Now
+                Book Now
               </Button>
 
               <Button
@@ -664,7 +696,7 @@ export const TourDetailsPage: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={handleBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxHeight: '75vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
-            
+
             {/* Capacity indicator */}
             <div
               style={{
@@ -804,8 +836,49 @@ export const TourDetailsPage: React.FC = () => {
               </div>
             )}
 
+            {/* Promo Code / Newsletter Voucher Input */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.85rem' }}>
+              <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: '0.4rem' }}>
+                🎟️ Have a Promo Code or Newsletter Voucher?
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="e.g. MICHUU15"
+                  value={promoCodeInput}
+                  onChange={(e) => setPromoCodeInput(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '0.55rem 0.85rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    fontSize: 'var(--font-size-sm)',
+                    textTransform: 'uppercase',
+                    fontWeight: 700,
+                  }}
+                />
+                <Button type="button" variant="outline" size="sm" onClick={handleApplyPromo} style={{ fontWeight: 700 }}>
+                  Apply Offer
+                </Button>
+              </div>
+              {promoDiscountPercent > 0 && (
+                <div style={{ marginTop: '0.4rem', fontSize: '11px', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <CheckCircle2 size={13} /> {promoDiscountPercent}% Travel Offer Active! -${discountAmount.toLocaleString()} deducted on 1 Tour.
+                </div>
+              )}
+            </div>
+
             <div className="flex-between" style={{ padding: '0.875rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', marginTop: '0.5rem' }}>
-              <span>Total ({totalTravelers} guest{totalTravelers !== 1 ? 's' : ''} · {adultsCount}A/{childrenCount}C):</span>
+              <div>
+                <div style={{ fontWeight: 700 }}>Total ({totalTravelers} guest{totalTravelers !== 1 ? 's' : ''} · {adultsCount}A/{childrenCount}C):</div>
+                {promoDiscountPercent > 0 && (
+                  <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700 }}>
+                    Includes 15% Single-Tour Discount (-${discountAmount})
+                  </div>
+                )}
+              </div>
               <span style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, color: 'var(--brand-primary)' }}>
                 ${totalPrice.toLocaleString()}
               </span>

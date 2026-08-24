@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLanguageStore } from '@tms/shared/store/useLanguageStore';
 import { MessageSquare, X, Send, Bot } from 'lucide-react';
 
@@ -28,7 +28,7 @@ const FAQ_KNOWLEDGE_BASE = [
   },
   {
     keywords: ['guide', 'ranger', 'abebe', 'safari'],
-    reply: 'All MICHUU expeditions include certified, multilingual Ethiopian Eco-Ranger Guides fluent in Amharic, Afaan Oromoo, and English.',
+    reply: 'All MICHUU expeditions include certified, multilingual Ethiopian Eco-Ranger Guides fluent in Amharic, Oromo, and English.',
   },
 ];
 
@@ -41,8 +41,8 @@ export const ChatbotWidget: React.FC = () => {
     currentLanguage === 'om'
       ? 'Akkam! Baga nagaan dhuftan. Akkamitti imala Itoophiyaa keessan har\'a isin gargaaruu?'
       : currentLanguage === 'am'
-      ? 'ሰላም! እንኳን ደህና መጡ። የኢትዮጵያ ጉዞዎን ዛሬ እንዴት ልርዳዎት?'
-      : 'Hello & Welcome! I am MICHUU AI. How can I assist your Ethiopian travel plans today?';
+        ? 'ሰላም! እንኳን ደህና መጡ። የኢትዮጵያ ጉዞዎን ዛሬ እንዴት ልርዳዎት?'
+        : 'Hello & Welcome! I am MICHUU AI. How can I assist your Ethiopian travel plans today?';
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -100,27 +100,33 @@ export const ChatbotWidget: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         style={{
           position: 'fixed',
-          bottom: '1.5rem',
-          right: '1.5rem',
+          bottom: '24px',
+          right: '24px',
           zIndex: 999,
-          width: 56,
-          height: 56,
+          width: 54,
+          height: 54,
           borderRadius: '50%',
-          backgroundColor: 'var(--brand-primary)',
+          backgroundColor: '#2563eb',
           color: '#ffffff',
-          border: 'none',
-          boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          boxShadow: '0 6px 20px rgba(37, 99, 235, 0.28), 0 2px 6px rgba(0, 0, 0, 0.12)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          transition: 'transform 0.2s ease',
+          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.08)')}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-        title="Live Chat Support"
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(37, 99, 235, 0.38), 0 4px 8px rgba(0, 0, 0, 0.15)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.28), 0 2px 6px rgba(0, 0, 0, 0.12)';
+        }}
+        title="Live Travel Concierge & AI Assistance"
       >
-        {isOpen ? <X size={26} /> : <MessageSquare size={26} />}
+        {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
       </button>
 
       {/* Floating Chat Window */}
@@ -128,8 +134,8 @@ export const ChatbotWidget: React.FC = () => {
         <div
           style={{
             position: 'fixed',
-            bottom: '5.5rem',
-            right: '1.5rem',
+            bottom: '88px',
+            right: '24px',
             zIndex: 999,
             width: '380px',
             maxWidth: 'calc(100vw - 2rem)',

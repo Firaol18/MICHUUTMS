@@ -1396,7 +1396,7 @@ export const EventsCalendarPage: React.FC = () => {
                   }}
                   style={{ width: '100%' }}
                 >
-                  Book This Festival Experience Now
+                  Book Now
                 </Button>
 
                 <Button
@@ -1798,7 +1798,7 @@ export const EventsCalendarPage: React.FC = () => {
                       <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.5 }}>
                         {activePaymentOption.instructions}
                       </div>
-                      
+
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-primary)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
                         <div>
                           <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700 }}>TRANSFER ACCOUNT / TILL:</div>

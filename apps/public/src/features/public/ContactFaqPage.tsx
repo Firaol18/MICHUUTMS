@@ -46,7 +46,7 @@ const FAQ_ITEMS: FAQItem[] = [
     id: 'faq-4',
     category: 'safety',
     question: 'Are ranger guides included with high-altitude and volcano expeditions?',
-    answer: 'Yes! All MICHUU expeditions (including Simien trekking, Danakil volcano climbs, and Wenchi crater lake tours) include certified, multilingual Ethiopian Eco-Ranger Guides fluent in Amharic, Afaan Oromoo, and English.',
+    answer: 'Yes! All MICHUU expeditions (including Simien trekking, Danakil volcano climbs, and Wenchi crater lake tours) include certified, multilingual Ethiopian Eco-Ranger Guides fluent in Amharic, Oromo, and English.',
   },
   {
     id: 'faq-5',
@@ -332,56 +332,6 @@ export const ContactFaqPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Newsletter Subscription Banner Strip */}
-      <Card
-        glass
-        style={{
-          padding: '2.5rem',
-          borderRadius: 'var(--radius-lg)',
-          background: 'linear-gradient(135deg, var(--brand-primary-light) 0%, rgba(6,182,212,0.12) 100%)',
-          textAlign: 'center',
-        }}
-      >
-        <div className="flex-center" style={{ gap: '0.5rem', color: 'var(--brand-primary)', fontWeight: 800, fontSize: 'var(--font-size-xs)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-          <Bell size={16} /> Exclusive Travel Deals
-        </div>
-
-        <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-          {t('newsletter_title')}
-        </h2>
-        <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto 1.5rem auto' }}>
-          {t('newsletter_sub')}
-        </p>
-
-        {newsSuccess ? (
-          <div style={{ padding: '0.875rem 1.5rem', backgroundColor: '#16a34a', color: '#ffffff', borderRadius: 'var(--radius-full)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            <CheckCircle2 size={18} /> You are subscribed! Check your inbox for our 15% discount voucher code.
-          </div>
-        ) : (
-          <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', gap: '0.75rem', maxWidth: '520px', margin: '0 auto' }}>
-            <input
-              type="email"
-              placeholder="Enter your email address..."
-              value={newsEmail}
-              onChange={(e) => setNewsEmail(e.target.value)}
-              required
-              style={{
-                flex: 1,
-                padding: '0.75rem 1.25rem',
-                borderRadius: 'var(--radius-full)',
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-primary)',
-                fontSize: 'var(--font-size-sm)',
-              }}
-            />
-            <Button type="submit" variant="primary" size="lg" style={{ borderRadius: 'var(--radius-full)' }}>
-              {t('subscribe_btn')}
-            </Button>
-          </form>
-        )}
-      </Card>
     </div>
   );
 };

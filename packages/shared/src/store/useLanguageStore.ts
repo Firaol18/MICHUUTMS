@@ -12,7 +12,7 @@ export interface LanguageOption {
 export const LANGUAGES: LanguageOption[] = [
   { code: 'en', label: 'English', nativeLabel: 'English', flag: '🇬🇧' },
   { code: 'am', label: 'Amharic', nativeLabel: 'አማርኛ', flag: '🇪🇹' },
-  { code: 'om', label: 'Afaan Oromoo', nativeLabel: 'Afaan Oromoo', flag: '🌳' },
+  { code: 'om', label: 'Oromo', nativeLabel: 'Oromo', flag: '🌳' },
 ];
 
 export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
