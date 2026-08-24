@@ -607,6 +607,7 @@ export const EventsCalendarPage: React.FC = () => {
       {/* ── 1. SPOTLIGHT HERO BANNER WITH COUNTDOWN & 1-CLICK BOOKING ── */}
       {upcomingFeaturedEvent && (
         <div
+          className="events-spotlight-banner"
           style={{
             borderRadius: 'var(--radius-xl)',
             overflow: 'hidden',
@@ -676,12 +677,12 @@ export const EventsCalendarPage: React.FC = () => {
             </div>
 
             {/* Live Countdown Box */}
-            <div style={{ backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255, 255, 255, 0.12)', textAlign: 'center' }}>
+            <div className="events-countdown-box" style={{ backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255, 255, 255, 0.12)', textAlign: 'center' }}>
               <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '1.25rem' }}>
                 ⏳ COUNTDOWN TO CELEBRATION
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <div className="events-countdown-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 {[
                   { num: countdown.days, label: 'DAYS' },
                   { num: countdown.hours, label: 'HOURS' },
@@ -689,7 +690,7 @@ export const EventsCalendarPage: React.FC = () => {
                   { num: countdown.seconds, label: 'SECS' },
                 ].map((t) => (
                   <div key={t.label} style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', padding: '0.875rem 0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff', lineHeight: 1 }}>{t.num}</div>
+                    <div className="events-countdown-digit" style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff', lineHeight: 1 }}>{t.num}</div>
                     <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.6)', marginTop: '0.35rem', fontWeight: 700 }}>{t.label}</div>
                   </div>
                 ))}
@@ -766,7 +767,7 @@ export const EventsCalendarPage: React.FC = () => {
         </div>
 
         {/* Search & Multi-Filter Bar */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '1rem', alignItems: 'center' }}>
+        <div className="events-filter-bar" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '1rem', alignItems: 'center' }}>
           <Input
             placeholder="Search events by name, ritual (e.g. Irreecha), or venue (Finfinnee, Bishoftu)..."
             icon={<Search size={16} />}
@@ -806,7 +807,7 @@ export const EventsCalendarPage: React.FC = () => {
         </div>
 
         {/* Category Filter Pills */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div className="events-category-pills" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {['all', ...Object.keys(CATEGORY_LABELS)].map((cat) => {
             const isActive = selectedCategory === cat;
             const color = cat === 'all' ? 'var(--brand-primary)' : CATEGORY_COLORS[cat as EthiopianEvent['category']];
@@ -963,7 +964,7 @@ export const EventsCalendarPage: React.FC = () => {
 
       {/* ── 4. VIEW 2: CARDS GRID VIEW ── */}
       {viewMode === 'cards' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+        <div className="events-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 290px), 1fr))', gap: '1.5rem' }}>
           {sortedEvents.map((evt) => {
             const basePrice = getEventBasePrice(evt);
             const hasOffer = evt.hasOffer;

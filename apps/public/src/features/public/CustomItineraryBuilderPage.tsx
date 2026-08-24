@@ -177,21 +177,22 @@ export const CustomItineraryBuilderPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Progress Steps Header */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', marginBottom: '2.5rem' }}>
+      {/* Step Indicator */}
+      <div className="itinerary-wizard-nav" style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
         {[
           { num: 1, label: 'Destinations' },
-          { num: 2, label: 'Dates & Guests' },
-          { num: 3, label: 'Stay & 4x4' },
-          { num: 4, label: 'Instant Quote' },
+          { num: 2, label: 'Dates & Travelers' },
+          { num: 3, label: 'Stay & Transport' },
+          { num: 4, label: 'Cost Estimate & Reserve' },
         ].map((s) => (
           <button
             key={s.num}
             onClick={() => setStep(s.num as any)}
             style={{
-              padding: '0.75rem',
+              flex: '1 1 140px',
+              padding: '0.75rem 1rem',
               borderRadius: 'var(--radius-md)',
-              border: `2px solid ${step === s.num ? 'var(--brand-primary)' : 'var(--border-color)'}`,
+              border: `1px solid ${step === s.num ? 'var(--brand-primary)' : 'var(--border-color)'}`,
               backgroundColor: step === s.num ? 'var(--brand-primary-light)' : 'var(--bg-secondary)',
               color: step === s.num ? 'var(--brand-primary)' : 'var(--text-secondary)',
               fontWeight: 700,
@@ -213,7 +214,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
 
       {/* ─── STEP 1: DESTINATIONS ─── */}
       {step === 1 && (
-        <Card glass style={{ padding: '2rem' }}>
+        <Card glass style={{ padding: 'clamp(1.25rem, 4vw, 2rem)' }}>
           <h3 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, marginBottom: '0.5rem' }}>
             Step 1: Select Ethiopian Destinations to Include
           </h3>
@@ -221,7 +222,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
             Choose one or multiple destinations for your itinerary.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+          <div className="itinerary-destinations-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
             {availableDestinations.map((dest) => {
               const isSelected = selectedDestinations.includes(dest.id);
               return (

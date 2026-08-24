@@ -219,10 +219,95 @@ body {
   }
 }
 
-/* ─── Events Calendar two-col → one-col ─── */
+/* ─── Events Calendar Responsiveness ─── */
 @media (max-width: 900px) {
   .events-layout {
     grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Events spotlight hero banner */
+  .events-spotlight-banner {
+    padding: 1.75rem 1.25rem !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  .events-spotlight-banner h1 {
+    font-size: 1.65rem !important;
+  }
+
+  .events-countdown-box {
+    padding: 1.25rem 1rem !important;
+  }
+
+  .events-countdown-grid {
+    gap: 0.4rem !important;
+  }
+
+  .events-countdown-digit {
+    font-size: 1.4rem !important;
+  }
+
+  /* Events filter bar & pills */
+  .events-filter-bar {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    align-items: stretch !important;
+  }
+
+  .events-category-pills {
+    overflow-x: auto !important;
+    padding-bottom: 0.5rem !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .events-category-pills::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .events-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .events-view-switcher {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .events-view-switcher button {
+    flex: 1 !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+    padding: 0.5rem 0.6rem !important;
+  }
+}
+
+/* ─── Tour Catalog Responsiveness ─── */
+@media (max-width: 768px) {
+  .tour-catalog-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .tour-catalog-filters {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .tour-catalog-filters > * {
+    width: 100% !important;
+  }
+
+  .tours-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
   }
 }
 
@@ -246,42 +331,106 @@ body {
     gap: 0.25rem !important;
     padding-bottom: 0.5rem !important;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .user-account-sidebar nav::-webkit-scrollbar {
     display: none;
   }
+
+  .user-account-content {
+    padding: 1.25rem 0 !important;
+  }
+
+  .user-booking-card {
+    padding: 1.25rem !important;
+  }
+
+  .user-booking-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+
+  .user-booking-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .user-booking-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
 }
 
-/* ─── Itinerary Builder ─── */
+/* ─── Itinerary Builder Responsiveness ─── */
 @media (max-width: 900px) {
   .itinerary-builder-layout {
     grid-template-columns: 1fr !important;
   }
+
+  .itinerary-wizard-nav {
+    overflow-x: auto !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .itinerary-wizard-nav::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-/* ─── Blog grid ─── */
+@media (max-width: 640px) {
+  .itinerary-destinations-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .itinerary-pricing-card {
+    padding: 1.25rem 1rem !important;
+  }
+}
+
+/* ─── Blog grid & Article Page ─── */
 @media (max-width: 640px) {
   .blog-grid {
     grid-template-columns: 1fr !important;
   }
+
+  .blog-featured-card {
+    flex-direction: column !important;
+  }
+
+  .blog-categories-pills {
+    overflow-x: auto !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .blog-categories-pills::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-/* ─── Login card ─── */
+/* ─── Public Modals and Checkout Form on Mobile ─── */
 @media (max-width: 640px) {
-  .login-page-wrap {
-    padding: 1rem !important;
+  .public-checkout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
   }
 
-  .login-card-box {
-    padding: 1.75rem 1.25rem !important;
+  .booking-modal-passengers {
+    grid-template-columns: 1fr !important;
   }
-}
 
-/* ─── Tables: horizontal scroll on mobile ─── */
-.tms-table-container {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  .booking-modal-package-options {
+    grid-template-columns: 1fr !important;
+  }
+
+  .payment-method-selector {
+    grid-template-columns: 1fr 1fr !important;
+  }
 }
 
 /* ─── Modal ─── */

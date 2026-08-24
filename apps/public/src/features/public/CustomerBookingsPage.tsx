@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
@@ -90,9 +90,9 @@ export const CustomerBookingsPage: React.FC = () => {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {bookings.map((bkg) => (
-            <Card key={bkg.id} glass style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <Card key={bkg.id} glass className="user-booking-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {/* Header row */}
-              <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+              <div className="flex-between user-booking-header" style={{ flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
                 <div>
                   <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', fontWeight: 700 }}>
                     Ref #{bkg.bookingReference}

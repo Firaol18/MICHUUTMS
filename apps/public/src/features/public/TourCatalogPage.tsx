@@ -149,9 +149,9 @@ export const TourCatalogPage: React.FC = () => {
 
       {/* Top Filter Bar */}
       <Card glass style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
-        <div className="flex-between" style={{ gap: '1rem', flexWrap: 'wrap' }}>
+        <div className="flex-between tour-catalog-header" style={{ gap: '1rem', flexWrap: 'wrap' }}>
           {/* Category Pills */}
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', overflowX: 'auto', maxWidth: '100%' }}>
             {CATEGORY_FILTERS.map((cat) => (
               <button
                 key={cat.value}
@@ -163,9 +163,9 @@ export const TourCatalogPage: React.FC = () => {
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div className="tour-catalog-filters" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             {/* Search Input with Debounce & Clear button */}
-            <div style={{ width: '260px', position: 'relative' }}>
+            <div style={{ flex: '1 1 200px', minWidth: 'min(100%, 200px)', position: 'relative' }}>
               <Input
                 placeholder="Search destinations..."
                 icon={<Search size={15} />}
@@ -360,7 +360,7 @@ export const TourCatalogPage: React.FC = () => {
           <p style={{ fontSize: 'var(--font-size-sm)' }}>Try searching for "Wenchi", "Lalibela", "Simien", or "Danakil".</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.75rem' }}>
+        <div className="tours-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 290px), 1fr))', gap: '1.75rem' }}>
           {filteredTours.map((tour) => (
             <TourCard key={tour.id} tour={tour} />
           ))}

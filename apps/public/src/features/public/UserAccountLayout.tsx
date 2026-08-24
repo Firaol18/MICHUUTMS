@@ -173,7 +173,7 @@ export const UserAccountLayout: React.FC = () => {
         </Card>
 
         {/* Page Content */}
-        <div style={{ minWidth: 0 }}>
+        <div className="user-account-content" style={{ minWidth: 0, flex: 1, width: '100%' }}>
           <Outlet />
         </div>
       </div>

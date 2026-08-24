@@ -43,6 +43,10 @@ http.interceptors.response.use(
     return response;
   },
   (error) => {
+    const method = error.config?.method?.toUpperCase();
+    const isMutation = method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+    const isNetworkError = error.message === 'Network Error' || error.code === 'ERR_NETWORK' || !error.response;
+
     if (error.response?.status === 401) {
       try {
         localStorage.removeItem('tms_token');
@@ -55,9 +59,10 @@ http.interceptors.response.use(
         ? error.response?.data?.message.join('. ')
         : error.response?.data?.message) ||
       error.response?.data?.error ||
-      error.message;
+      (isMutation ? error.message : null);
 
-    if (errMsg && !error.config?.headers?.['X-Skip-Toast']) {
+    // Only show toast error on active user mutations (POST/PUT/PATCH/DELETE) or when not a background GET network dropout
+    if (errMsg && !error.config?.headers?.['X-Skip-Toast'] && (isMutation || !isNetworkError)) {
       toast.error(String(errMsg));
     }
 

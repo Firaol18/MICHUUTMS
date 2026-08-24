@@ -176,21 +176,6 @@ export const TourDetailsPage: React.FC = () => {
 
 
 
-  if (isLoading) {
-    return <LoadingSpinner label="Loading itinerary details..." />;
-  }
-
-  if (!tour) {
-    return (
-      <div className="flex-center" style={{ minHeight: '50vh', flexDirection: 'column', gap: '1rem' }}>
-        <h2>Tour package not found.</h2>
-        <Button variant="primary" onClick={() => navigate('/tours')}>
-          Back to Tour Catalog
-        </Button>
-      </div>
-    );
-  }
-
   // Promotional Offer & Voucher State
   const cartPromoCode = useCartStore((s) => s.promoCode);
   const cartDiscountPercent = useCartStore((s) => s.discountPercent);
@@ -218,6 +203,21 @@ export const TourDetailsPage: React.FC = () => {
       toast.warning(err.message || 'Invalid promo code.', 'Promo Code');
     }
   };
+
+  if (isLoading) {
+    return <LoadingSpinner label="Loading itinerary details..." />;
+  }
+
+  if (!tour) {
+    return (
+      <div className="flex-center" style={{ minHeight: '50vh', flexDirection: 'column', gap: '1rem' }}>
+        <h2>Tour package not found.</h2>
+        <Button variant="primary" onClick={() => navigate('/tours')}>
+          Back to Tour Catalog
+        </Button>
+      </div>
+    );
+  }
 
   const totalTravelers = adultsCount + childrenCount;
   const spotsRemaining = tour.maxGroupSize - totalTravelers;
