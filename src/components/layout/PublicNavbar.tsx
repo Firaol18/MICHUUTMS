@@ -46,29 +46,7 @@ const LANGUAGE_OPTIONS: { code: LanguageCode; label: string; shortCode: string }
   { code: 'om', label: 'Oromo', shortCode: 'OM' },
 ];
 
-const CURATED_AVATARS = [
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
-];
-
-export function getTravelerAvatar(user?: { name?: string; email?: string; avatarUrl?: string } | null): string {
-  if (user?.avatarUrl && !user.avatarUrl.includes('ui-avatars.com')) {
-    return user.avatarUrl;
-  }
-  if (!user?.name && !user?.email) {
-    return CURATED_AVATARS[0];
-  }
-  const key = `${user.name || ''}_${user.email || ''}`;
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash + key.charCodeAt(i) * (i + 1)) % CURATED_AVATARS.length;
-  }
-  return CURATED_AVATARS[Math.abs(hash) % CURATED_AVATARS.length];
-}
+import { getUserAvatarUrl, getTravelerAvatar } from '@/utils/avatar';
 
 export const PublicNavbar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuthStore();

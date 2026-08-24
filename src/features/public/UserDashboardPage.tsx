@@ -8,6 +8,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ETicketModal } from '@/components/common/ETicketModal';
 import { tourismService } from '@/services/tourismService';
 import { useAuthStore } from '@/store/useAuthStore';
+import { getUserAvatarUrl } from '@/utils/avatar';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { useReviewStore } from '@/store/useReviewStore';
 import type { Booking } from '@/types/booking';
@@ -147,7 +148,7 @@ export const UserDashboardPage: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <img
-            src={user?.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'}
+            src={getUserAvatarUrl(user)}
             alt={user?.name || 'User'}
             style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--brand-primary)' }}
           />

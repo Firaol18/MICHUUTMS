@@ -8,6 +8,7 @@ import { LoadingSpinner } from '@tms/shared/components/common/LoadingSpinner';
 import { ETicketModal } from '@tms/shared/components/common/ETicketModal';
 import { tourismService } from '@tms/shared/services/tourismService';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
+import { getUserAvatarUrl } from '@tms/shared/utils/avatar';
 import { useWishlistStore } from '@tms/shared/store/useWishlistStore';
 import { useReviewStore } from '@tms/shared/store/useReviewStore';
 import type { Booking } from '@tms/shared/types/booking';
@@ -147,7 +148,7 @@ export const UserDashboardPage: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <img
-            src={user?.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'}
+            src={getUserAvatarUrl(user)}
             alt={user?.name || 'User'}
             style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--brand-primary)' }}
           />
@@ -164,9 +165,9 @@ export const UserDashboardPage: React.FC = () => {
                   : 'Traveler Member'}
               </Badge>
             </div>
-            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-              {user?.email} • Member since 2026
-            </p>
+            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              {user?.email || 'traveler@example.com'} • Member since 2026
+            </div>
           </div>
         </div>
 

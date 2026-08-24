@@ -4,6 +4,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { useAuthStore } from '@/store/useAuthStore';
 import { userService } from '@/services/userService';
+import { getUserAvatarUrl } from '@/utils/avatar';
 import type { LoyaltyTier } from '@/types/customer';
 import { getLoyaltyTier, getNextTierThreshold, LOYALTY_META } from '@/types/customer';
 import {
@@ -433,10 +434,7 @@ export const ProfilePage: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border-color)' }}>
                     <div style={{ position: 'relative' }}>
                       <img
-                        src={
-                          profile.avatarUrl ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'Traveler')}&background=2563eb&color=fff&size=128`
-                        }
+                        src={getUserAvatarUrl(profile)}
                         alt={profile.name}
                         style={{
                           width: 84,

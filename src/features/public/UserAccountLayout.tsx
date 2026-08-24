@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
+import { getUserAvatarUrl } from '@/utils/avatar';
 import { Card } from '@/components/common/Card';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
@@ -74,10 +75,7 @@ export const UserAccountLayout: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <img
-            src={
-              user?.avatarUrl ||
-              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
-            }
+            src={getUserAvatarUrl(user)}
             alt={user?.name}
             style={{
               width: 56,
