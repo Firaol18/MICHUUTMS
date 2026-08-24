@@ -27,14 +27,23 @@ import {
 export const AdminCustomTripsPage: React.FC = () => {
   const {
     customDestinations,
+    fetchCustomDestinations,
     addCustomDestination,
     updateCustomDestination,
     deleteCustomDestination,
     pricingConfig,
+    fetchPricingConfig,
     updatePricingConfig,
     customTripInquiries,
+    fetchCustomTripInquiries,
     updateInquiryStatus,
   } = useContentStore();
+
+  useEffect(() => {
+    fetchCustomTripInquiries();
+    fetchCustomDestinations();
+    fetchPricingConfig();
+  }, [fetchCustomTripInquiries, fetchCustomDestinations, fetchPricingConfig]);
 
   const [activeTab, setActiveTab] = useState<'destinations' | 'pricing' | 'inquiries'>('destinations');
 

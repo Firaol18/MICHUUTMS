@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { ROLE_DEFINITIONS } from '@/utils/permissions';
+import { http } from '@/services/http';
 import { Save } from 'lucide-react';
 
 export const AdminSettingsPage: React.FC = () => {
@@ -12,11 +13,38 @@ export const AdminSettingsPage: React.FC = () => {
   const [currency, setCurrency] = useState('ETB (Br) / USD ($)');
   const [depositPercent, setDepositPercent] = useState(25);
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    http.get('/agency-settings')
+      .then((res) => {
+        if (res.data) {
+          if (res.data.agencyName) setAgencyName(res.data.agencyName);
+          if (res.data.contactEmail) setContactEmail(res.data.contactEmail);
+          if (res.data.currency) setCurrency(res.data.currency);
+          if (res.data.depositPercent) setDepositPercent(res.data.depositPercent);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
+    setIsSaving(true);
+    try {
+      await http.patch('/agency-settings', {
+        agencyName,
+        contactEmail,
+        currency,
+        depositPercent,
+      });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2500);
+    } catch (err) {
+      console.error('Failed to save settings to backend:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -62,8 +90,8 @@ export const AdminSettingsPage: React.FC = () => {
                 </span>
               ) : <div />}
 
-              <Button type="submit" variant="primary" icon={<Save size={16} />}>
-                Save Business Parameters
+              <Button type="submit" variant="primary" icon={<Save size={16} />} disabled={isSaving}>
+                {isSaving ? 'Saving...' : 'Save Business Parameters'}
               </Button>
             </div>
           </form>

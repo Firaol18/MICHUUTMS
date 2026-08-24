@@ -56,4 +56,52 @@ export class CustomTripsController {
   remove(@Param('id') id: string) {
     return this.customTripsService.remove(id);
   }
+
+  // ── Custom Destinations Endpoints ──
+
+  @Get('destinations/all')
+  @ApiOperation({ summary: 'Get all custom trip destinations (public & admin)' })
+  getDestinations() {
+    return this.customTripsService.getDestinations();
+  }
+
+  @Post('destinations')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create custom destination option (admin)' })
+  createDestination(@Body() body: any) {
+    return this.customTripsService.createDestination(body);
+  }
+
+  @Patch('destinations/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update custom destination option (admin)' })
+  updateDestination(@Param('id') id: string, @Body() body: any) {
+    return this.customTripsService.updateDestination(id, body);
+  }
+
+  @Delete('destinations/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete custom destination option (admin)' })
+  deleteDestination(@Param('id') id: string) {
+    return this.customTripsService.deleteDestination(id);
+  }
+
+  // ── Pricing Config Endpoints ──
+
+  @Get('pricing/config')
+  @ApiOperation({ summary: 'Get custom trip pricing multiplier config' })
+  getPricingConfig() {
+    return this.customTripsService.getPricingConfig();
+  }
+
+  @Patch('pricing/config')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update custom trip pricing multiplier config (admin)' })
+  updatePricingConfig(@Body() body: any) {
+    return this.customTripsService.updatePricingConfig(body);
+  }
 }

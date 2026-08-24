@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
@@ -197,6 +197,8 @@ const CATEGORIES_LIST: ExpenseCategory[] = [
 
 export const AdminExpensesPage: React.FC = () => {
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [liveTours, setLiveTours] = useState<any[]>([]);
+  const [liveBookings, setLiveBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -224,29 +226,42 @@ export const AdminExpensesPage: React.FC = () => {
     setIsLoading(true);
     setApiError('');
     try {
-      const res = await http.get('/expenses');
-      setExpenses(
-        Array.isArray(res.data)
-          ? res.data.map((e: any) => ({
-              id: String(e.id),
-              voucherNo: e.expenseNumber || e.voucherNo || `VCH-${e.id}`,
-              category: (e.category as any) || 'Transportation',
-              description: e.description || '',
-              amount: Number(e.amount) || 0,
-              date: e.expenseDate
-                ? String(e.expenseDate).split('T')[0]
-                : e.date
-                ? String(e.date).split('T')[0]
-                : new Date().toISOString().split('T')[0],
-              supplier: e.supplier || e.department || '',
-              relatedTourId: e.relatedTourId || '',
-              relatedTourTitle: e.relatedTourTitle || '',
-              paymentMethod: (e.paymentMethod as any) || 'Bank Transfer',
-              receiptNo: e.receiptUrl || e.receiptNo || '',
-              approvalStatus: (e.status || e.approvalStatus || 'Approved') as any,
-            }))
-          : []
-      );
+      const [resExpenses, resTours, resBookings] = await Promise.all([
+        http.get('/expenses'),
+        http.get('/tours'),
+        http.get('/bookings'),
+      ]);
+
+      const rawTours = Array.isArray(resTours.data) ? resTours.data : (resTours.data?.data ?? []);
+      const rawBookings = Array.isArray(resBookings.data) ? resBookings.data : (resBookings.data?.data ?? []);
+      setLiveTours(rawTours);
+      setLiveBookings(rawBookings);
+
+      const mapped = Array.isArray(resExpenses.data)
+        ? resExpenses.data.map((e: any) => ({
+            id: String(e.id),
+            voucherNo: e.expenseNumber || e.voucherNo || `VCH-${e.id}`,
+            category: (e.category as any) || 'Transportation',
+            description: e.description || '',
+            amount: Number(e.amount) || 0,
+            date: e.expenseDate
+              ? String(e.expenseDate).split('T')[0]
+              : e.date
+              ? String(e.date).split('T')[0]
+              : new Date().toISOString().split('T')[0],
+            supplier: e.supplier || e.department || '',
+            relatedTourId: e.relatedTourId || '',
+            relatedTourTitle: e.relatedTourTitle || '',
+            paymentMethod: (e.paymentMethod as any) || 'Bank Transfer',
+            receiptNo: e.receiptUrl || e.receiptNo || '',
+            approvalStatus: (e.status || e.approvalStatus || 'Approved') as any,
+          }))
+        : [];
+      setExpenses(mapped);
+
+      if (rawTours.length > 0) {
+        setSelectedTourId((prev) => prev || String(rawTours[0].id));
+      }
     } catch (err: any) {
       setApiError('Failed to load expenses from server.');
       setExpenses([]);
@@ -259,15 +274,34 @@ export const AdminExpensesPage: React.FC = () => {
     fetchExpenses();
   }, []);
 
-  // Selected Tour Profitability Analysis
-  const activeTourObj = INITIAL_TOURS_PROFIT.find((t) => t.id === selectedTourId) || INITIAL_TOURS_PROFIT[0];
+  // Selected Tour Profitability Analysis with Real Backend Data
+  const toursProfitList = useMemo(() => {
+    if (liveTours.length === 0) return INITIAL_TOURS_PROFIT;
+    return liveTours.map((t: any) => {
+      const tourIdStr = String(t.id);
+      const tourBookings = liveBookings.filter((b: any) => b.tourId === tourIdStr || b.tourTitle === t.title);
+      const confirmedPax = tourBookings.reduce((sum: number, b: any) => sum + (Number(b.numberOfTravelers) || 1), 0) || 10;
+      const calculatedRev = tourBookings.reduce((sum: number, b: any) => sum + Number(b.totalPrice), 0) || (Number(t.pricePerPerson) * confirmedPax);
+
+      return {
+        id: tourIdStr,
+        title: t.title,
+        departureDate: typeof t.createdAt === 'string' ? t.createdAt.split('T')[0] : '2026-09-01',
+        confirmedTravelers: confirmedPax,
+        packagePrice: Number(t.pricePerPerson) || 500,
+        revenue: Math.round(calculatedRev),
+      };
+    });
+  }, [liveTours, liveBookings]);
+
+  const activeTourObj = toursProfitList.find((t) => t.id === selectedTourId) || toursProfitList[0] || INITIAL_TOURS_PROFIT[0];
   
   // Calculate expenses connected to selected tour dynamically from expenses state
-  const connectedExpenses = expenses.filter((e) => e.relatedTourId === selectedTourId);
+  const connectedExpenses = expenses.filter((e) => e.relatedTourId === activeTourObj.id || (e.relatedTourTitle && e.relatedTourTitle === activeTourObj.title));
   const tourTotalExpenses = connectedExpenses.reduce((sum, e) => sum + e.amount, 0);
   const tourGrossRevenue = activeTourObj.revenue;
   const tourNetProfit = tourGrossRevenue - tourTotalExpenses;
-  const profitMarginPercent = Math.round((tourNetProfit / tourGrossRevenue) * 100);
+  const profitMarginPercent = tourGrossRevenue > 0 ? Math.round((tourNetProfit / tourGrossRevenue) * 100) : 0;
 
   // Overall Expenses Total
   const grandTotalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -398,7 +432,7 @@ export const AdminExpensesPage: React.FC = () => {
               cursor: 'pointer',
             }}
           >
-            {INITIAL_TOURS_PROFIT.map((t) => (
+            {toursProfitList.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.title}
               </option>
@@ -761,7 +795,7 @@ export const AdminExpensesPage: React.FC = () => {
               style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-xs)' }}
             >
               <option value="">-- None (General Overhead Expense) --</option>
-              {INITIAL_TOURS_PROFIT.map((t) => (
+              {toursProfitList.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.title}
                 </option>

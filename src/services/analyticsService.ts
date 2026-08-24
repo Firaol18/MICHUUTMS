@@ -17,6 +17,7 @@ export interface DestinationStat {
   share: number;
   color: string;
 }
+export type PopularDestination = DestinationStat;
 
 export interface PackageStat {
   title: string;
@@ -26,6 +27,7 @@ export interface PackageStat {
   price: string;
   margin: string;
 }
+export type PopularPackage = PackageStat;
 
 export interface CategoryProfitability {
   category: string;

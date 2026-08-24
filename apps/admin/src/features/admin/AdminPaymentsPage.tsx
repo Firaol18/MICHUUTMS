@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
@@ -197,6 +197,7 @@ const STATUSES_LIST: PaymentStatus[] = ['Pending', 'Paid', 'Partially Paid', 'Fa
 
 export const AdminPaymentsPage: React.FC = () => {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
+  const [liveBookings, setLiveBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -226,29 +227,43 @@ export const AdminPaymentsPage: React.FC = () => {
     setIsLoading(true);
     setApiError('');
     try {
-      const res = await http.get('/payments');
-      setTransactions(
-        Array.isArray(res.data)
-          ? res.data.map((p: any) => ({
-              id: String(p.id),
-              txRef: p.transactionRef || p.txRef || `TX-${p.id}`,
-              receiptNo: p.receiptNo || `RCP-${p.id}`,
-              bookingRef: p.bookingRef || '',
-              customerName: p.customerName || '',
-              type: (p.type || 'Full Payment') as any,
-              amount: Number(p.amount) || 0,
-              currency: p.currency || 'USD',
-              method: (p.paymentMethod || p.method || 'Credit/Debit Card') as any,
-              status: (p.status || 'Paid') as any,
-              date: p.paymentDate
-                ? new Date(p.paymentDate).toISOString().split('T')[0]
-                : p.date
-                ? String(p.date).split('T')[0]
-                : new Date().toISOString().split('T')[0],
-              notes: p.description || p.notes || '',
-            }))
-          : []
-      );
+      const [resPayments, resBookings] = await Promise.all([
+        http.get('/payments'),
+        http.get('/bookings'),
+      ]);
+
+      const rawBookings = Array.isArray(resBookings.data)
+        ? resBookings.data
+        : (resBookings.data?.data ?? []);
+
+      setLiveBookings(rawBookings);
+
+      const mappedTxns = Array.isArray(resPayments.data)
+        ? resPayments.data.map((p: any) => ({
+            id: String(p.id),
+            txRef: p.transactionRef || p.txRef || `TX-${p.id}`,
+            receiptNo: p.receiptNo || `RCP-${p.id}`,
+            bookingRef: p.bookingRef || '',
+            customerName: p.customerName || '',
+            type: (p.type || 'Full Payment') as any,
+            amount: Number(p.amount) || 0,
+            currency: p.currency || 'USD',
+            method: (p.paymentMethod || p.method || 'Credit/Debit Card') as any,
+            status: (p.status || 'Paid') as any,
+            date: p.paymentDate
+              ? new Date(p.paymentDate).toISOString().split('T')[0]
+              : p.date
+              ? String(p.date).split('T')[0]
+              : new Date().toISOString().split('T')[0],
+            notes: p.description || p.notes || '',
+          }))
+        : [];
+      setTransactions(mappedTxns);
+
+      if (rawBookings.length > 0) {
+        const firstRef = rawBookings[0].bookingReference || `BK-${rawBookings[0].id}`;
+        setSelectedBookingRef((prev) => prev || firstRef);
+      }
     } catch (err: any) {
       setApiError('Failed to load payments from server.');
       setTransactions([]);
@@ -261,12 +276,32 @@ export const AdminPaymentsPage: React.FC = () => {
     fetchPayments();
   }, []);
 
-  // Selected Booking Ledger Calculation
-  const activeBooking = INITIAL_BOOKING_LEDGERS.find((b) => b.bookingRef === selectedBookingRef) || INITIAL_BOOKING_LEDGERS[0];
+  // Selected Booking Ledger Calculation with Real Backend Data
+  const bookingLedgers = useMemo(() => {
+    if (liveBookings.length === 0) return INITIAL_BOOKING_LEDGERS;
+    return liveBookings.map((b: any) => {
+      const bRef = b.bookingReference || `BK-${b.id}`;
+      const cName = b.traveler?.name || b.customerName || 'Customer';
+      const tTitle = b.tourTitle || b.destinationName || 'Ethiopian Tour';
+      const tot = Number(b.totalPrice) || 1200;
+      return {
+        bookingRef: bRef,
+        tourTitle: tTitle,
+        customerName: cName,
+        totalAmount: tot,
+        paidAmount: 0,
+        remainingBalance: tot,
+        status: (b.paymentStatus === 'paid' ? 'Settled' : b.paymentStatus === 'partial' ? 'Partial' : 'Unpaid') as any,
+        departureDate: typeof b.travelDate === 'string' ? b.travelDate.split('T')[0] : '2026-10-01',
+      };
+    });
+  }, [liveBookings]);
+
+  const activeBooking = bookingLedgers.find((b) => b.bookingRef === selectedBookingRef) || bookingLedgers[0] || INITIAL_BOOKING_LEDGERS[0];
   const totalAmount = activeBooking.totalAmount;
   
   // Calculate total paid dynamically from transaction list for this booking
-  const bookingTxns = transactions.filter((t) => t.bookingRef === selectedBookingRef && t.status !== 'Failed');
+  const bookingTxns = transactions.filter((t) => t.bookingRef === activeBooking.bookingRef && t.status !== 'Failed');
   const totalPaidCalculated = bookingTxns.reduce((sum, t) => (t.type === 'Refund' ? sum - t.amount : sum + t.amount), 0);
   const remainingBalance = Math.max(0, totalAmount - totalPaidCalculated);
 
@@ -425,7 +460,7 @@ export const AdminPaymentsPage: React.FC = () => {
               cursor: 'pointer',
             }}
           >
-            {INITIAL_BOOKING_LEDGERS.map((b) => (
+            {bookingLedgers.map((b) => (
               <option key={b.bookingRef} value={b.bookingRef}>
                 {b.bookingRef} — {b.customerName} ({b.tourTitle.slice(0, 28)}...)
               </option>

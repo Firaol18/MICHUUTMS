@@ -85,12 +85,14 @@ interface ContentStoreState {
 
   // Custom Trip Destinations & Settings
   customDestinations: CustomDestinationOption[];
-  addCustomDestination: (dest: Omit<CustomDestinationOption, 'id'>) => CustomDestinationOption;
-  updateCustomDestination: (id: string, updates: Partial<CustomDestinationOption>) => void;
-  deleteCustomDestination: (id: string) => void;
+  fetchCustomDestinations: () => Promise<void>;
+  addCustomDestination: (dest: Omit<CustomDestinationOption, 'id'>) => Promise<CustomDestinationOption>;
+  updateCustomDestination: (id: string, updates: Partial<CustomDestinationOption>) => Promise<void>;
+  deleteCustomDestination: (id: string) => Promise<void>;
 
   pricingConfig: CustomTripPricingConfig;
-  updatePricingConfig: (updates: Partial<CustomTripPricingConfig>) => void;
+  fetchPricingConfig: () => Promise<void>;
+  updatePricingConfig: (updates: Partial<CustomTripPricingConfig>) => Promise<void>;
 
   // Custom Trip Inquiries (Loaded strictly from real backend)
   customTripInquiries: CustomTripInquiry[];
@@ -317,11 +319,21 @@ export const useContentStore = create<ContentStoreState>()(
 
       updateArticle: async (id, updates) => {
         try {
-          const numId = Number(id);
-          if (!isNaN(numId)) {
-            await http.patch(`/blog/${numId}`, updates);
-          }
-        } catch {}
+          await http.patch(`/blog/${id}`, {
+            ...(updates.title && { title: updates.title }),
+            ...(updates.slug && { slug: updates.slug }),
+            ...(updates.excerpt && { excerpt: updates.excerpt }),
+            ...(updates.content && { content: updates.content }),
+            ...(updates.author && { authorName: updates.author }),
+            ...(updates.authorAvatar && { authorAvatarUrl: updates.authorAvatar }),
+            ...(updates.coverImage && { coverImageUrl: updates.coverImage }),
+            ...(updates.category && { category: updates.category }),
+            ...(updates.tags && { tags: updates.tags }),
+            ...(updates.readMinutes !== undefined && { readTimeMinutes: updates.readMinutes }),
+          });
+        } catch (err) {
+          console.error('Failed to update blog post on backend:', err);
+        }
         set((state) => ({
           articles: state.articles.map((a) => (a.id === id ? { ...a, ...updates } : a)),
         }));
@@ -329,11 +341,10 @@ export const useContentStore = create<ContentStoreState>()(
 
       deleteArticle: async (id) => {
         try {
-          const numId = Number(id);
-          if (!isNaN(numId)) {
-            await http.delete(`/blog/${numId}`);
-          }
-        } catch {}
+          await http.delete(`/blog/${id}`);
+        } catch (err) {
+          console.error('Failed to delete blog post on backend:', err);
+        }
         set((state) => ({
           articles: state.articles.filter((a) => a.id !== id),
         }));
@@ -341,25 +352,84 @@ export const useContentStore = create<ContentStoreState>()(
 
       // Custom Destinations
       customDestinations: DEFAULT_DESTINATIONS,
-      addCustomDestination: (dest) => {
+
+      fetchCustomDestinations: async () => {
+        try {
+          const res = await http.get('/custom-trips/destinations/all');
+          if (Array.isArray(res.data) && res.data.length > 0) {
+            set({ customDestinations: res.data });
+          }
+        } catch {}
+      },
+
+      addCustomDestination: async (dest) => {
+        try {
+          const res = await http.post('/custom-trips/destinations', dest);
+          if (res.data) {
+            set((state) => ({ customDestinations: [...state.customDestinations, res.data] }));
+            return res.data;
+          }
+        } catch {}
         const item = { ...dest, id: `dest-${Date.now()}` };
         set((state) => ({ customDestinations: [...state.customDestinations, item] }));
         return item;
       },
-      updateCustomDestination: (id, updates) => {
+
+      updateCustomDestination: async (id, updates) => {
+        try {
+          await http.patch(`/custom-trips/destinations/${id}`, updates);
+        } catch {}
         set((state) => ({
           customDestinations: state.customDestinations.map((d) => (d.id === id ? { ...d, ...updates } : d)),
         }));
       },
-      deleteCustomDestination: (id) => {
+
+      deleteCustomDestination: async (id) => {
+        try {
+          await http.delete(`/custom-trips/destinations/${id}`);
+        } catch {}
         set((state) => ({
           customDestinations: state.customDestinations.filter((d) => d.id !== id),
         }));
       },
 
       pricingConfig: DEFAULT_PRICING_CONFIG,
-      updatePricingConfig: (updates) => {
+
+      fetchPricingConfig: async () => {
+        try {
+          const res = await http.get('/custom-trips/pricing/config');
+          if (res.data) {
+            set({
+              pricingConfig: {
+                tierMultipliers: {
+                  luxury: res.data.luxuryMultiplier ?? 1.4,
+                  standard: res.data.standardMultiplier ?? 1.0,
+                  budget: res.data.budgetMultiplier ?? 0.8,
+                },
+                transportRates: {
+                  landcruiserPerDay: res.data.landcruiserPerDay ?? 120,
+                  flightFixedRate: res.data.flightFixedRate ?? 250,
+                  busFixedRate: res.data.busFixedRate ?? 50,
+                },
+              },
+            });
+          }
+        } catch {}
+      },
+
+      updatePricingConfig: async (updates) => {
         set((state) => ({ pricingConfig: { ...state.pricingConfig, ...updates } }));
+        try {
+          const current = get().pricingConfig;
+          await http.patch('/custom-trips/pricing/config', {
+            luxuryMultiplier: current.tierMultipliers.luxury,
+            standardMultiplier: current.tierMultipliers.standard,
+            budgetMultiplier: current.tierMultipliers.budget,
+            landcruiserPerDay: current.transportRates.landcruiserPerDay,
+            flightFixedRate: current.transportRates.flightFixedRate,
+            busFixedRate: current.transportRates.busFixedRate,
+          });
+        } catch {}
       },
 
       // Custom Trip Inquiries (Loaded strictly from real backend)

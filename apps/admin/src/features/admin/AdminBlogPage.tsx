@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -29,7 +29,11 @@ const CATEGORIES: { label: string; value: BlogArticle['category']; color: string
 ];
 
 export const AdminBlogPage: React.FC = () => {
-  const { articles, addArticle, updateArticle, deleteArticle } = useContentStore();
+  const { articles, fetchArticles, addArticle, updateArticle, deleteArticle } = useContentStore();
+
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
