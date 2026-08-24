@@ -124,7 +124,7 @@ ${packages.map((p, i) => `${i + 1}. ${p.title} - ${p.bookings} Bookings - Margin
       </div>
 
       {/* Report Tables & Insights */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+      <div className="admin-reports-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
         <Card glass style={{ padding: '1.5rem' }}>
           <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <TrendingUp size={18} style={{ color: '#10b981' }} /> Popular Destinations Report

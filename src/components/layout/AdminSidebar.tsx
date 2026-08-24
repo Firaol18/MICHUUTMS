@@ -79,59 +79,116 @@ export const AdminSidebar: React.FC = () => {
         zIndex: 10,
       }}
     >
-      {/* Brand Header */}
-      <div
-        className="flex-between"
-        style={{
-          height: 'var(--navbar-height)',
-          padding: sidebarCollapsed ? '0 0.875rem' : '0 1.25rem',
-          borderBottom: '1px solid var(--border-color)',
-        }}
-      >
-        <div className="flex-center" style={{ gap: '0.75rem' }}>
-          <div
-            className="flex-center text-gradient"
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--brand-primary-light)',
-              fontWeight: 800,
-            }}
-          >
-            <Compass size={22} style={{ color: 'var(--brand-primary)' }} />
-          </div>
-          {!sidebarCollapsed && (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontWeight: 800, fontSize: 'var(--font-size-md)', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-                MICHUU <span style={{ color: 'var(--brand-primary)' }}>ADMIN</span>
-              </span>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Ethiopian Tourism Control
-              </span>
-            </div>
+        {/* Brand Header */}
+        <div
+          className="flex-between"
+          style={{
+            height: 'var(--navbar-height)',
+            padding: sidebarCollapsed ? '0 0.5rem' : '0 1.25rem',
+            borderBottom: '1px solid var(--border-color)',
+            flexShrink: 0,
+            gap: '0.5rem',
+            justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+          }}
+        >
+          {sidebarCollapsed ? (
+            /* Collapsed State: Centered clickable icon with Expand chevron badge */
+            <button
+              onClick={toggleSidebar}
+              className="tms-btn-ghost"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                position: 'relative',
+              }}
+              title="Click to Expand Sidebar"
+              aria-label="Expand sidebar"
+            >
+              <div
+                className="text-gradient"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: 'var(--brand-primary-light)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Compass size={22} style={{ color: 'var(--brand-primary)' }} />
+              </div>
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  bottom: 2,
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--bg-primary)',
+                  border: '1px solid var(--border-color)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                }}
+              >
+                <ChevronRight size={11} style={{ color: 'var(--brand-primary)' }} />
+              </div>
+            </button>
+          ) : (
+            /* Expanded State */
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+                <div
+                  className="text-gradient"
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--brand-primary-light)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Compass size={22} style={{ color: 'var(--brand-primary)' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+                  <span style={{ fontWeight: 800, fontSize: 'var(--font-size-md)', letterSpacing: '-0.02em', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>
+                    MICHUU <span style={{ color: 'var(--brand-primary)' }}>ADMIN</span>
+                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2, marginTop: 2 }}>
+                    Ethiopian Tourism Control
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={toggleSidebar}
+                className="tms-btn-ghost"
+                style={{ width: 30, height: 30, borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            </>
           )}
         </div>
 
-        <button
-          onClick={toggleSidebar}
-          className="tms-btn-ghost flex-center"
-          style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)' }}
-          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
-      </div>
-
       {/* Navigation Links matching exact tree hierarchy */}
       <nav style={{ flex: 1, padding: '0.75rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto' }}>
-
-        {!sidebarCollapsed && (
-          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.4rem 0.75rem 0.2rem 0.75rem' }}>
-            ADMIN PORTAL
-          </div>
-        )}
-
         {navItems.map((item) => (
           <NavLink
             key={item.to}

@@ -290,7 +290,7 @@ export const AdminDashboardPage: React.FC = () => {
       </div>
 
       {/* ── Operations & Recent Reservations Grid ─────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+      <div className="admin-dashboard-operations-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
         {/* Recent Reservations Table */}
         <Card glass style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="flex-between">
