@@ -267,134 +267,188 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-
-      {/* Promotional Discount Offers Banner Strip (Exact requested component) */}
+      {/* ─── LUXURY TRAVEL HIGHLIGHTS & PERKS STRIP ─── */}
       <section
         style={{
-          backgroundColor: 'var(--bg-secondary)',
-          borderTop: '1px solid var(--border-color)',
-          borderBottom: '1px solid var(--border-color)',
-          padding: '1.5rem 1.5rem',
-          boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)',
+          backgroundColor: '#FFFFFF',
+          borderTop: '1px solid #E2E8F0',
+          borderBottom: '1px solid #E2E8F0',
+          padding: '1.75rem 1.5rem',
+          boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
         }}
       >
         <div
+          className="promo-strip-grid"
           style={{
             maxWidth: '1280px',
             margin: '0 auto',
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '2rem',
+            gap: '1.5rem',
             alignItems: 'center',
           }}
         >
-          {/* Promo Offer 1: Travel Smart */}
+          {/* Highlight 1: Welcome Offer */}
           <div
-            className="flex-center"
-            style={{
-              justifyContent: 'flex-start',
-              gap: '1.25rem',
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-md)',
-              cursor: 'pointer',
-              transition: 'transform 0.2s ease',
-            }}
             onClick={() => navigate('/tours')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '0.85rem 1.15rem',
+              borderRadius: '16px',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+              e.currentTarget.style.borderColor = '#2563EB';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(37, 99, 235, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#F8FAFC';
+              e.currentTarget.style.borderColor = '#E2E8F0';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
           >
             <div
-              className="flex-center"
               style={{
-                width: 48,
-                height: 48,
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'rgba(2, 132, 199, 0.1)',
-                color: '#0284c7',
+                width: 44,
+                height: 44,
+                borderRadius: '12px',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                color: '#2563EB',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 flexShrink: 0,
               }}
             >
-              <DollarSign size={32} style={{ strokeWidth: 2.5 }} />
+              <Tag size={22} style={{ color: '#2563EB' }} />
             </div>
             <div>
-              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, color: '#16a34a', letterSpacing: '0.04em' }}>
-                UP TO USD. 50 OFF
+              <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#16A34A', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                15% Welcome Offer Active
               </div>
-              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                TRAVEL SMART
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
+                Save 15% on 1st Tour or Event
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '0.15rem' }}>
+                Use promo code <strong>MICHUU15</strong>
               </div>
             </div>
           </div>
 
-          {/* Promo Offer 2: Hotels Across Ethiopia */}
+          {/* Highlight 2: Certified Local Rangers */}
           <div
-            className="flex-center"
-            style={{
-              justifyContent: 'flex-start',
-              gap: '1.25rem',
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-md)',
-              cursor: 'pointer',
-              transition: 'transform 0.2s ease',
-            }}
             onClick={() => navigate('/tours')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '0.85rem 1.15rem',
+              borderRadius: '16px',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+              e.currentTarget.style.borderColor = '#0284C7';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(2, 132, 199, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#F8FAFC';
+              e.currentTarget.style.borderColor = '#E2E8F0';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
           >
             <div
-              className="flex-center"
               style={{
-                width: 48,
-                height: 48,
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: '#0284c7',
-                color: '#ffffff',
-                fontWeight: 900,
-                fontSize: '24px',
+                width: 44,
+                height: 44,
+                borderRadius: '12px',
+                backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                color: '#0284C7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 flexShrink: 0,
-                boxShadow: '0 4px 10px rgba(2, 132, 199, 0.25)',
               }}
             >
-              H
+              <Compass size={22} style={{ color: '#0284C7' }} />
             </div>
             <div>
-              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, color: '#16a34a', letterSpacing: '0.04em' }}>
-                UP TO 70% OFF
+              <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0284C7', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Certified Local Guides
               </div>
-              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                ON HOTELS ACROSS Ethiopia
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
+                100% Verified Local Rangers
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '0.15rem' }}>
+                Simien, Danakil & Bale specialists
               </div>
             </div>
           </div>
 
-          {/* Promo Offer 3: App Offer */}
+          {/* Highlight 3: 24/7 Concierge Protection */}
           <div
-            className="flex-center"
+            onClick={() => navigate('/contact')}
             style={{
-              justifyContent: 'flex-start',
-              gap: '1.25rem',
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '0.85rem 1.15rem',
+              borderRadius: '16px',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
               cursor: 'pointer',
-              transition: 'transform 0.2s ease',
+              transition: 'all 0.2s ease',
             }}
-            onClick={() => navigate('/tours')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+              e.currentTarget.style.borderColor = '#059669';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(5, 150, 105, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#F8FAFC';
+              e.currentTarget.style.borderColor = '#E2E8F0';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
           >
             <div
-              className="flex-center"
               style={{
-                width: 48,
-                height: 48,
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'rgba(2, 132, 199, 0.1)',
-                color: '#0284c7',
+                width: 44,
+                height: 44,
+                borderRadius: '12px',
+                backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                color: '#059669',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 flexShrink: 0,
               }}
             >
-              <Smartphone size={32} style={{ strokeWidth: 2.2 }} />
+              <ShieldCheck size={22} style={{ color: '#059669' }} />
             </div>
             <div>
-              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 800, color: '#16a34a', letterSpacing: '0.04em' }}>
-                FLAT USD. 50 OFF
+              <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#059669', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Travel With Confidence
               </div>
-              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                US APP OFFER
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
+                24/7 Addis Concierge & Care
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '0.15rem' }}>
+                Direct support & departure guarantee
               </div>
             </div>
           </div>
