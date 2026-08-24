@@ -6,17 +6,16 @@ import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
+import { ConfirmModal } from '@tms/shared/components/common/ConfirmModal';
 import { useContentStore } from '@tms/shared/store/useContentStore';
 import type { BlogArticle } from '@tms/shared/services/mockEventsData';
 import {
-  BookOpen,
-  Plus,
   Search,
   Edit2,
   Trash2,
   Clock,
-  User,
   Eye,
+  Plus,
 } from 'lucide-react';
 
 const CATEGORIES: { label: string; value: BlogArticle['category']; color: string }[] = [
@@ -40,6 +39,7 @@ export const AdminBlogPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<BlogArticle | null>(null);
   const [previewArticle, setPreviewArticle] = useState<BlogArticle | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -138,9 +138,7 @@ export const AdminBlogPage: React.FC = () => {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete article "${name}"?`)) {
-      deleteArticle(id);
-    }
+    setDeleteTarget({ id, name });
   };
 
   const filteredArticles = articles.filter((art) => {
@@ -228,8 +226,8 @@ export const AdminBlogPage: React.FC = () => {
       align: 'center',
       cell: (row) => (
         <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'center' }}>
-          <button type="button" onClick={() => setPreviewArticle(row)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0284c7', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="View Details"><Eye size={16} /></button>
-          <button type="button" onClick={() => openEditModal(row)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="Edit"><Edit2 size={16} /></button>
+          <Button variant="ghost" size="sm" icon={<Eye size={14} />} onClick={() => setPreviewArticle(row)} title="Preview Article" />
+          <Button variant="ghost" size="sm" icon={<Edit2 size={14} />} onClick={() => openEditModal(row)} title="Edit Article" />
           <Button variant="ghost" size="sm" icon={<Trash2 size={14} style={{ color: 'var(--status-danger)' }} />} onClick={() => handleDelete(row.id, row.title)} title="Delete Article" />
         </div>
       ),
@@ -248,35 +246,55 @@ export const AdminBlogPage: React.FC = () => {
         }
       />
 
-      {/* Main Articles Data Table with Unified Filter and Search */}
-      <DataTable
-        columns={columns}
-        data={filteredArticles}
-        keyExtractor={(item) => item.id}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchPlaceholder="Search articles by title, author, or tags..."
-        filterModalTitle="Filter Blog Posts"
-        filterFields={[
-          {
-            id: 'category',
-            label: 'Article Category',
-            value: categoryFilter,
-            onChange: setCategoryFilter,
-            options: [
-              { label: 'All Category', value: 'all' },
-              ...CATEGORIES.map((cat) => ({
-                label: cat.label,
-                value: cat.value,
-              })),
-            ],
-          },
-        ]}
-        onApplyFilters={() => {}}
-        onClearFilters={() => {
-          setCategoryFilter('all');
-        }}
-      />
+      {/* Filter and Search Bar */}
+      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ maxWidth: '320px', width: '100%' }}>
+          <Input
+            placeholder="Search articles by title, author or tag..."
+            icon={<Search size={16} />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setCategoryFilter('all')}
+            style={{
+              padding: '0.35rem 0.75rem',
+              borderRadius: 'var(--radius-full)',
+              border: `1px solid ${categoryFilter === 'all' ? 'var(--brand-primary)' : 'var(--border-color)'}`,
+              backgroundColor: categoryFilter === 'all' ? 'var(--brand-primary-light)' : 'transparent',
+              color: categoryFilter === 'all' ? 'var(--brand-primary)' : 'var(--text-secondary)',
+              fontSize: 'var(--font-size-xs)',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            All Categories ({articles.length})
+          </button>
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.value}
+              onClick={() => setCategoryFilter(cat.value)}
+              style={{
+                padding: '0.35rem 0.75rem',
+                borderRadius: 'var(--radius-full)',
+                border: `1px solid ${categoryFilter === cat.value ? cat.color : 'var(--border-color)'}`,
+                backgroundColor: categoryFilter === cat.value ? `${cat.color}15` : 'transparent',
+                color: categoryFilter === cat.value ? cat.color : 'var(--text-secondary)',
+                fontSize: 'var(--font-size-xs)',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <DataTable columns={columns} data={filteredArticles} keyExtractor={(item) => item.id} />
 
       {/* Create / Edit Article Modal */}
       <Modal
@@ -427,6 +445,21 @@ export const AdminBlogPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Delete Article Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          await deleteArticle(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        title="Delete Blog Article"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? It will be removed from the public travel blog.`}
+        confirmText="Delete Article"
+        variant="danger"
+      />
     </div>
   );
 };

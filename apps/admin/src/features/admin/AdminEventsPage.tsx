@@ -2,21 +2,19 @@ import React, { useState } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
-import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
+import { ConfirmModal } from '@tms/shared/components/common/ConfirmModal';
 import { useContentStore } from '@tms/shared/store/useContentStore';
 import type { EthiopianEvent } from '@tms/shared/services/mockEventsData';
 import {
-  CalendarDays,
-  Plus,
   Search,
   Edit2,
   Trash2,
   Star,
   MapPin,
-  Sparkles,
+  Plus,
 } from 'lucide-react';
 
 const CATEGORY_COLORS: Record<EthiopianEvent['category'], string> = {
@@ -38,16 +36,13 @@ const CATEGORIES: EthiopianEvent['category'][] = [
 ];
 
 export const AdminEventsPage: React.FC = () => {
-  const { events, fetchEvents, addEvent, updateEvent, deleteEvent, toggleFeaturedEvent } = useContentStore();
+  const { events, addEvent, updateEvent, deleteEvent, toggleFeaturedEvent } = useContentStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EthiopianEvent | null>(null);
-
-  React.useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -152,9 +147,7 @@ export const AdminEventsPage: React.FC = () => {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
-      deleteEvent(id);
-    }
+    setDeleteTarget({ id, name });
   };
 
   const filteredEvents = events.filter((evt) => {
@@ -226,30 +219,6 @@ export const AdminEventsPage: React.FC = () => {
       ),
     },
     {
-      header: 'Price / Offer',
-      minWidth: '130px',
-      noWrap: true,
-      cell: (row) => (
-        <div style={{ fontSize: 'var(--font-size-xs)' }}>
-          {row.hasOffer ? (
-            <>
-              <span style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', display: 'block', marginBottom: '1px' }}>
-                🏷 {row.offerTag || (row.discountPercent ? `${row.discountPercent}% OFF` : 'SPECIAL OFFER')}
-              </span>
-              {row.originalPrice && (
-                <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)', marginRight: 4 }}>
-                  ${row.originalPrice}
-                </span>
-              )}
-              <span style={{ fontWeight: 700, color: '#16a34a' }}>${row.price ?? 0}</span>
-            </>
-          ) : (
-            <span style={{ fontWeight: 600 }}>${row.price ?? 0}</span>
-          )}
-        </div>
-      ),
-    },
-    {
       header: 'Featured',
       minWidth: '90px',
       noWrap: true,
@@ -277,7 +246,7 @@ export const AdminEventsPage: React.FC = () => {
       align: 'center',
       cell: (row) => (
         <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'center' }}>
-          <button type="button" onClick={() => openEditModal(row)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }} title="Edit"><Edit2 size={16} /></button>
+          <Button variant="ghost" size="sm" icon={<Edit2 size={14} />} onClick={() => openEditModal(row)} />
           <Button variant="ghost" size="sm" icon={<Trash2 size={14} style={{ color: 'var(--status-danger)' }} />} onClick={() => handleDelete(row.id, row.title)} />
         </div>
       ),
@@ -296,35 +265,56 @@ export const AdminEventsPage: React.FC = () => {
         }
       />
 
-      {/* Main Events Data Table with Unified Filter and Search */}
-      <DataTable
-        columns={columns}
-        data={filteredEvents}
-        keyExtractor={(item) => item.id}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchPlaceholder="Search events by title, location, or tag..."
-        filterModalTitle="Filter Events"
-        filterFields={[
-          {
-            id: 'category',
-            label: 'Event Category',
-            value: categoryFilter,
-            onChange: setCategoryFilter,
-            options: [
-              { label: 'All Category', value: 'all' },
-              ...CATEGORIES.map((cat) => ({
-                label: cat.charAt(0).toUpperCase() + cat.slice(1),
-                value: cat,
-              })),
-            ],
-          },
-        ]}
-        onApplyFilters={() => {}}
-        onClearFilters={() => {
-          setCategoryFilter('all');
-        }}
-      />
+      {/* Filter and Search Bar */}
+      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ maxWidth: '320px', width: '100%' }}>
+          <Input
+            placeholder="Search events by name or location..."
+            icon={<Search size={16} />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setCategoryFilter('all')}
+            style={{
+              padding: '0.35rem 0.75rem',
+              borderRadius: 'var(--radius-full)',
+              border: `1px solid ${categoryFilter === 'all' ? 'var(--brand-primary)' : 'var(--border-color)'}`,
+              backgroundColor: categoryFilter === 'all' ? 'var(--brand-primary-light)' : 'transparent',
+              color: categoryFilter === 'all' ? 'var(--brand-primary)' : 'var(--text-secondary)',
+              fontSize: 'var(--font-size-xs)',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            All Categories ({events.length})
+          </button>
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              style={{
+                padding: '0.35rem 0.75rem',
+                borderRadius: 'var(--radius-full)',
+                border: `1px solid ${categoryFilter === cat ? CATEGORY_COLORS[cat] : 'var(--border-color)'}`,
+                backgroundColor: categoryFilter === cat ? `${CATEGORY_COLORS[cat]}15` : 'transparent',
+                color: categoryFilter === cat ? CATEGORY_COLORS[cat] : 'var(--text-secondary)',
+                fontSize: 'var(--font-size-xs)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                textTransform: 'capitalize',
+              }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <DataTable columns={columns} data={filteredEvents} keyExtractor={(item) => item.id} />
 
       {/* Create / Edit Event Modal */}
       <Modal
@@ -439,69 +429,23 @@ export const AdminEventsPage: React.FC = () => {
             value={tipForVisitors}
             onChange={(e) => setTipForVisitors(e.target.value)}
           />
-
-          {/* ── Offer / Pricing Section ── */}
-          <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>🏷 Pricing & Offer Settings</div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <Input
-                label="Base Price (USD / guest)"
-                type="number"
-                placeholder="e.g. 65"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                min={0}
-              />
-              <div style={{ display: 'flex', alignItems: 'center', paddingTop: '1.75rem', gap: '0.5rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
-                  <input
-                    type="checkbox"
-                    checked={hasOffer}
-                    onChange={(e) => setHasOffer(e.target.checked)}
-                  />
-                  🏷️ Enable Special Offer
-                </label>
-              </div>
-            </div>
-
-            {hasOffer && (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                  <Input
-                    label="Original Price (for strikethrough)"
-                    type="number"
-                    placeholder="e.g. 95"
-                    value={originalPrice}
-                    onChange={(e) => setOriginalPrice(e.target.value)}
-                    min={0}
-                  />
-                  <Input
-                    label="Discount % (optional)"
-                    type="number"
-                    placeholder="e.g. 20"
-                    value={discountPercent}
-                    onChange={(e) => setDiscountPercent(e.target.value)}
-                    min={0}
-                    max={99}
-                  />
-                  <Input
-                    label="Offer Tag Label"
-                    placeholder="e.g. EARLY BIRD -20%"
-                    value={offerTag}
-                    onChange={(e) => setOfferTag(e.target.value)}
-                  />
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '0.5rem 0.75rem', backgroundColor: 'rgba(239,68,68,0.06)', borderRadius: 'var(--radius-sm)', border: '1px dashed rgba(239,68,68,0.25)' }}>
-                  Preview: <strong style={{ color: '#ef4444' }}>{offerTag || (discountPercent ? `${discountPercent}% OFF` : 'SPECIAL OFFER')}</strong> — was <s>${originalPrice || '?'}</s> now <strong style={{ color: '#16a34a' }}>${price || '?'}</strong> / guest
-                </div>
-              </>
-            )}
-          </div>
         </form>
       </Modal>
+
+      {/* Delete Event Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          await deleteEvent(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        title="Delete Festival / Event"
+        message={`Are you sure you want to permanently delete "${deleteTarget?.name}"? It will no longer appear on the public events calendar.`}
+        confirmText="Delete Event"
+        variant="danger"
+      />
     </div>
   );
 };

@@ -118,12 +118,35 @@ export class UsersService {
     return this.usersRepo.save(entity);
   }
 
-  async updateUser(id: string, updates: Partial<User>) {
-    const userUpdates = { ...updates };
-    if (userUpdates.password) {
-      userUpdates.password = await bcrypt.hash(userUpdates.password, 10);
+  async updateUser(id: string, updates: Partial<User> & Record<string, any>) {
+    const user = await this.getUserById(id);
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
     }
-    await this.usersRepo.update(id, userUpdates);
+
+    const allowedKeys = [
+      'name', 'email', 'password', 'phone', 'nationality', 'avatarUrl',
+      'ecName', 'ecRelationship', 'ecPhone', 'ecEmail',
+      'passportType', 'passportNumber', 'passportCountry', 'passportExpiry',
+      'dietaryNeeds', 'languages', 'accessibility', 'preferredCurrency',
+      'accommodation', 'tourTypes', 'isActive', 'roleId'
+    ];
+
+    const cleanUpdates: Record<string, any> = {};
+    for (const key of allowedKeys) {
+      if (updates[key] !== undefined) {
+        cleanUpdates[key] = updates[key];
+      }
+    }
+
+    if (cleanUpdates.password) {
+      cleanUpdates.password = await bcrypt.hash(cleanUpdates.password, 10);
+    }
+
+    if (Object.keys(cleanUpdates).length > 0) {
+      await this.usersRepo.update(id, cleanUpdates);
+    }
+
     return this.getUserById(id);
   }
 

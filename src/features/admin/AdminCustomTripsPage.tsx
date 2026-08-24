@@ -7,6 +7,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Card } from '@/components/common/Card';
 import { Modal } from '@/components/common/Modal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useContentStore, type CustomDestinationOption, type CustomTripInquiry } from '@/store/useContentStore';
 import {
   Compass,
@@ -50,6 +51,9 @@ export const AdminCustomTripsPage: React.FC = () => {
   // Destination modal state
   const [isDestModalOpen, setIsDestModalOpen] = useState(false);
   const [editingDest, setEditingDest] = useState<CustomDestinationOption | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; type: 'destination' | 'inquiry' } | null>(null);
+
+  // Destination modal state
   const [destName, setDestName] = useState('');
   const [destRegion, setDestRegion] = useState('');
   const [destPricePerDay, setDestPricePerDay] = useState(150);
@@ -115,9 +119,7 @@ export const AdminCustomTripsPage: React.FC = () => {
   };
 
   const handleDeleteDest = (id: string, name: string) => {
-    if (window.confirm(`Delete destination option "${name}"?`)) {
-      deleteCustomDestination(id);
-    }
+    setDeleteTarget({ id, name, type: 'destination' });
   };
 
   const handleSavePricing = (e: React.FormEvent) => {
@@ -527,6 +529,29 @@ export const AdminCustomTripsPage: React.FC = () => {
           </label>
         </form>
       </Modal>
+
+      {/* Delete Confirmation Modal for Custom Destination & Inquiries */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          if (deleteTarget.type === 'destination') {
+            deleteCustomDestination(deleteTarget.id);
+          } else {
+            deleteCustomTripInquiry(deleteTarget.id);
+          }
+          setDeleteTarget(null);
+        }}
+        title={deleteTarget?.type === 'destination' ? 'Delete Custom Destination' : 'Delete Trip Inquiry'}
+        message={
+          deleteTarget?.type === 'destination'
+            ? `Are you sure you want to delete destination option "${deleteTarget?.name}"? Travelers will no longer be able to select it in the custom itinerary builder.`
+            : `Are you sure you want to delete the customized itinerary inquiry from "${deleteTarget?.name}"?`
+        }
+        confirmText={deleteTarget?.type === 'destination' ? 'Delete Destination' : 'Delete Inquiry'}
+        variant="danger"
+      />
     </div>
   );
 };

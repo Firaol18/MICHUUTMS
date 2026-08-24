@@ -6,6 +6,7 @@ import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useContentStore } from '@/store/useContentStore';
 import type { EthiopianEvent } from '@/services/mockEventsData';
 import {
@@ -44,6 +45,7 @@ export const AdminEventsPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EthiopianEvent | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -56,6 +58,12 @@ export const AdminEventsPage: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [tipForVisitors, setTipForVisitors] = useState('');
+  // Offer/Price fields
+  const [price, setPrice] = useState<string>('');
+  const [hasOffer, setHasOffer] = useState(false);
+  const [offerTag, setOfferTag] = useState('');
+  const [discountPercent, setDiscountPercent] = useState<string>('');
+  const [originalPrice, setOriginalPrice] = useState<string>('');
 
   const openCreateModal = () => {
     setEditingEvent(null);
@@ -69,6 +77,11 @@ export const AdminEventsPage: React.FC = () => {
     setImageUrl('https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800');
     setIsFeatured(false);
     setTipForVisitors('');
+    setPrice('');
+    setHasOffer(false);
+    setOfferTag('');
+    setDiscountPercent('');
+    setOriginalPrice('');
     setIsModalOpen(true);
   };
 
@@ -84,6 +97,11 @@ export const AdminEventsPage: React.FC = () => {
     setImageUrl(evt.imageUrl);
     setIsFeatured(evt.isFeatured);
     setTipForVisitors(evt.tipForVisitors || '');
+    setPrice(evt.price !== undefined ? String(evt.price) : '');
+    setHasOffer(evt.hasOffer ?? false);
+    setOfferTag(evt.offerTag ?? '');
+    setDiscountPercent(evt.discountPercent !== undefined ? String(evt.discountPercent) : '');
+    setOriginalPrice(evt.originalPrice !== undefined ? String(evt.originalPrice) : '');
     setIsModalOpen(true);
   };
 
@@ -103,6 +121,11 @@ export const AdminEventsPage: React.FC = () => {
         imageUrl: imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
         isFeatured,
         tipForVisitors: tipForVisitors || undefined,
+        price: price !== '' ? Number(price) : 0,
+        hasOffer,
+        offerTag: hasOffer && offerTag ? offerTag : undefined,
+        discountPercent: hasOffer && discountPercent !== '' ? Number(discountPercent) : undefined,
+        originalPrice: hasOffer && originalPrice !== '' ? Number(originalPrice) : undefined,
       });
     } else {
       addEvent({
@@ -116,15 +139,18 @@ export const AdminEventsPage: React.FC = () => {
         imageUrl: imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
         isFeatured,
         tipForVisitors: tipForVisitors || undefined,
+        price: price !== '' ? Number(price) : 0,
+        hasOffer,
+        offerTag: hasOffer && offerTag ? offerTag : undefined,
+        discountPercent: hasOffer && discountPercent !== '' ? Number(discountPercent) : undefined,
+        originalPrice: hasOffer && originalPrice !== '' ? Number(originalPrice) : undefined,
       });
     }
     setIsModalOpen(false);
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
-      deleteEvent(id);
-    }
+    setDeleteTarget({ id, name });
   };
 
   const filteredEvents = events.filter((evt) => {
@@ -408,6 +434,21 @@ export const AdminEventsPage: React.FC = () => {
           />
         </form>
       </Modal>
+
+      {/* Delete Event Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          await deleteEvent(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        title="Delete Festival / Event"
+        message={`Are you sure you want to permanently delete "${deleteTarget?.name}"? It will no longer appear on the public events calendar.`}
+        confirmText="Delete Event"
+        variant="danger"
+      />
     </div>
   );
 };

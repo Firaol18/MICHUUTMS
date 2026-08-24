@@ -6,6 +6,7 @@ import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useContentStore } from '@/store/useContentStore';
 import type { BlogArticle } from '@/services/mockEventsData';
 import {
@@ -40,6 +41,7 @@ export const AdminBlogPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<BlogArticle | null>(null);
   const [previewArticle, setPreviewArticle] = useState<BlogArticle | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -138,9 +140,7 @@ export const AdminBlogPage: React.FC = () => {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete article "${name}"?`)) {
-      deleteArticle(id);
-    }
+    setDeleteTarget({ id, name });
   };
 
   const filteredArticles = articles.filter((art) => {
@@ -447,6 +447,21 @@ export const AdminBlogPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Delete Article Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          await deleteArticle(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        title="Delete Blog Article"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? It will be removed from the public travel blog.`}
+        confirmText="Delete Article"
+        variant="danger"
+      />
     </div>
   );
 };

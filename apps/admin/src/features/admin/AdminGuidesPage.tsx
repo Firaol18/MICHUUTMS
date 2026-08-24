@@ -6,6 +6,7 @@ import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
+import { ConfirmModal } from '@tms/shared/components/common/ConfirmModal';
 import { PermissionGuard } from '@tms/shared/components/common/PermissionGuard';
 import { tourismService } from '@tms/shared/services/tourismService';
 import type { TourGuide, GuideStatus, GuideAvailability } from '@tms/shared/types/guide';
@@ -67,6 +68,8 @@ export const AdminGuidesPage: React.FC = () => {
   // Create / Edit Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editGuide, setEditGuide] = useState<TourGuide | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   // Form fields for Create/Edit
@@ -167,11 +170,8 @@ export const AdminGuidesPage: React.FC = () => {
     fetchGuides();
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete guide "${name}"?`)) {
-      await tourismService.deleteGuide(id);
-      fetchGuides();
-    }
+  const handleDelete = (id: string, name: string) => {
+    setDeleteTarget({ id, name });
   };
 
   const handleAddCert = async () => {
@@ -651,6 +651,27 @@ export const AdminGuidesPage: React.FC = () => {
         </Modal>
       )}
 
+      {/* Delete Guide Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setIsDeleting(true);
+          try {
+            await tourismService.deleteGuide(deleteTarget.id);
+            setDeleteTarget(null);
+            fetchGuides();
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+        title="Delete Tour Guide"
+        message={`Are you sure you want to delete guide "${deleteTarget?.name}"? Any upcoming tour assignments will be unlinked.`}
+        confirmText="Delete Guide"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

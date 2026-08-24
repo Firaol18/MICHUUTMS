@@ -7,6 +7,7 @@ import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
+import { ConfirmModal } from '@tms/shared/components/common/ConfirmModal';
 import { PermissionGuard } from '@tms/shared/components/common/PermissionGuard';
 import { tourismService } from '@tms/shared/services/tourismService';
 import type { TourPackage, TourCategory, DifficultyLevel, ItineraryDay } from '@tms/shared/types/tour';
@@ -189,6 +190,8 @@ export const AdminToursPage: React.FC = () => {
   // Edit state
   const [editingTour, setEditingTour] = useState<TourPackage | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editCategory, setEditCategory] = useState<TourCategory>('luxury');
   const [editPrice, setEditPrice] = useState(0);
@@ -404,11 +407,8 @@ export const AdminToursPage: React.FC = () => {
           <PermissionGuard resource="tours" action="delete">
             <button
               type="button"
-              onClick={async () => {
-                if (window.confirm(`Delete "${row.title}"?`)) {
-                  await tourismService.deleteTourPackage(row.id);
-                  fetchTours();
-                }
+              onClick={() => {
+                setDeleteTarget({ id: row.id, title: row.title });
               }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }}
               title="Delete Tour"
@@ -668,6 +668,28 @@ export const AdminToursPage: React.FC = () => {
           </form>
         </Modal>
       )}
+
+      {/* Delete Tour Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setIsDeleting(true);
+          try {
+            await tourismService.deleteTourPackage(deleteTarget.id);
+            setDeleteTarget(null);
+            fetchTours();
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+        title="Delete Tour Package"
+        message={`Are you sure you want to permanently delete "${deleteTarget?.title}"? All associated itineraries, pricing configurations, and scheduled departures will be removed.`}
+        confirmText="Delete Package"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

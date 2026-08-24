@@ -159,7 +159,7 @@ export const AdminLoginPage: React.FC = () => {
           />
 
           <Button type="submit" variant="primary" size="lg" isLoading={isLoading} icon={<KeyRound size={18} />}>
-            Authenticate & Access Admin Panel
+            Sign In
           </Button>
         </form>
 

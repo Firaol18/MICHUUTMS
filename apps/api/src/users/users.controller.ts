@@ -47,22 +47,32 @@ export class UsersController {
   ): Promise<User> {
     let targetUser: User | null = null;
 
-    // 1. Check Authorization Bearer token
-    const authHeader = req?.headers?.['authorization'] || req?.headers?.['Authorization'];
-    if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7).trim();
-      try {
-        const decoded: any = this.jwtService.decode(token);
-        if (decoded && decoded.sub) {
-          targetUser = await this.usersService.getUserById(decoded.sub).catch(() => null);
-        }
-        if (!targetUser && decoded && decoded.email) {
-          targetUser = await this.usersService.getUserByEmail(decoded.email);
-        }
-      } catch {}
+    // 1. Check req.user if populated by Passport
+    if (req?.user?.id) {
+      targetUser = await this.usersService.getUserById(req.user.id).catch(() => null);
+    }
+    if (!targetUser && req?.user?.email) {
+      targetUser = await this.usersService.getUserByEmail(req.user.email);
     }
 
-    // 2. Explicit User ID or Email
+    // 2. Check Authorization Bearer token
+    if (!targetUser) {
+      const authHeader = req?.headers?.['authorization'] || req?.headers?.['Authorization'];
+      if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7).trim();
+        try {
+          const decoded: any = this.jwtService.decode(token);
+          if (decoded && decoded.sub) {
+            targetUser = await this.usersService.getUserById(decoded.sub).catch(() => null);
+          }
+          if (!targetUser && decoded && decoded.email) {
+            targetUser = await this.usersService.getUserByEmail(decoded.email);
+          }
+        } catch {}
+      }
+    }
+
+    // 3. Explicit User ID or Email
     if (!targetUser && explicitUserId) {
       targetUser = await this.usersService.getUserById(explicitUserId).catch(() => null);
     }
@@ -70,7 +80,7 @@ export class UsersController {
       targetUser = await this.usersService.getUserByEmail(explicitEmail);
     }
 
-    // 3. Fallback: retrieve first active user
+    // 4. Fallback: retrieve first active user
     if (!targetUser) {
       const users = await this.usersService.getUsers();
       targetUser = users[0] || null;

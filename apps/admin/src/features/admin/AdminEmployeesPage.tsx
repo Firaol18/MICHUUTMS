@@ -6,6 +6,7 @@ import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
+import { ConfirmModal } from '@tms/shared/components/common/ConfirmModal';
 import { Card } from '@tms/shared/components/common/Card';
 import {
   Shield,
@@ -94,6 +95,8 @@ export const AdminEmployeesPage: React.FC = () => {
   const [resetPassEmployee, setResetPassEmployee] = useState<EmployeeItem | null>(null);
   const [generatedPass, setGeneratedPass] = useState('');
   const [isPassCopied, setIsPassCopied] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Add / Edit Form State
   const [formName, setFormName] = useState('');
@@ -219,13 +222,8 @@ export const AdminEmployeesPage: React.FC = () => {
   };
 
   // Delete Employee
-  const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete employee "${name}"?`)) {
-      try {
-        await http.delete(`/users/${id}`);
-        await fetchEmployeesData();
-      } catch { }
-    }
+  const handleDelete = (id: string, name: string) => {
+    setDeleteTarget({ id, name });
   };
 
   // Open Password Reset Modal
@@ -815,6 +813,28 @@ export const AdminEmployeesPage: React.FC = () => {
         </Modal>
       )}
 
+      {/* Delete Employee Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setIsDeleting(true);
+          try {
+            await http.delete(`/users/${deleteTarget.id}`);
+            setDeleteTarget(null);
+            await fetchEmployeesData();
+          } catch {
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+        title="Delete Staff Member"
+        message={`Are you sure you want to delete employee "${deleteTarget?.name}"? They will lose all role permissions and system access.`}
+        confirmText="Delete Employee"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

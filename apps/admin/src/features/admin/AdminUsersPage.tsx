@@ -6,6 +6,7 @@ import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
 import { Input } from '@tms/shared/components/common/Input';
 import { Modal } from '@tms/shared/components/common/Modal';
+import { ConfirmModal } from '@tms/shared/components/common/ConfirmModal';
 import { PermissionGuard } from '@tms/shared/components/common/PermissionGuard';
 import { tourismService } from '@tms/shared/services/tourismService';
 import { http } from '@tms/shared/services/apiClient';
@@ -131,6 +132,7 @@ export const AdminUsersPage: React.FC = () => {
 
   const [detailCustomer, setDetailCustomer] = React.useState<CustomerProfile | null>(null);
   const [isDetailOpen, setIsDetailOpen] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<{ id: string; name: string } | null>(null);
   const [customerBookings, setCustomerBookings] = React.useState<Booking[]>([]);
   const [activeTab, setActiveTab] = React.useState<'overview' | 'passport' | 'preferences' | 'comms' | 'bookings' | 'loyalty'>('overview');
 
@@ -166,25 +168,74 @@ export const AdminUsersPage: React.FC = () => {
   const [editCurrency, setEditCurrency] = React.useState('USD ($)');
   const [editAccomm, setEditAccomm] = React.useState('');
 
+  const mapBackendUserToProfile = (u: any, bookings: Booking[] = []): CustomerProfile => {
+    const userBookings = bookings.filter(
+      (b) => b.traveler?.email?.toLowerCase() === u.email?.toLowerCase()
+    );
+    const totalBookings = userBookings.length;
+    const totalSpend = userBookings.reduce((sum, b) => sum + (Number(b.totalPrice) || 0), 0);
+    const loyaltyTier = getLoyaltyTier(totalBookings);
+
+    const passport = (u.passportNumber || u.passportType || u.passportCountry || u.nationality) ? {
+      documentType: (u.passportType === 'national_id' || u.passportType === 'other') ? u.passportType : 'passport',
+      documentNumber: u.passportNumber || '',
+      issuingCountry: u.passportCountry || u.nationality || 'Ethiopia',
+      expiryDate: u.passportExpiry || '',
+      nationality: u.nationality || u.passportCountry || 'Ethiopian',
+    } : undefined;
+
+    const emergencyContact = (u.ecName || u.ecPhone || u.ecEmail) ? {
+      name: u.ecName || '',
+      relationship: u.ecRelationship || 'Emergency Contact',
+      phone: u.ecPhone || '',
+      email: u.ecEmail || undefined,
+    } : undefined;
+
+    const languagesList = Array.isArray(u.languages)
+      ? u.languages
+      : (typeof u.languages === 'string' && u.languages ? u.languages.split(',').map((s: string) => s.trim()) : ['English', 'Amharic']);
+
+    const tourTypesList = Array.isArray(u.tourTypes)
+      ? u.tourTypes
+      : (typeof u.tourTypes === 'string' && u.tourTypes ? u.tourTypes.split(',').map((s: string) => s.trim()) : []);
+
+    const travelPreferences = {
+      preferredTourTypes: tourTypesList,
+      dietaryNeeds: u.dietaryNeeds || '',
+      languages: languagesList,
+      accessibilityNeeds: u.accessibility || '',
+      preferredCurrency: u.preferredCurrency || 'USD ($)',
+      accommodationPreference: u.accommodation || 'Eco-Lodge / 4-Star Boutique',
+    };
+
+    return {
+      id: String(u.id),
+      name: u.name || 'Anonymous Traveler',
+      email: u.email,
+      mobile: u.phone || '+251 911 000 000',
+      role: u.role?.name || (typeof u.role === 'string' ? u.role : 'Tourist'),
+      regDate: typeof u.createdAt === 'string' ? u.createdAt.split('T')[0] : '2026-08-19',
+      status: u.isActive !== false ? 'active' : 'blocked',
+      passport,
+      emergencyContact,
+      travelPreferences,
+      totalBookings,
+      totalSpend,
+      loyaltyTier,
+      communicationHistory: u.communicationHistory || [],
+    };
+  };
+
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const res = await http.get('/users');
-      const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      const [usersRes, allBookings] = await Promise.all([
+        http.get('/users'),
+        tourismService.getBookings('all').catch(() => []),
+      ]);
+      const list = Array.isArray(usersRes.data) ? usersRes.data : (usersRes.data?.data || []);
       if (list.length > 0) {
-        setCustomers(list.map((u: any) => ({
-          id: String(u.id),
-          name: u.name || 'Anonymous Traveler',
-          email: u.email,
-          mobile: u.phone || '+251 911 000 000',
-          role: u.role?.name || (typeof u.role === 'string' ? u.role : 'Tourist'),
-          regDate: typeof u.createdAt === 'string' ? u.createdAt.split('T')[0] : '2026-08-19',
-          status: u.isActive !== false ? 'active' : 'blocked',
-          totalBookings: 1,
-          totalSpend: 1200,
-          loyaltyTier: 'bronze',
-          communicationHistory: [],
-        })));
+        setCustomers(list.map((u: any) => mapBackendUserToProfile(u, allBookings)));
       } else {
         setCustomers(INITIAL_CUSTOMERS);
       }
@@ -213,9 +264,24 @@ export const AdminUsersPage: React.FC = () => {
   });
 
   const openDetail = async (c: CustomerProfile) => {
-    setDetailCustomer(c); setActiveTab('overview'); setIsDetailOpen(true);
-    const all = await tourismService.getBookings('all');
-    setCustomerBookings(all.filter((b) => b.traveler.email === c.email));
+    setDetailCustomer(c);
+    setActiveTab('overview');
+    setIsDetailOpen(true);
+    try {
+      const [userRes, allBookings] = await Promise.all([
+        http.get(`/users/${c.id}`).catch(() => ({ data: c })),
+        tourismService.getBookings('all').catch(() => []),
+      ]);
+      const fullUser = userRes.data || c;
+      const userBookings = allBookings.filter(
+        (b) => b.traveler?.email?.toLowerCase() === c.email?.toLowerCase()
+      );
+      setCustomerBookings(userBookings);
+      const mapped = mapBackendUserToProfile(fullUser, allBookings);
+      setDetailCustomer(mapped);
+    } catch {
+      setDetailCustomer(c);
+    }
   };
 
   const openEdit = (c: CustomerProfile) => {
@@ -376,7 +442,7 @@ export const AdminUsersPage: React.FC = () => {
           <PermissionGuard resource="users" action="delete">
             <button
               type="button"
-              onClick={() => { if (window.confirm(`Delete ${row.name}?`)) save(customers.filter((c) => c.id !== row.id)); }}
+              onClick={() => { setDeleteTarget({ id: row.id, name: row.name }); }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }}
               title="Delete Customer"
             >
@@ -669,6 +735,21 @@ export const AdminUsersPage: React.FC = () => {
           </form>
         </Modal>
       )}
+
+      {/* Delete Customer Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          save(customers.filter((c) => c.id !== deleteTarget.id));
+          setDeleteTarget(null);
+        }}
+        title="Delete Customer Profile"
+        message={`Are you sure you want to permanently delete the profile for "${deleteTarget?.name}"?`}
+        confirmText="Delete Profile"
+        variant="danger"
+      />
     </div>
   );
 };

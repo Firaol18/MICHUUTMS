@@ -5,6 +5,7 @@ import { DataTable } from '@/components/data-display/DataTable';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { PermissionGuard } from '@/components/common/PermissionGuard';
 import { tourismService } from '@/services/tourismService';
 import type { Booking, BookingStatus, PaymentStatus } from '@/types/booking';
@@ -45,6 +46,27 @@ export const AdminBookingsPage: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isManifestOpen, setIsManifestOpen] = useState(false);
   const [selectedManifestBooking, setSelectedManifestBooking] = useState<Booking | null>(null);
+
+  // Modal State for Cancellation / Refunds (Replacing window.prompt)
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; ref: string; isRefund: boolean } | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelConfirm = async (reason?: string) => {
+    if (!cancelTarget) return;
+    setIsCancelling(true);
+    try {
+      await tourismService.cancelBookingWithRefund(
+        cancelTarget.id,
+        reason || 'Cancelled by admin operator',
+        cancelTarget.isRefund
+      );
+      setCancelTarget(null);
+      setIsDetailOpen(false);
+      fetchBookings();
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const fetchBookings = async () => {
     setIsLoading(true);
@@ -244,11 +266,12 @@ export const AdminBookingsPage: React.FC = () => {
                 variant="ghost" size="sm"
                 style={{ color: '#ef4444' }}
                 icon={<XCircle size={13} />}
-                onClick={async () => {
-                  const reason = window.prompt('Enter cancellation reason:');
-                  if (reason === null) return;
-                  await tourismService.cancelBookingWithRefund(row.id, reason || 'Cancelled by admin', false);
-                  fetchBookings();
+                onClick={() => {
+                  setCancelTarget({
+                    id: row.id,
+                    ref: row.bookingReference,
+                    isRefund: row.paymentStatus === 'paid',
+                  });
                 }}
               >
                 Cancel
@@ -478,12 +501,12 @@ export const AdminBookingsPage: React.FC = () => {
                     size="sm"
                     style={{ color: '#ef4444', marginLeft: 'auto' }}
                     icon={<XCircle size={14} />}
-                    onClick={async () => {
-                      const reason = window.prompt('Cancellation reason:');
-                      if (reason === null) return;
-                      await tourismService.cancelBookingWithRefund(detailBooking.id, reason || 'Cancelled by admin', false);
-                      fetchBookings();
-                      setIsDetailOpen(false);
+                    onClick={() => {
+                      setCancelTarget({
+                        id: detailBooking.id,
+                        ref: detailBooking.bookingReference,
+                        isRefund: false,
+                      });
                     }}
                   >
                     Cancel Booking
@@ -494,12 +517,12 @@ export const AdminBookingsPage: React.FC = () => {
                       size="sm"
                       style={{ color: '#3b82f6' }}
                       icon={<RotateCcw size={14} />}
-                      onClick={async () => {
-                        const reason = window.prompt('Refund reason:');
-                        if (reason === null) return;
-                        await tourismService.cancelBookingWithRefund(detailBooking.id, reason || 'Refund requested', true);
-                        fetchBookings();
-                        setIsDetailOpen(false);
+                      onClick={() => {
+                        setCancelTarget({
+                          id: detailBooking.id,
+                          ref: detailBooking.bookingReference,
+                          isRefund: true,
+                        });
                       }}
                     >
                       Cancel & Refund
@@ -519,6 +542,25 @@ export const AdminBookingsPage: React.FC = () => {
         tourTitle={selectedManifestBooking?.tourTitle || 'Historic Ethiopia & Wenchi Expedition'}
         dateRange={selectedManifestBooking ? `Aug 20 – 27, 2026 (Departure: ${selectedManifestBooking.travelDate})` : 'Aug 20 – 27, 2026'}
         guideName={selectedManifestBooking?.assignedGuideName || 'Abebe Bekele'}
+      />
+
+      {/* Cancellation / Refund Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(cancelTarget)}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleCancelConfirm}
+        title={cancelTarget?.isRefund ? 'Cancel Booking & Issue Refund' : 'Cancel Reservation'}
+        message={
+          cancelTarget?.isRefund
+            ? `Are you sure you want to cancel booking Ref #${cancelTarget?.ref}? This will cancel the traveler manifest reservation and automatically log a full refund in the payments ledger.`
+            : `Are you sure you want to cancel booking Ref #${cancelTarget?.ref}? The reservation status will be updated to CANCELLED.`
+        }
+        confirmText={cancelTarget?.isRefund ? 'Confirm Cancellation & Refund' : 'Confirm Cancellation'}
+        variant="danger"
+        requirePrompt={true}
+        promptLabel="Cancellation Reason / Operator Notes:"
+        promptPlaceholder="e.g., Traveler requested date change, weather advisory, health emergency..."
+        isLoading={isCancelling}
       />
     </div>
   );

@@ -6,6 +6,7 @@ import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { Card } from '@/components/common/Card';
 import {
   Shield,
@@ -164,6 +165,7 @@ export const AdminEmployeesPage: React.FC = () => {
   const [resetPassEmployee, setResetPassEmployee] = useState<EmployeeItem | null>(null);
   const [generatedPass, setGeneratedPass] = useState('');
   const [isPassCopied, setIsPassCopied] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Add / Edit Form State
   const [formName, setFormName] = useState('');
@@ -179,8 +181,8 @@ export const AdminEmployeesPage: React.FC = () => {
   const handleOpenCreate = () => {
     setEditingEmployee(null);
     setFormName('');
-    setFormUsername(`${Math.floor(1000000000000000 + Math.random() * 9000000000000000)}`);
-    setFormPhone('+251920443110');
+    setFormUsername('');
+    setFormPhone('');
     setFormEmail('');
     setFormBranch(AVAILABLE_BRANCHES[0]);
     setFormOrgUnit('Land Development and Administration Bureau');
@@ -198,32 +200,38 @@ export const AdminEmployeesPage: React.FC = () => {
     setFormEmail(emp.email);
     setFormBranch(emp.branch);
     setFormOrgUnit(emp.organizationUnit);
-    setFormRoles([...emp.roles]);
+    setFormRoles(emp.roles);
     setFormStatus(emp.status);
     setIsAddEditModalOpen(true);
   };
 
-  // Save Employee Form
+  // Open View Modal
+  const handleOpenView = (emp: EmployeeItem) => {
+    setViewingEmployee(emp);
+    setIsViewModalOpen(true);
+  };
+
+  // Save Add / Edit
   const handleSaveEmployee = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName.trim() || !formUsername.trim()) return;
+    if (!formName || !formUsername || !formPhone || !formEmail) return;
 
     if (editingEmployee) {
       setEmployees((prev) =>
-        prev.map((item) =>
-          item.id === editingEmployee.id
+        prev.map((emp) =>
+          emp.id === editingEmployee.id
             ? {
-              ...item,
-              name: formName,
-              username: formUsername,
-              phoneNumber: formPhone,
-              email: formEmail || `${formUsername.toLowerCase()}@michuutms.et`,
-              branch: formBranch,
-              organizationUnit: formOrgUnit,
-              roles: formRoles.length > 0 ? formRoles : ['BAS'],
-              status: formStatus,
-            }
-            : item
+                ...emp,
+                name: formName,
+                username: formUsername,
+                phoneNumber: formPhone,
+                email: formEmail,
+                branch: formBranch,
+                organizationUnit: formOrgUnit,
+                roles: formRoles,
+                status: formStatus,
+              }
+            : emp
         )
       );
     } else {
@@ -232,11 +240,11 @@ export const AdminEmployeesPage: React.FC = () => {
         name: formName,
         username: formUsername,
         phoneNumber: formPhone,
-        email: formEmail || `${formUsername.toLowerCase()}@michuutms.et`,
+        email: formEmail,
         branch: formBranch,
         organizationUnit: formOrgUnit,
-        roles: formRoles.length > 0 ? formRoles : ['BAS'],
-        registrationDate: new Date().toLocaleDateString('en-US'),
+        roles: formRoles,
+        registrationDate: new Date().toLocaleDateString(),
         status: formStatus,
       };
       setEmployees([newEmp, ...employees]);
@@ -254,9 +262,7 @@ export const AdminEmployeesPage: React.FC = () => {
 
   // Delete Employee
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete employee "${name}"?`)) {
-      setEmployees((prev) => prev.filter((emp) => emp.id !== id));
-    }
+    setDeleteTarget({ id, name });
   };
 
   // Open Password Reset Modal
@@ -853,6 +859,20 @@ export const AdminEmployeesPage: React.FC = () => {
         </Modal>
       )}
 
+      {/* Delete Employee Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          setEmployees((prev) => prev.filter((emp) => emp.id !== deleteTarget.id));
+          setDeleteTarget(null);
+        }}
+        title="Delete Staff Member"
+        message={`Are you sure you want to delete employee "${deleteTarget?.name}"? They will lose all role permissions and system access.`}
+        confirmText="Delete Employee"
+        variant="danger"
+      />
     </div>
   );
 };
