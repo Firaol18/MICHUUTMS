@@ -661,7 +661,7 @@ export const EventsCalendarPage: React.FC = () => {
                 >
                   {upcomingFeaturedEvent.category === 'sport'
                     ? `Register for Event ($${getEventBasePrice(upcomingFeaturedEvent)})`
-                    : `Book Festival Pass & Guide ($${getEventBasePrice(upcomingFeaturedEvent)})`}
+                    : `Book Now ($${getEventBasePrice(upcomingFeaturedEvent)})`}
                 </Button>
 
                 <Button

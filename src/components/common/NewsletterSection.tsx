@@ -80,21 +80,26 @@ export const NewsletterSection: React.FC = () => {
       className="tms-newsletter-section"
       style={{
         maxWidth: '800px',
-        margin: '4rem auto 0 auto',
-        padding: '0 1.5rem',
+        margin: 'clamp(2rem, 5vw, 4rem) auto 0 auto',
+        padding: '0 clamp(1rem, 3vw, 1.5rem)',
         position: 'relative',
         zIndex: 2,
+        width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       {/* ── Minimalist Premium White Newsletter Card ── */}
       <div
+        className="tms-newsletter-card"
         style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '20px',
           border: '1px solid #E2E8F0',
           boxShadow: '0 12px 40px rgba(15, 23, 42, 0.06)',
-          padding: '3.25rem 2.75rem',
+          padding: 'clamp(2rem, 5vw, 3.25rem) clamp(1.25rem, 4vw, 2.75rem)',
           textAlign: 'center',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* ── Eyebrow with Subtle Gold Spark Detail ── */}
@@ -103,7 +108,7 @@ export const NewsletterSection: React.FC = () => {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.45rem',
-            fontSize: '11px',
+            fontSize: 'clamp(10px, 2.2vw, 11px)',
             fontWeight: 800,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
@@ -118,7 +123,7 @@ export const NewsletterSection: React.FC = () => {
         {/* ── Clean Travel Heading ── */}
         <h2
           style={{
-            fontSize: 'clamp(1.65rem, 2.8vw, 2.15rem)',
+            fontSize: 'clamp(1.4rem, 4.2vw, 2.15rem)',
             fontWeight: 800,
             color: '#0F172A',
             letterSpacing: '-0.025em',
@@ -132,7 +137,7 @@ export const NewsletterSection: React.FC = () => {
         {/* ── Subtitle in #526581 for High Legibility ── */}
         <p
           style={{
-            fontSize: '14.5px',
+            fontSize: 'clamp(13px, 2.5vw, 14.5px)',
             color: '#526581',
             maxWidth: '520px',
             margin: '0 auto 1.85rem auto',
@@ -148,7 +153,7 @@ export const NewsletterSection: React.FC = () => {
             style={{
               maxWidth: '520px',
               margin: '0 auto',
-              padding: '1.25rem 1.5rem',
+              padding: '1.25rem clamp(1rem, 3vw, 1.5rem)',
               borderRadius: '14px',
               backgroundColor: '#F8FAFC',
               border: '1px solid #E2E8F0',
@@ -156,6 +161,8 @@ export const NewsletterSection: React.FC = () => {
               flexDirection: 'column',
               gap: '1rem',
               alignItems: 'center',
+              width: '100%',
+              boxSizing: 'border-box',
             }}
           >
             <div
@@ -166,13 +173,15 @@ export const NewsletterSection: React.FC = () => {
                 color: '#16A34A',
                 fontWeight: 700,
                 fontSize: '13.5px',
+                textAlign: 'center',
               }}
             >
-              <CheckCircle2 size={18} />
+              <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
               <span>Subscription Confirmed! 15% Travel Offer Ready</span>
             </div>
 
             <div
+              className="tms-newsletter-voucher-box"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -183,6 +192,7 @@ export const NewsletterSection: React.FC = () => {
                 border: '1px dashed #2563EB',
                 borderRadius: '10px',
                 gap: '0.75rem',
+                boxSizing: 'border-box',
               }}
             >
               <div style={{ textAlign: 'left' }}>
@@ -198,7 +208,7 @@ export const NewsletterSection: React.FC = () => {
                 type="button"
                 onClick={handleCopyAndApply}
                 style={{
-                  padding: '0.45rem 0.9rem',
+                  padding: '0.5rem 0.9rem',
                   borderRadius: '8px',
                   border: '1px solid #2563EB',
                   backgroundColor: copied ? '#2563EB' : 'transparent',
@@ -210,6 +220,7 @@ export const NewsletterSection: React.FC = () => {
                   alignItems: 'center',
                   gap: '0.35rem',
                   transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {copied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
@@ -251,24 +262,28 @@ export const NewsletterSection: React.FC = () => {
           /* ── Clean Focused Email Form ── */
           <form
             onSubmit={handleSubmit}
+            className="tms-newsletter-form"
             style={{
               display: 'flex',
               gap: '0.5rem',
               maxWidth: '520px',
               margin: '0 auto',
-              flexWrap: 'nowrap',
+              width: '100%',
               justifyContent: 'center',
-              alignItems: 'center',
+              alignItems: 'stretch',
+              boxSizing: 'border-box',
             }}
           >
             {/* Clean Input with Mail Icon & Refined Focus Interaction */}
             <div
+              className="tms-newsletter-input-wrap"
               style={{
                 flex: 1,
-                minWidth: '220px',
+                minWidth: '200px',
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
+                boxSizing: 'border-box',
               }}
             >
               <Mail
@@ -299,6 +314,7 @@ export const NewsletterSection: React.FC = () => {
                   outline: 'none',
                   boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)',
                   transition: 'all 0.18s ease',
+                  boxSizing: 'border-box',
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = '#2563EB';
@@ -315,6 +331,7 @@ export const NewsletterSection: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
+              className="tms-newsletter-btn"
               style={{
                 padding: '0.8rem 1.5rem',
                 borderRadius: '12px',
@@ -332,6 +349,7 @@ export const NewsletterSection: React.FC = () => {
                 boxShadow: '0 4px 14px rgba(37, 99, 235, 0.22)',
                 transition: 'all 0.18s ease',
                 opacity: isLoading ? 0.75 : 1,
+                boxSizing: 'border-box',
               }}
               onMouseEnter={(e) => {
                 if (!isLoading) {
@@ -352,9 +370,6 @@ export const NewsletterSection: React.FC = () => {
             </button>
           </form>
         )}
-
-        {/* ── Subtle Micro Copy ── */}
-
       </div>
     </section>
   );

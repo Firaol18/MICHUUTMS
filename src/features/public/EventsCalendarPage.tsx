@@ -180,7 +180,7 @@ export const EventsCalendarPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<EthiopianEvent['category'] | 'all'>('all');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
-  
+
   // Modals state
   const [activeModalEvent, setActiveModalEvent] = useState<EthiopianEvent | null>(null);
   const [bookingEvent, setBookingEvent] = useState<EthiopianEvent | null>(null);
@@ -233,7 +233,7 @@ export const EventsCalendarPage: React.FC = () => {
           matchesReg = e.region === selectedRegion || e.region === 'Nationwide';
         }
       }
-      
+
       const eventMonth = new Date(e.date).getMonth();
       const matchesMonth = selectedMonth === 'all' || eventMonth === selectedMonth;
 
@@ -425,7 +425,7 @@ export const EventsCalendarPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1320px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
-      
+
       {/* ── 1. SPOTLIGHT HERO BANNER WITH COUNTDOWN & 1-CLICK BOOKING ── */}
       {upcomingFeaturedEvent && (
         <div
@@ -483,7 +483,7 @@ export const EventsCalendarPage: React.FC = () => {
                 >
                   {upcomingFeaturedEvent.category === 'sport'
                     ? `Register for Event ($${getEventBasePrice(upcomingFeaturedEvent)})`
-                    : `Book Festival Pass & Guide ($${getEventBasePrice(upcomingFeaturedEvent)})`}
+                    : `Book Now ($${getEventBasePrice(upcomingFeaturedEvent)})`}
                 </Button>
 
                 <Button
@@ -544,7 +544,7 @@ export const EventsCalendarPage: React.FC = () => {
 
       {/* ── 2. CONTROLS BAR: SEARCH, FILTERS & VIEW MODE SWITCHER ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2.5rem' }}>
-        
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
