@@ -56,17 +56,14 @@ export class SeedService implements OnApplicationBootstrap {
   }
 
   private async seedUsers() {
-    const count = await this.userRepo.count();
-    if (count > 0) return;
-
-    this.logger.log('🌱 Seeding Users...');
+    this.logger.log('🌱 Checking / Seeding Users & Admins...');
     const hashedPass = await bcrypt.hash('password123', 10);
     const hashedAdminPass = await bcrypt.hash('adminpass123', 10);
 
     const users: Partial<User>[] = [
       { name: 'Eleanor Vance', email: 'eleanor.vance@example.com', password: hashedPass, isActive: true },
       { name: 'Alex Morgan', email: 'admin@wanderlusttms.com', password: hashedAdminPass, isActive: true },
-      { name: 'Alex Morgan', email: 'admin@michuutms.com', password: hashedPass, isActive: true },
+      { name: 'Alex Morgan', email: 'admin@michuutms.com', password: hashedAdminPass, isActive: true },
       { name: 'Sophia Rossi', email: 'sophia.r@example.it', password: hashedPass, isActive: true },
       { name: 'Liam Hemsworth', email: 'liam.h@example.co.uk', password: hashedPass, isActive: true },
       { name: 'David Miller', email: 'david.m@example.com', password: hashedPass, isActive: true },
@@ -75,9 +72,20 @@ export class SeedService implements OnApplicationBootstrap {
     ];
 
     for (const u of users) {
-      await this.userRepo.save(this.userRepo.create(u));
+      const existing = await this.userRepo.findOne({
+        where: { email: u.email },
+        select: ['id', 'email', 'password', 'isActive'],
+      });
+      if (!existing) {
+        await this.userRepo.save(this.userRepo.create(u));
+        this.logger.log(`Created user: ${u.email}`);
+      } else {
+        existing.password = u.password!;
+        existing.isActive = true;
+        await this.userRepo.save(existing);
+      }
     }
-    this.logger.log(`✅ Seeded ${users.length} Users`);
+    this.logger.log(`✅ Verified ${users.length} Users`);
   }
 
   private async seedSuppliers() {

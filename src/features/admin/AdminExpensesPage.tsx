@@ -4,7 +4,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
 import { Badge } from '@/components/common/Badge';
-import { Plus, Search, Receipt, Filter, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Search, Receipt, Filter, Trash2, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export type ExpenseCategory =
   | 'Transportation'
@@ -199,6 +199,10 @@ export const AdminExpensesPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [selectedTourId, setSelectedTourId] = useState<string>('tour-101');
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -306,6 +310,13 @@ export const AdminExpensesPage: React.FC = () => {
       (e.relatedTourTitle && e.relatedTourTitle.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
+
+  const totalEntries = filteredExpenses.length;
+  const totalPages = Math.ceil(totalEntries / pageSize) || 1;
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalEntries);
+  const paginatedExpenses = filteredExpenses.slice(startIndex, endIndex);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -461,21 +472,38 @@ export const AdminExpensesPage: React.FC = () => {
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <Filter size={15} style={{ color: 'var(--text-muted)' }} />
-          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>Category:</span>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            style={{ padding: '0.4rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}
-          >
-            <option value="ALL">All 12 Categories</option>
-            {CATEGORIES_LIST.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <Filter size={15} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>Category:</span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              style={{ padding: '0.4rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}
+            >
+              <option value="ALL">All 12 Categories</option>
+              {CATEGORIES_LIST.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>Show:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              style={{ padding: '0.4rem 0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-xs)', fontWeight: 600, cursor: 'pointer' }}
+            >
+              {[5, 10, 15, 25, 50].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -496,16 +524,16 @@ export const AdminExpensesPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredExpenses.length === 0 ? (
+            {paginatedExpenses.length === 0 ? (
               <tr>
                 <td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                   No operational expense records match your search or filter criteria.
                 </td>
               </tr>
             ) : (
-              filteredExpenses.map((exp, idx) => (
+              paginatedExpenses.map((exp, idx) => (
                 <tr key={exp.id} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--bg-tertiary)' }}>
-                  <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)' }}>{idx + 1}</td>
+                  <td style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-muted)' }}>{startIndex + idx + 1}</td>
                   <td style={{ padding: '0.875rem 1rem' }}>
                     <div style={{ fontFamily: 'monospace', fontWeight: 800, color: '#034ea2' }}>{exp.voucherNo}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Receipt: {exp.receiptNo}</div>
@@ -582,6 +610,99 @@ export const AdminExpensesPage: React.FC = () => {
           </tbody>
         </table>
       </Card>
+
+      {/* Pagination Footer */}
+      <div
+        className="flex-between"
+        style={{
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+          fontSize: 'var(--font-size-xs)',
+          color: 'var(--text-muted)',
+          padding: '0.25rem 0.25rem',
+        }}
+      >
+        <div>
+          Showing <strong>{totalEntries === 0 ? 0 : startIndex + 1}</strong> to{' '}
+          <strong>{endIndex}</strong> of <strong>{totalEntries}</strong> expense vouchers
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            disabled={safePage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-primary)',
+              color: safePage <= 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+              cursor: safePage <= 1 ? 'not-allowed' : 'pointer',
+              opacity: safePage <= 1 ? 0.5 : 1,
+            }}
+            aria-label="Previous page"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+            .map((p, idx, arr) => {
+              const prev = arr[idx - 1];
+              const showEllipsis = prev && p - prev > 1;
+
+              return (
+                <React.Fragment key={p}>
+                  {showEllipsis && <span style={{ padding: '0 0.25rem', color: 'var(--text-muted)' }}>...</span>}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 'var(--radius-sm)',
+                      border: `1px solid ${p === safePage ? 'var(--brand-primary)' : 'var(--border-color)'}`,
+                      backgroundColor: p === safePage ? 'var(--brand-primary)' : 'var(--bg-primary)',
+                      color: p === safePage ? '#ffffff' : 'var(--text-primary)',
+                      fontWeight: p === safePage ? 700 : 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {p}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+
+          <button
+            type="button"
+            disabled={safePage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-primary)',
+              color: safePage >= totalPages ? 'var(--text-muted)' : 'var(--text-primary)',
+              cursor: safePage >= totalPages ? 'not-allowed' : 'pointer',
+              opacity: safePage >= totalPages ? 0.5 : 1,
+            }}
+            aria-label="Next page"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
 
       {/* Modal for Adding / Editing Expense Outflow */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Edit Expense Voucher' : 'Log Operational Expense Voucher'}>
