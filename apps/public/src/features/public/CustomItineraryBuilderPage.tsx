@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
 import { Badge } from '@tms/shared/components/common/Badge';
 import { Input } from '@tms/shared/components/common/Input';
+import { LoadingSpinner } from '@tms/shared/components/common/LoadingSpinner';
 import { useCartStore } from '@tms/shared/store/useCartStore';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
-import { useContentStore } from '@tms/shared/store/useContentStore';
+import { useContentStore, type CustomDestinationOption } from '@tms/shared/store/useContentStore';
+import { tourismService } from '@tms/shared/services/tourismService';
 import {
   Compass,
   CheckCircle2,
   ArrowRight,
   Sparkles,
+  MapPin,
+  Calendar,
+  Users,
+  ShieldCheck,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,19 +26,66 @@ export const CustomItineraryBuilderPage: React.FC = () => {
   const addItem = useCartStore((state) => state.addItem);
   const { customDestinations, pricingConfig, addCustomTripInquiry } = useContentStore();
 
-  const activeDestinations = customDestinations.filter((d) => d.isActive);
-
+  const [availableDestinations, setAvailableDestinations] = useState<CustomDestinationOption[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Form selections
-  const [selectedDestinations, setSelectedDestinations] = useState<string[]>(
-    activeDestinations.slice(0, 2).map((d) => d.id)
-  );
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
   const [tripDays, setTripDays] = useState(5);
   const [travelersCount, setTravelersCount] = useState(2);
-  const [startDate, setStartDate] = useState('2026-10-15');
+  const [startDate, setStartDate] = useState(new Date(Date.now() + 86400000 * 14).toISOString().split('T')[0]);
   const [accommodationTier, setAccommodationTier] = useState<'luxury' | 'standard' | 'budget'>('luxury');
   const [transportType, setTransportType] = useState<'landcruiser' | 'flight' | 'bus'>('landcruiser');
+
+  useEffect(() => {
+    const loadDestinations = async () => {
+      try {
+        const tours = await tourismService.getTours();
+        if (tours.length > 0) {
+          const mapped: CustomDestinationOption[] = tours.map((t) => ({
+            id: t.id,
+            name: t.destination.name || t.title,
+            region: t.destination.region || 'Ethiopia',
+            pricePerDay: Math.max(80, Math.round(t.pricePerPerson / (t.durationDays || 3))),
+            image: t.destination.imageUrl || t.imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
+            description: t.summary || t.destination.description,
+            isActive: true,
+          }));
+
+          // Deduplicate by name
+          const seen = new Set<string>();
+          const unique = mapped.filter((d) => {
+            if (seen.has(d.name)) return false;
+            seen.add(d.name);
+            return true;
+          });
+
+          setAvailableDestinations(unique);
+          if (unique.length > 0) {
+            setSelectedDestinations([unique[0].id]);
+          }
+        } else {
+          // Fallback to store destinations
+          const active = customDestinations.filter((d) => d.isActive);
+          setAvailableDestinations(active);
+          if (active.length > 0) {
+            setSelectedDestinations([active[0].id]);
+          }
+        }
+      } catch {
+        const active = customDestinations.filter((d) => d.isActive);
+        setAvailableDestinations(active);
+        if (active.length > 0) {
+          setSelectedDestinations([active[0].id]);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDestinations();
+  }, [customDestinations]);
 
   const toggleDest = (id: string) => {
     setSelectedDestinations((prev) =>
@@ -43,7 +96,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
   // Price Calculation Engine using dynamic config from store
   const baseRatePerDay =
     selectedDestinations.reduce((sum, id) => {
-      const dest = activeDestinations.find((d) => d.id === id);
+      const dest = availableDestinations.find((d) => d.id === id);
       return sum + (dest?.pricePerDay || 150);
     }, 0) / (selectedDestinations.length || 1);
 
@@ -68,7 +121,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
     }
 
     const destNames = selectedDestinations
-      .map((id) => activeDestinations.find((d) => d.id === id)?.name)
+      .map((id) => availableDestinations.find((d) => d.id === id)?.name)
       .filter(Boolean)
       .join(' + ');
 
@@ -88,14 +141,13 @@ export const CustomItineraryBuilderPage: React.FC = () => {
       customerPhone: (user as any)?.phone,
     });
 
-
     // Add to cart
     addItem({
       id: `custom-expedition-${Date.now()}`,
       type: 'tour',
       title: `Custom Expedition: ${destNames}`,
       subtitle: `${tripDays} Days • ${travelersCount} Guests • ${accommodationTier.toUpperCase()} Stay`,
-      imageUrl: activeDestinations.find((d) => d.id === selectedDestinations[0])?.image || activeDestinations[0]?.image || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=400',
+      imageUrl: availableDestinations.find((d) => d.id === selectedDestinations[0])?.image || availableDestinations[0]?.image || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=400',
       unitPrice: estimatedPerPerson,
       quantity: travelersCount,
       date: startDate,
@@ -107,6 +159,8 @@ export const CustomItineraryBuilderPage: React.FC = () => {
 
     navigate('/tours');
   };
+
+  if (isLoading) return <LoadingSpinner label="Loading destinations and planner..." />;
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
@@ -168,7 +222,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-            {activeDestinations.map((dest) => {
+            {availableDestinations.map((dest) => {
               const isSelected = selectedDestinations.includes(dest.id);
               return (
                 <div
@@ -181,6 +235,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
                     cursor: 'pointer',
                     backgroundColor: 'var(--bg-secondary)',
                     position: 'relative',
+                    transition: 'transform 0.2s ease',
                   }}
                 >
                   <div style={{ height: 140, backgroundImage: `url(${dest.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
@@ -217,7 +272,7 @@ export const CustomItineraryBuilderPage: React.FC = () => {
             Step 2: Expedition Dates & Traveler Count
           </h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
             <Input label="Departure Date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
             <Input label="Trip Duration (Days)" type="number" min={2} max={30} value={tripDays} onChange={(e) => setTripDays(Number(e.target.value))} required />
             <Input label="Number of Travelers" type="number" min={1} max={20} value={travelersCount} onChange={(e) => setTravelersCount(Number(e.target.value))} required />
@@ -245,58 +300,54 @@ export const CustomItineraryBuilderPage: React.FC = () => {
             <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.75rem' }}>
               Select Accommodation Preference
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
               {[
                 { id: 'luxury', title: '✨ Luxury Eco-Lodge', desc: 'Haile Resort, Skylight Hotel, Kuriftu Resort' },
-                { id: 'standard', title: '🏨 4-Star Boutique Hotel', desc: 'Comfortable hotel with breakfast & Wi-Fi' },
-                { id: 'budget', title: '🏕️ Trekking / Safari Camp', desc: 'Highland tents & safari campsites' },
-              ].map((acc) => (
-                <button
-                  key={acc.id}
-                  type="button"
-                  onClick={() => setAccommodationTier(acc.id as any)}
+                { id: 'standard', title: '🏨 4-Star Premium Hotel', desc: 'Modern high-comfort hotels with breakfast & amenities' },
+                { id: 'budget', title: '🏕️ Cultural Guesthouse / Camp', desc: 'Authentic traditional lodges and national park safari camps' },
+              ].map((tier) => (
+                <div
+                  key={tier.id}
+                  onClick={() => setAccommodationTier(tier.id as any)}
                   style={{
-                    padding: '1rem',
+                    padding: '1.25rem',
                     borderRadius: 'var(--radius-md)',
-                    border: `2px solid ${accommodationTier === acc.id ? 'var(--brand-primary)' : 'var(--border-color)'}`,
-                    backgroundColor: accommodationTier === acc.id ? 'var(--brand-primary-light)' : 'var(--bg-secondary)',
-                    textAlign: 'left',
+                    border: `2px solid ${accommodationTier === tier.id ? 'var(--brand-primary)' : 'var(--border-color)'}`,
+                    backgroundColor: accommodationTier === tier.id ? 'var(--brand-primary-light)' : 'var(--bg-secondary)',
                     cursor: 'pointer',
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>{acc.title}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{acc.desc}</div>
-                </button>
+                  <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', marginBottom: '0.25rem' }}>{tier.title}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{tier.desc}</div>
+                </div>
               ))}
             </div>
           </div>
 
           <div style={{ marginBottom: '2rem' }}>
             <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.75rem' }}>
-              Select Ground & Air Transport
+              Select Transport Expedition Type
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
               {[
-                { id: 'landcruiser', title: '🚘 4x4 Land Cruiser Charter', desc: 'Private English-speaking driver' },
-                { id: 'flight', title: '✈️ Domestic Flight Transfers', desc: 'Ethiopian Airlines flight legs' },
-                { id: 'bus', title: '🚌 Coaster Tour Bus', desc: 'Ideal for larger group tours' },
-              ].map((tr) => (
-                <button
-                  key={tr.id}
-                  type="button"
-                  onClick={() => setTransportType(tr.id as any)}
+                { id: 'landcruiser', title: '🚙 4x4 Toyota Land Cruiser', desc: 'Dedicated safari chauffeur, unlimited mileage & fuel' },
+                { id: 'flight', title: '✈️ Domestic Flight + Airport Shuttles', desc: 'Ethiopian Airlines scheduled flights between circuits' },
+                { id: 'bus', title: '🚐 Private Coaster Mini-Coach', desc: 'Spacious air-conditioned mini-coach for groups' },
+              ].map((trans) => (
+                <div
+                  key={trans.id}
+                  onClick={() => setTransportType(trans.id as any)}
                   style={{
-                    padding: '1rem',
+                    padding: '1.25rem',
                     borderRadius: 'var(--radius-md)',
-                    border: `2px solid ${transportType === tr.id ? 'var(--brand-primary)' : 'var(--border-color)'}`,
-                    backgroundColor: transportType === tr.id ? 'var(--brand-primary-light)' : 'var(--bg-secondary)',
-                    textAlign: 'left',
+                    border: `2px solid ${transportType === trans.id ? 'var(--brand-primary)' : 'var(--border-color)'}`,
+                    backgroundColor: transportType === trans.id ? 'var(--brand-primary-light)' : 'var(--bg-secondary)',
                     cursor: 'pointer',
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>{tr.title}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{tr.desc}</div>
-                </button>
+                  <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', marginBottom: '0.25rem' }}>{trans.title}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{trans.desc}</div>
+                </div>
               ))}
             </div>
           </div>
@@ -306,57 +357,66 @@ export const CustomItineraryBuilderPage: React.FC = () => {
               ← Back
             </Button>
             <Button variant="primary" size="lg" icon={<ArrowRight size={18} />} onClick={() => setStep(4)}>
-              Generate Instant Quote
+              Review Instant Quote
             </Button>
           </div>
         </Card>
       )}
 
-      {/* ─── STEP 4: INSTANT QUOTE & CHECKOUT ─── */}
+      {/* ─── STEP 4: INSTANT QUOTE & BOOKING ─── */}
       {step === 4 && (
         <Card glass style={{ padding: '2rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <Badge variant="success">✓ CUSTOM ITINERARY READY</Badge>
-            <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, marginTop: '0.5rem' }}>
-              Estimated Custom Expedition Quote
-            </h2>
+            <Badge variant="success">✨ AI-Powered Dynamic Quote Ready</Badge>
+            <h3 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, marginTop: '0.75rem' }}>
+              Your Tailor-Made Ethiopian Tour Itinerary
+            </h3>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-            <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: 'var(--brand-primary)', marginBottom: '0.75rem' }}>
-                Summary of Selected Preferences
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+            <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
+              <h4 style={{ fontWeight: 700, fontSize: 'var(--font-size-md)', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                Trip Overview
               </h4>
-              <div style={{ fontSize: 'var(--font-size-xs)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div><strong>Destinations:</strong> {selectedDestinations.map((id) => activeDestinations.find((d) => d.id === id)?.name).join(', ')}</div>
-                <div><strong>Trip Duration:</strong> {tripDays} Days ({startDate})</div>
-                <div><strong>Group Size:</strong> {travelersCount} Guests</div>
-                <div><strong>Accommodation:</strong> {accommodationTier.toUpperCase()} Stay</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: 'var(--font-size-sm)' }}>
+                <div><strong>Destinations:</strong> {selectedDestinations.map((id) => availableDestinations.find((d) => d.id === id)?.name).filter(Boolean).join(', ')}</div>
+                <div><strong>Departure Date:</strong> {startDate}</div>
+                <div><strong>Duration:</strong> {tripDays} Days / {tripDays - 1} Nights</div>
+                <div><strong>Party Size:</strong> {travelersCount} Travelers</div>
+                <div><strong>Accommodation:</strong> {accommodationTier.toUpperCase()} Eco-Stay</div>
                 <div><strong>Transport:</strong> {transportType.toUpperCase()} Charter</div>
-                <div><strong>Certified Guide:</strong> Eco-Ranger (Amharic/Oromiffa/English)</div>
               </div>
             </div>
 
-            <div style={{ backgroundColor: 'var(--brand-primary-light)', padding: '1.5rem', borderRadius: 'var(--radius-md)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontSize: 'var(--font-size-xs)', textTransform: 'uppercase', color: 'var(--brand-primary)', fontWeight: 700 }}>
-                ESTIMATED PACKAGE TOTAL
+            <div style={{ backgroundColor: 'var(--brand-primary-light)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <h4 style={{ fontWeight: 700, fontSize: 'var(--font-size-md)', marginBottom: '1rem', color: 'var(--brand-primary)' }}>
+                  Estimated Price Breakdown
+                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
+                  <span>Price per Traveler:</span>
+                  <strong>${estimatedPerPerson.toLocaleString()} USD</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: 'var(--font-size-lg)', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                  <span>Total Expedition:</span>
+                  <strong style={{ color: 'var(--brand-primary)', fontSize: '1.4rem' }}>${totalCustomPrice.toLocaleString()} USD</strong>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                  Includes certified Eco-Ranger guide, park entry permits, all breakfasts & dinners, and chosen transportation.
+                </div>
               </div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--brand-primary)', margin: '0.35rem 0' }}>
-                ${totalCustomPrice.toLocaleString()} USD
-              </div>
-              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-                (${estimatedPerPerson.toLocaleString()} per guest • Includes taxes & ranger fees)
+
+              <div style={{ marginTop: '1.5rem' }}>
+                <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={handleAddToCart}>
+                  Book & Reserve This Custom Expedition
+                </Button>
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
             <Button variant="ghost" onClick={() => setStep(3)}>
-              ← Adjust Preferences
-            </Button>
-
-            <Button variant="primary" size="lg" icon={<Compass size={18} />} onClick={handleAddToCart}>
-              🛒 Add Custom Expedition to Cart & Checkout
+              ← Modify Options
             </Button>
           </div>
         </Card>

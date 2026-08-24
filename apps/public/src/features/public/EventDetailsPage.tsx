@@ -12,6 +12,7 @@ import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { Virtual360Modal } from '@tms/shared/components/common/Virtual360Modal';
 import { TourReviewsSection } from '@tms/shared/components/reviews/TourReviewsSection';
 import { InteractiveLocationMap } from '@tms/shared/components/common/InteractiveLocationMap';
+import { EthiopianPaymentQR } from '@tms/shared/components/common/EthiopianPaymentQR';
 import { tourismService } from '@tms/shared/services/tourismService';
 import type { EthiopianEvent } from '@tms/shared/services/mockEventsData';
 import type { Booking } from '@tms/shared/types/booking';
@@ -216,27 +217,7 @@ export const EventDetailsPage: React.FC = () => {
     useCartStore.getState().openCart();
   };
 
-  const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      setBookingError('File size must be under 8MB.');
-      return;
-    }
-    setBookingError('');
-    setReceiptFileName(file.name);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPaymentReceiptUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
 
-  const handleCopyAccount = (text: string) => {
-    navigator.clipboard?.writeText(text);
-    setCopiedAccount(true);
-    setTimeout(() => setCopiedAccount(false), 2000);
-  };
 
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -978,98 +959,34 @@ export const EventDetailsPage: React.FC = () => {
                   })}
                 </div>
 
-                {/* Payment Instructions & Account Box */}
-                <div style={{ padding: '0.875rem 1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '1rem', fontSize: 'var(--font-size-xs)' }}>
-                  <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.5 }}>
-                    {activePaymentOption.instructions}
-                  </div>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-primary)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-                    <div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700 }}>TRANSFER ACCOUNT / TILL:</div>
-                      <div style={{ fontWeight: 800, color: 'var(--brand-primary)', fontFamily: 'monospace', fontSize: 'var(--font-size-sm)' }}>
-                        {activePaymentOption.accountNumber}
-                      </div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Name: {activePaymentOption.accountName}</div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      type="button"
-                      icon={copiedAccount ? <Check size={13} style={{ color: '#16a34a' }} /> : <Copy size={13} />}
-                      onClick={() => handleCopyAccount(activePaymentOption.accountNumber)}
-                    >
-                      {copiedAccount ? 'Copied' : 'Copy'}
-                    </Button>
-                  </div>
+                {/* Ethiopian Payment QR & Verification Widget */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <EthiopianPaymentQR
+                    method={paymentMethod}
+                    amountUsd={totalPrice}
+                    accountNumber={activePaymentOption.accountNumber}
+                    accountName={activePaymentOption.accountName}
+                    receiptUrl={paymentReceiptUrl}
+                    receiptFileName={receiptFileName}
+                    onReceiptUpload={(url, name) => {
+                      setPaymentReceiptUrl(url);
+                      setReceiptFileName(name);
+                    }}
+                    onRemoveReceipt={() => {
+                      setPaymentReceiptUrl('');
+                      setReceiptFileName('');
+                    }}
+                  />
                 </div>
 
-                {/* Transaction Reference & Screenshot Upload */}
                 {paymentMethod !== 'cash' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                  <div style={{ marginTop: '0.75rem' }}>
                     <Input
                       label="Transaction Reference / Bank Confirmation Code (e.g. FT2609...)"
                       placeholder="Enter TXN ID / Reference Code"
                       value={transactionReference}
                       onChange={(e) => setTransactionReference(e.target.value)}
                     />
-
-                    <div>
-                      <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
-                        📸 Upload Screenshot / Photo of Payment Receipt
-                      </label>
-
-                      <div
-                        style={{
-                          border: '2px dashed var(--border-color)',
-                          borderRadius: 'var(--radius-md)',
-                          padding: '1rem',
-                          textAlign: 'center',
-                          backgroundColor: 'var(--bg-secondary)',
-                          cursor: 'pointer',
-                          position: 'relative',
-                        }}
-                      >
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={handleReceiptUpload}
-                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
-                        />
-                        {paymentReceiptUrl ? (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-                            <img
-                              src={paymentReceiptUrl}
-                              alt="Receipt Preview"
-                              style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
-                            />
-                            <div style={{ textAlign: 'left', fontSize: 'var(--font-size-xs)' }}>
-                              <span style={{ fontWeight: 800, color: '#16a34a', display: 'block' }}>✓ Screenshot Attached</span>
-                              <span style={{ color: 'var(--text-muted)' }}>{receiptFileName || 'payment_receipt.jpg'}</span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPaymentReceiptUrl('');
-                                setReceiptFileName('');
-                              }}
-                              style={{ color: '#ef4444' }}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
-                            <UploadCloud size={24} style={{ color: 'var(--brand-primary)' }} />
-                            <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700 }}>Click to browse or drop payment screenshot</span>
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>JPEG, PNG, WebP up to 8MB</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>

@@ -1,23 +1,66 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '@tms/shared/components/common/Card';
 import { Button } from '@tms/shared/components/common/Button';
+import { Badge } from '@tms/shared/components/common/Badge';
 import { LoadingSpinner } from '@tms/shared/components/common/LoadingSpinner';
 import { ETicketModal } from '@tms/shared/components/common/ETicketModal';
 import { tourismService } from '@tms/shared/services/tourismService';
+import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import type { Booking } from '@tms/shared/types/booking';
-import { Download } from 'lucide-react';
+import { Download, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 export const InvoicesPage: React.FC = () => {
+  const { user } = useAuthStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedETicket, setSelectedETicket] = useState<Booking | null>(null);
 
   useEffect(() => {
     tourismService.getBookings('all').then((data) => {
-      setBookings(data);
+      if (user?.email && user.role !== 'admin' && user.role !== 'tour_operator') {
+        const userEmail = user.email.toLowerCase();
+        setBookings(data.filter((b) => b.traveler?.email?.toLowerCase() === userEmail));
+      } else {
+        setBookings(data);
+      }
+      setIsLoading(false);
+    }).catch(() => {
+      setBookings([]);
       setIsLoading(false);
     });
-  }, []);
+  }, [user]);
+
+  const renderPaymentStatus = (paymentStatus: string, status: string) => {
+    const ps = (paymentStatus || '').toLowerCase();
+    const st = (status || '').toLowerCase();
+
+    if (ps === 'paid' || st === 'confirmed') {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#16a34a', fontWeight: 700 }}>
+          <CheckCircle2 size={13} /> PAID FULL
+        </span>
+      );
+    }
+    if (ps === 'partial') {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#d97706', fontWeight: 700 }}>
+          <Clock size={13} /> PARTIALLY PAID
+        </span>
+      );
+    }
+    if (ps === 'refunded' || st === 'cancelled') {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#dc2626', fontWeight: 700 }}>
+          <AlertCircle size={13} /> REFUNDED / VOID
+        </span>
+      );
+    }
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#6b7280', fontWeight: 700 }}>
+        <Clock size={13} /> PAYMENT PENDING
+      </span>
+    );
+  };
 
   if (isLoading) return <LoadingSpinner label="Loading invoices..." />;
 
@@ -47,8 +90,7 @@ export const InvoicesPage: React.FC = () => {
                   {bkg.tourTitle}
                 </div>
                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                  Date Issued: {bkg.travelDate} • Status:{' '}
-                  <strong style={{ color: '#16a34a' }}>PAID FULL</strong>
+                  Date Issued: {bkg.travelDate} • Status: {renderPaymentStatus(bkg.paymentStatus, bkg.status)}
                 </div>
               </div>
 

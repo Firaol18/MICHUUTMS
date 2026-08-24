@@ -34,10 +34,18 @@ export const UserDashboardOverview: React.FC = () => {
   useEffect(() => {
     fetchReviews();
     tourismService.getBookings('all').then((data) => {
-      setBookings(data);
+      if (_user?.email && _user.role !== 'admin' && _user.role !== 'tour_operator') {
+        const email = _user.email.toLowerCase();
+        setBookings(data.filter((b) => b.traveler?.email?.toLowerCase() === email));
+      } else {
+        setBookings(data);
+      }
+      setIsLoading(false);
+    }).catch(() => {
+      setBookings([]);
       setIsLoading(false);
     });
-  }, [fetchReviews]);
+  }, [fetchReviews, _user]);
 
   const statCards = [
     {

@@ -6,21 +6,59 @@ import { Button } from '@/components/common/Button';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ETicketModal } from '@/components/common/ETicketModal';
 import { tourismService } from '@/services/tourismService';
+import { useAuthStore } from '@/store/useAuthStore';
 import type { Booking } from '@/types/booking';
-import { Calendar, MapPin, Users, CheckCircle2, QrCode, Compass } from 'lucide-react';
+import { Calendar, MapPin, Users, CheckCircle2, QrCode, Compass, Clock, AlertCircle } from 'lucide-react';
 
 export const MyBookingsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedETicket, setSelectedETicket] = useState<Booking | null>(null);
 
   useEffect(() => {
     tourismService.getBookings('all').then((data) => {
-      setBookings(data);
+      if (user?.email && user.role !== 'admin' && user.role !== 'tour_operator') {
+        const userEmail = user.email.toLowerCase();
+        setBookings(data.filter((b) => b.traveler?.email?.toLowerCase() === userEmail));
+      } else {
+        setBookings(data);
+      }
+      setIsLoading(false);
+    }).catch(() => {
+      setBookings([]);
       setIsLoading(false);
     });
-  }, []);
+  }, [user]);
+
+  const getStatusBadge = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'confirmed':
+        return <Badge variant="success" icon={<CheckCircle2 size={13} />}>CONFIRMED</Badge>;
+      case 'pending':
+        return <Badge variant="warning" icon={<Clock size={13} />}>PENDING</Badge>;
+      case 'cancelled':
+        return <Badge variant="danger" icon={<AlertCircle size={13} />}>CANCELLED</Badge>;
+      case 'completed':
+        return <Badge variant="info">COMPLETED</Badge>;
+      default:
+        return <Badge variant="neutral">{status?.toUpperCase() || 'ACTIVE'}</Badge>;
+    }
+  };
+
+  const getPaymentBadge = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'paid':
+        return <Badge variant="info">PAID</Badge>;
+      case 'partial':
+        return <Badge variant="warning">PARTIAL</Badge>;
+      case 'refunded':
+        return <Badge variant="danger">REFUNDED</Badge>;
+      default:
+        return <Badge variant="neutral">UNPAID</Badge>;
+    }
+  };
 
   if (isLoading) return <LoadingSpinner label="Fetching your travel reservations..." />;
 
@@ -54,10 +92,8 @@ export const MyBookingsPage: React.FC = () => {
                 </div>
 
                 <div className="flex-center" style={{ gap: '0.5rem' }}>
-                  <Badge variant="success" icon={<CheckCircle2 size={13} />}>
-                    {bkg.status.toUpperCase()}
-                  </Badge>
-                  <Badge variant="info">PAID</Badge>
+                  {getStatusBadge(bkg.status)}
+                  {getPaymentBadge(bkg.paymentStatus)}
                 </div>
               </div>
 
