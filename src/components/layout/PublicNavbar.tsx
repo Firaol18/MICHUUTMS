@@ -850,24 +850,21 @@ export const PublicNavbar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* Guest Actions */
-              <div className="flex-center hide-md" style={{ gap: '0.4rem' }}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/login?mode=signin')}
-                  style={{ fontWeight: 600, fontSize: 'var(--font-size-xs)' }}
-                >
-                  {t('sign_in')}
-                </Button>
+              /* Guest Action: Single Sign In button */
+              <div className="flex-center hide-md">
                 <Button
                   variant="primary"
                   size="sm"
-                  icon={<UserPlus size={13} />}
-                  onClick={() => navigate('/login?mode=signup')}
-                  style={{ fontWeight: 700, fontSize: 'var(--font-size-xs)' }}
+                  icon={<LogIn size={14} />}
+                  onClick={() => navigate('/login?mode=signin')}
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 'var(--font-size-xs)',
+                    borderRadius: 'var(--radius-full)',
+                    padding: '0.4rem 1rem',
+                  }}
                 >
-                  {t('sign_up')}
+                  {t('sign_in')}
                 </Button>
               </div>
             )}
@@ -1116,7 +1113,7 @@ export const PublicNavbar: React.FC = () => {
                 </button>
               </>
             ) : (
-              <div className="pub-nav-mobile-auth" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem 1rem' }}>
+              <div className="pub-nav-mobile-auth" style={{ padding: '0.75rem 1rem' }}>
                 <Button
                   variant="primary"
                   size="lg"
@@ -1124,16 +1121,7 @@ export const PublicNavbar: React.FC = () => {
                   onClick={() => { setIsMobileMenuOpen(false); navigate('/login?mode=signin'); }}
                   style={{ width: '100%', justifyContent: 'center', fontWeight: 700 }}
                 >
-                  {t('sign_in')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="md"
-                  icon={<UserPlus size={16} />}
-                  onClick={() => { setIsMobileMenuOpen(false); navigate('/login?mode=signup'); }}
-                  style={{ width: '100%', justifyContent: 'center', fontWeight: 600 }}
-                >
-                  Create Account
+                  {t('sign_in')} / Register
                 </Button>
               </div>
             )}

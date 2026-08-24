@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { TourPackage } from '@/types/tour';
 
 interface WishlistState {
@@ -8,60 +9,34 @@ interface WishlistState {
   clearWishlist: () => void;
 }
 
-export const useWishlistStore = create<WishlistState>((set, get) => ({
-  wishlist: [
-    {
-      id: 'tour-101',
-      title: 'Wenchi Crater Lake & Thermal Springs Expedition',
-      slug: 'wenchi-crater-lake-expedition',
-      category: 'mountain',
-      destination: {
-        id: 'dest-wenchi',
-        name: 'Wenchi Crater Lake',
-        country: 'Ethiopia',
-        region: 'Oromia Region',
-        imageUrl: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=800',
-        description: 'Extinct volcanic crater featuring pristine crater lake, hot mineral springs, and forest trails.',
+import { toast } from '@/store/useToastStore';
+
+export const useWishlistStore = create<WishlistState>()(
+  persist(
+    (set, get) => ({
+      wishlist: [],
+
+      toggleWishlist: (tour) => {
+        set((state) => {
+          const exists = state.wishlist.some((item) => item.id === tour.id);
+          if (exists) {
+            toast.info(`"${tour.title}" removed from your Wishlist.`, 'Wishlist Updated');
+            return { wishlist: state.wishlist.filter((item) => item.id !== tour.id) };
+          } else {
+            toast.success(`"${tour.title}" saved to your Wishlist!`, 'Added to Wishlist');
+            return { wishlist: [...state.wishlist, tour] };
+          }
+        });
       },
-      pricePerPerson: 450,
-      durationDays: 3,
-      maxGroupSize: 12,
-      difficulty: 'moderate',
-      rating: 4.9,
-      reviewCount: 38,
-      imageUrl: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=800',
-      galleryImages: [
-        'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=800',
-      ],
-      summary: 'Explore Ethiopia’s breathtaking volcanic crater lake, soak in natural thermal springs.',
-      included: ['Guided crater rim trek', 'Hot springs entrance', 'Full board meals'],
-      excluded: ['International flights', 'Personal tips'],
-      itinerary: [
-        { dayNumber: 1, title: 'Addis to Wenchi', description: 'Drive west from Addis Ababa to Ambo and ascend to Wenchi crater rim.' }
-      ],
-      isFeatured: true,
-      status: 'active',
-      hasOffer: true,
-      discountPercent: 15,
-      originalPrice: 530,
-      offerTag: '15% OFF SEASONAL PROMO',
-    },
-  ],
 
-  toggleWishlist: (tour) => {
-    set((state) => {
-      const exists = state.wishlist.some((item) => item.id === tour.id);
-      if (exists) {
-        return { wishlist: state.wishlist.filter((item) => item.id !== tour.id) };
-      } else {
-        return { wishlist: [...state.wishlist, tour] };
-      }
-    });
-  },
+      isWishlisted: (tourId) => {
+        return get().wishlist.some((item) => item.id === tourId);
+      },
 
-  isWishlisted: (tourId) => {
-    return get().wishlist.some((item) => item.id === tourId);
-  },
-
-  clearWishlist: () => set({ wishlist: [] }),
-}));
+      clearWishlist: () => set({ wishlist: [] }),
+    }),
+    {
+      name: 'michuu-tms-wishlist',
+    }
+  )
+);

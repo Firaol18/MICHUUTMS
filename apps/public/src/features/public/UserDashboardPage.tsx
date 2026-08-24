@@ -41,13 +41,13 @@ export const UserDashboardPage: React.FC = () => {
   const [selectedETicket, setSelectedETicket] = useState<Booking | null>(null);
 
   // Profile Edit Form State
-  const [profileName, setProfileName] = useState(user?.name || 'Eleanor Vance');
-  const [profileEmail, setProfileEmail] = useState(user?.email || 'eleanor.vance@example.com');
-  const [profilePhone, setProfilePhone] = useState('+251 91 123 4567');
+  const [profileName, setProfileName] = useState(user?.name || '');
+  const [profileEmail, setProfileEmail] = useState(user?.email || '');
+  const [profilePhone, setProfilePhone] = useState(user?.phone || '+251 9');
   const [profileNationality, setProfileNationality] = useState('Ethiopia');
   const [preferredCurrency, setPreferredCurrency] = useState('ETB (Br) / USD ($)');
-  const [emergencyContact, setEmergencyContact] = useState('Abebe Vance (+251 911 223344)');
-  const [dietaryPref, setDietaryPref] = useState('Vegetarian / Fasting Options');
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [dietaryPref, setDietaryPref] = useState('Standard / Local Cuisine');
   const [profileSaveMessage, setProfileSaveMessage] = useState(false);
 
   // Review Form State
@@ -69,13 +69,17 @@ export const UserDashboardPage: React.FC = () => {
       setIsLoading(true);
       try {
         const data = await tourismService.getBookings('all');
-        setBookings(data);
+        if (user?.email && user.role !== 'admin' && user.role !== 'tour_operator') {
+          setBookings(data.filter((b) => b.traveler?.email?.toLowerCase() === user.email.toLowerCase()));
+        } else {
+          setBookings(data);
+        }
       } finally {
         setIsLoading(false);
       }
     };
     fetchCustomerBookings();
-  }, [fetchReviews]);
+  }, [fetchReviews, user]);
 
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +125,10 @@ export const UserDashboardPage: React.FC = () => {
     }
   };
 
+  const myReviews = user?.email
+    ? reviews.filter((r) => r.authorEmail && r.authorEmail.toLowerCase() === user.email.toLowerCase())
+    : [];
+
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
       {/* Header Banner */}
@@ -139,19 +147,25 @@ export const UserDashboardPage: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <img
-            src={user?.avatarUrl || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80'}
+            src={user?.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'}
             alt={user?.name || 'User'}
             style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--brand-primary)' }}
           />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {user?.name || 'Eleanor Vance'}
+                {user?.name || 'Traveler'}
               </h1>
-              <Badge variant="success">VIP Traveler</Badge>
+              <Badge variant="success">
+                {user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
+                  ? 'Administrator'
+                  : user?.role === 'tour_guide' || user?.role === 'GUIDE'
+                  ? 'Certified Guide'
+                  : 'Traveler Member'}
+              </Badge>
             </div>
             <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-              {user?.email || 'eleanor.vance@example.com'} • Member since 2026
+              {user?.email} • Member since 2026
             </p>
           </div>
         </div>
@@ -250,7 +264,7 @@ export const UserDashboardPage: React.FC = () => {
             transition: 'all 0.15s ease',
           }}
         >
-          <Star size={16} fill={activeTab === 'reviews' ? '#fff' : 'none'} /> My Reviews ({reviews.length})
+          <Star size={16} fill={activeTab === 'reviews' ? '#fff' : 'none'} /> My Reviews ({myReviews.length})
         </button>
 
         <button

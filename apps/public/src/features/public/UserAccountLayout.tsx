@@ -16,20 +16,26 @@ import {
   HelpCircle,
 } from 'lucide-react';
 
-const NAV_ITEMS = [
-  { to: '/user/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
-  { to: '/my-bookings', label: 'My Bookings', icon: <Ticket size={16} /> },
-  { to: '/user/guide-dashboard', label: 'Guide Portal', icon: <Compass size={16} /> },
-  { to: '/user/issues', label: 'Support Tickets', icon: <HelpCircle size={16} /> },
-  { to: '/user/invoices', label: 'Invoices & Receipts', icon: <FileText size={16} /> },
-  { to: '/user/wishlist', label: 'Wishlist', icon: <Heart size={16} /> },
-  { to: '/user/reviews', label: 'My Reviews', icon: <Star size={16} /> },
-  { to: '/user/profile', label: 'Profile & Settings', icon: <Settings size={16} /> },
-];
-
 export const UserAccountLayout: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+
+  const isGuideOrAdmin =
+    user?.role === 'ADMIN' ||
+    user?.role === 'SUPER_ADMIN' ||
+    user?.role === 'tour_guide' ||
+    user?.role === 'GUIDE';
+
+  const navItems = [
+    { to: '/user/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
+    { to: '/my-bookings', label: 'My Bookings', icon: <Ticket size={16} /> },
+    ...(isGuideOrAdmin ? [{ to: '/user/guide-dashboard', label: 'Guide Portal', icon: <Compass size={16} /> }] : []),
+    { to: '/user/issues', label: 'Support Tickets', icon: <HelpCircle size={16} /> },
+    { to: '/user/invoices', label: 'Invoices & Receipts', icon: <FileText size={16} /> },
+    { to: '/user/wishlist', label: 'Wishlist', icon: <Heart size={16} /> },
+    { to: '/user/reviews', label: 'My Reviews', icon: <Star size={16} /> },
+    { to: '/user/profile', label: 'Profile & Settings', icon: <Settings size={16} /> },
+  ];
 
   const handleSignOut = () => {
     logout();
@@ -70,7 +76,7 @@ export const UserAccountLayout: React.FC = () => {
           <img
             src={
               user?.avatarUrl ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=2563eb&color=fff&size=128`
+              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
             }
             alt={user?.name}
             style={{
@@ -86,7 +92,13 @@ export const UserAccountLayout: React.FC = () => {
               <h1 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--text-primary)' }}>
                 {user?.name || 'Traveler'}
               </h1>
-              <Badge variant="success">VIP Traveler</Badge>
+              <Badge variant="success">
+                {user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
+                  ? 'Administrator'
+                  : user?.role === 'tour_guide' || user?.role === 'GUIDE'
+                  ? 'Certified Guide'
+                  : 'Traveler Member'}
+              </Badge>
             </div>
             <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
               {user?.email} • Member since 2026
@@ -111,7 +123,7 @@ export const UserAccountLayout: React.FC = () => {
           style={{ padding: '0.6rem', position: 'sticky', top: '80px', minWidth: '200px' }}
         >
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

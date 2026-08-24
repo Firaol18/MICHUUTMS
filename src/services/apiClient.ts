@@ -29,9 +29,19 @@ http.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: standard error handling
+import { toast } from '@/store/useToastStore';
+
+// Response interceptor: standard error handling & backend-driven toast feedback
 http.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const method = response.config.method?.toUpperCase();
+    if (method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      if (response.data?.message && typeof response.data.message === 'string') {
+        toast.success(response.data.message);
+      }
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       try {
@@ -39,6 +49,18 @@ http.interceptors.response.use(
         localStorage.removeItem('auth_user');
       } catch {}
     }
+
+    const errMsg =
+      (Array.isArray(error.response?.data?.message)
+        ? error.response?.data?.message.join('. ')
+        : error.response?.data?.message) ||
+      error.response?.data?.error ||
+      error.message;
+
+    if (errMsg && !error.config?.headers?.['X-Skip-Toast']) {
+      toast.error(String(errMsg));
+    }
+
     return Promise.reject(error);
   }
 );

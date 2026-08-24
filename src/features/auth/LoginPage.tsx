@@ -1,72 +1,174 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
+import { http } from '@/services/apiClient';
 import { Card } from '@/components/common/Card';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
-import type { Role } from '@/types/rbac';
-import { Compass, Lock, Mail, User as UserIcon, ArrowRight, Phone } from 'lucide-react';
+import {
+  Compass,
+  Lock,
+  Mail,
+  User as UserIcon,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'signin';
 
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
-
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('eleanor.vance@example.com');
-  const [phone, setPhone] = useState('+251 91 123 4567');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const handleLoginSuccess = (userDisplayName: string, userEmail: string, _userPhone: string, isAdminUser: boolean) => {
-    const detectedRole: Role = isAdminUser ? 'admin' : 'tourist';
-
-    login(
-      {
-        id: `usr-${Date.now()}`,
-        name: userDisplayName,
-        email: userEmail,
-        role: detectedRole,
-        department: isAdminUser ? 'Tourism Operations' : 'Traveler Member',
-        avatarUrl: isAdminUser
-          ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-          : 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-      },
-      'jwt-token-tourism-2026'
-    );
-
-    if (detectedRole === 'admin') {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/user/dashboard');
+  useEffect(() => {
+    const m = searchParams.get('mode');
+    if (m === 'signup' || m === 'signin') {
+      setMode(m);
     }
+  }, [searchParams]);
+
+  const switchMode = (newMode: 'signin' | 'signup') => {
+    setMode(newMode);
+    setErrorMsg('');
+    setSuccessMsg('');
+    setSearchParams({ mode: newMode });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const parseBackendError = (err: any): string => {
+    if (!err) return 'An unexpected error occurred. Please try again.';
+    const data = err.response?.data;
+    if (data?.message) {
+      if (Array.isArray(data.message)) {
+        return data.message.join('. ');
+      }
+      return String(data.message);
+    }
+    if (data?.error) return String(data.error);
+    if (err.message) return String(err.message);
+    return 'Authentication request failed. Please check your network and try again.';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanName = name.trim();
+
+    // Client-side validation prior to sending to backend
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setErrorMsg('Please enter a valid email address.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMsg('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (mode === 'signup') {
+      if (cleanName.length < 2) {
+        setErrorMsg('Full name must be at least 2 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setErrorMsg('Passwords do not match. Please re-enter.');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
-    setTimeout(() => {
-      const cleanEmail = email.toLowerCase().trim();
-      const isAdminUser = cleanEmail.includes('admin') || cleanEmail.includes('operator');
-      const userDisplayName = name.trim() || (isAdminUser ? 'Alex Morgan' : 'Eleanor Vance');
+    try {
+      if (mode === 'signup') {
+        // Direct backend registration
+        const response = await http.post('/auth/register', {
+          name: cleanName,
+          email: cleanEmail,
+          password,
+        });
 
-      handleLoginSuccess(userDisplayName, cleanEmail, phone, isAdminUser);
-      setIsLoading(false);
-    }, 500);
-  };
+        const { user, access_token } = response.data;
+        if (!access_token || !user) {
+          throw new Error('Invalid response structure received from authentication server.');
+        }
 
-  const handleSocialAuth = (provider: string) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      handleLoginSuccess(`Eleanor Vance (${provider})`, `eleanor.${provider.toLowerCase()}@example.com`, '+251 91 999 8888', false);
+        login(
+          {
+            id: String(user.id),
+            name: user.name,
+            email: user.email,
+            role: user.role || 'tourist',
+            department: user.department || 'Traveler Member',
+            avatarUrl: user.avatarUrl,
+          },
+          access_token
+        );
+
+        setSuccessMsg('Account created successfully! Redirecting...');
+        setTimeout(() => {
+          if (user.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/user/dashboard');
+          }
+        }, 500);
+      } else {
+        // Direct backend login
+        const response = await http.post('/auth/login', {
+          email: cleanEmail,
+          password,
+        });
+
+        const { user, access_token } = response.data;
+        if (!access_token || !user) {
+          throw new Error('Invalid response structure received from authentication server.');
+        }
+
+        login(
+          {
+            id: String(user.id),
+            name: user.name,
+            email: user.email,
+            role: user.role || 'tourist',
+            department: user.department || (user.role === 'admin' ? 'Tourism Operations' : 'Traveler Member'),
+            avatarUrl: user.avatarUrl,
+          },
+          access_token
+        );
+
+        setSuccessMsg(`Welcome back, ${user.name}! Redirecting...`);
+        setTimeout(() => {
+          if (user.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/user/dashboard');
+          }
+        }, 500);
+      }
+    } catch (err: any) {
+      const message = parseBackendError(err);
+      setErrorMsg(message);
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -75,7 +177,7 @@ export const LoginPage: React.FC = () => {
       style={{
         minHeight: '100vh',
         backgroundColor: 'var(--bg-primary)',
-        padding: '1.5rem',
+        padding: '2rem 1.5rem',
         background: 'radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 50%), radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.08), transparent 50%)',
       }}
     >
@@ -85,28 +187,29 @@ export const LoginPage: React.FC = () => {
           width: '100%',
           maxWidth: '460px',
           padding: '2.5rem 2rem',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: '24px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
         }}
       >
         {/* Header */}
-        <div className="flex-center" style={{ flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        <div className="flex-center" style={{ flexDirection: 'column', gap: '0.4rem', marginBottom: '1.75rem' }}>
           <div
             className="flex-center text-gradient"
             style={{
-              width: 54,
-              height: 54,
-              borderRadius: 'var(--radius-md)',
+              width: 52,
+              height: 52,
+              borderRadius: '16px',
               backgroundColor: 'var(--brand-primary-light)',
-              marginBottom: '0.5rem',
+              marginBottom: '0.25rem',
             }}
           >
-            <Compass size={32} style={{ color: 'var(--brand-primary)' }} />
+            <Compass size={30} style={{ color: 'var(--brand-primary)' }} />
           </div>
-          <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
             MICHUU <span style={{ color: 'var(--brand-primary)' }}>TMS</span>
           </h2>
-          <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-            Ethiopia's Premier Tourism & Travel Management System
+          <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
+            {mode === 'signin' ? 'Sign in to access your bookings, tickets & personalized trips' : 'Create an account to begin your Ethiopian journey'}
           </p>
         </div>
 
@@ -117,20 +220,22 @@ export const LoginPage: React.FC = () => {
             gridTemplateColumns: '1fr 1fr',
             backgroundColor: 'var(--bg-tertiary)',
             padding: '0.25rem',
-            borderRadius: 'var(--radius-sm)',
-            marginBottom: '1.25rem',
+            borderRadius: 'var(--radius-full)',
+            marginBottom: '1.5rem',
+            border: '1px solid var(--border-color)',
           }}
         >
           <button
             type="button"
-            onClick={() => setMode('signin')}
+            onClick={() => switchMode('signin')}
             style={{
-              padding: '0.5rem',
-              borderRadius: 'var(--radius-sm)',
+              padding: '0.55rem',
+              borderRadius: 'var(--radius-full)',
               fontSize: 'var(--font-size-xs)',
-              fontWeight: mode === 'signin' ? 700 : 500,
-              backgroundColor: mode === 'signin' ? 'var(--bg-secondary)' : 'transparent',
+              fontWeight: mode === 'signin' ? 800 : 500,
+              backgroundColor: mode === 'signin' ? 'var(--bg-primary)' : 'transparent',
               color: mode === 'signin' ? 'var(--brand-primary)' : 'var(--text-secondary)',
+              boxShadow: mode === 'signin' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
               border: 'none',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
@@ -140,14 +245,15 @@ export const LoginPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => setMode('signup')}
+            onClick={() => switchMode('signup')}
             style={{
-              padding: '0.5rem',
-              borderRadius: 'var(--radius-sm)',
+              padding: '0.55rem',
+              borderRadius: 'var(--radius-full)',
               fontSize: 'var(--font-size-xs)',
-              fontWeight: mode === 'signup' ? 700 : 500,
-              backgroundColor: mode === 'signup' ? 'var(--bg-secondary)' : 'transparent',
+              fontWeight: mode === 'signup' ? 800 : 500,
+              backgroundColor: mode === 'signup' ? 'var(--bg-primary)' : 'transparent',
               color: mode === 'signup' ? 'var(--brand-primary)' : 'var(--text-secondary)',
+              boxShadow: mode === 'signup' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
               border: 'none',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
@@ -157,51 +263,54 @@ export const LoginPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Auth Sub-method: Email vs Phone */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', justifyContent: 'center' }}>
-          <button
-            type="button"
-            onClick={() => setAuthMethod('email')}
+        {/* Error Alert */}
+        {errorMsg && (
+          <div
             style={{
-              fontSize: '11px',
-              fontWeight: authMethod === 'email' ? 700 : 500,
-              color: authMethod === 'email' ? 'var(--brand-primary)' : 'var(--text-muted)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              color: '#ef4444',
+              fontSize: 'var(--font-size-xs)',
+              marginBottom: '1.25rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.25rem',
+              gap: '0.5rem',
             }}
           >
-            <Mail size={12} /> Email Auth
-          </button>
-          <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>|</span>
-          <button
-            type="button"
-            onClick={() => setAuthMethod('phone')}
-            style={{
-              fontSize: '11px',
-              fontWeight: authMethod === 'phone' ? 700 : 500,
-              color: authMethod === 'phone' ? 'var(--brand-primary)' : 'var(--text-muted)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-          >
-            <Phone size={12} /> Phone / Telebirr
-          </button>
-        </div>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{errorMsg}</span>
+          </div>
+        )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Success Alert */}
+        {successMsg && (
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              color: '#10b981',
+              fontSize: 'var(--font-size-xs)',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* Authentication Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
           {mode === 'signup' && (
             <Input
               label="Full Name"
-              placeholder="e.g. Eleanor Vance"
+              placeholder="e.g. Firaol Desalegn"
               icon={<UserIcon size={16} />}
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -209,78 +318,92 @@ export const LoginPage: React.FC = () => {
             />
           )}
 
-          {authMethod === 'email' ? (
+          <Input
+            label="Email Address"
+            type="email"
+            placeholder="e.g. name@example.com"
+            icon={<Mail size={16} />}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <div style={{ position: 'relative' }}>
             <Input
-              label="Email Address"
-              type="email"
-              placeholder="e.g. eleanor.vance@example.com"
-              icon={<Mail size={16} />}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Min 8 characters"
+              icon={<Lock size={16} />}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
-          ) : (
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '36px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+              }}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+
+          {mode === 'signup' && (
             <Input
-              label="Mobile / Telebirr Phone Number"
-              type="tel"
-              placeholder="e.g. +251 91 123 4567"
-              icon={<Phone size={16} />}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              label="Confirm Password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Re-enter your password"
+              icon={<Lock size={16} />}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
           )}
 
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            icon={<Lock size={16} />}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-
-          <Button type="submit" variant="primary" size="lg" isLoading={isLoading} icon={<ArrowRight size={18} />}>
-            {mode === 'signin' ? 'Sign In to Dashboard' : 'Complete Registration'}
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            isLoading={isLoading}
+            icon={<ArrowRight size={18} />}
+            style={{ marginTop: '0.5rem', fontWeight: 700 }}
+          >
+            {mode === 'signin' ? 'Sign In' : 'Create Account'}
           </Button>
         </form>
 
-        {/* Social Login Options */}
-        <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '0.75rem' }}>
-            Or continue with 1-click Social Login
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={() => handleSocialAuth('Google')}
-              style={{ fontSize: '11px' }}
-            >
-              🌐 Google
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={() => handleSocialAuth('Telebirr')}
-              style={{ fontSize: '11px', color: '#16a34a', borderColor: 'rgba(22,163,74,0.3)' }}
-            >
-              📱 Telebirr
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={() => handleSocialAuth('Apple')}
-              style={{ fontSize: '11px' }}
-            >
-              🍎 Apple
-            </Button>
-          </div>
+        {/* Switch mode footer */}
+        <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+          {mode === 'signin' ? (
+            <span>
+              Don't have an account?{' '}
+              <button
+                type="button"
+                onClick={() => switchMode('signup')}
+                style={{ color: 'var(--brand-primary)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Create Account
+              </button>
+            </span>
+          ) : (
+            <span>
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => switchMode('signin')}
+                style={{ color: 'var(--brand-primary)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Sign In
+              </button>
+            </span>
+          )}
         </div>
       </Card>
     </div>

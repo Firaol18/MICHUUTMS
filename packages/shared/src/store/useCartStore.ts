@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type CartItemType = 'tour' | 'hotel' | 'transport' | 'event';
 
@@ -9,7 +10,7 @@ export interface CartItem {
   subtitle?: string;
   imageUrl: string;
   unitPrice: number;
-  quantity: number; // e.g. number of guests or days
+  quantity: number;
   date?: string;
   details?: {
     location?: string;
@@ -38,116 +39,91 @@ interface CartState {
   getTotalPrice: () => number;
 }
 
-export const useCartStore = create<CartState>((set, get) => ({
-  items: [
-    // Pre-populate with a sample multi-item cart for demonstration
-    {
-      id: 'tour-101-cart',
-      type: 'tour',
-      title: 'Wenchi Crater Lake & Thermal Springs Expedition',
-      subtitle: '3 Days / 2 Nights • Oromia Region',
-      imageUrl: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=800',
-      unitPrice: 450,
-      quantity: 2,
-      date: '2026-09-20',
-      details: {
-        location: 'Wenchi, Ethiopia',
-        duration: '3 Days',
-        guideName: 'Abebe Bekele (Senior Eco-Ranger)',
+import { toast } from '@tms/shared/store/useToastStore';
+
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      isOpen: false,
+      promoCode: '',
+      discountPercent: 0,
+
+      openCart: () => set({ isOpen: true }),
+      closeCart: () => set({ isOpen: false }),
+      toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
+
+      addItem: (newItem) => {
+        set((state) => {
+          const existingIndex = state.items.findIndex((item) => item.id === newItem.id);
+          if (existingIndex > -1) {
+            const updatedItems = [...state.items];
+            updatedItems[existingIndex].quantity += newItem.quantity || 1;
+            toast.success(`Updated quantity for "${newItem.title}" in cart!`, 'Cart Updated');
+            return { items: updatedItems, isOpen: true };
+          }
+          toast.success(`"${newItem.title}" added to your cart!`, 'Added to Cart');
+          return {
+            items: [...state.items, { ...newItem, quantity: newItem.quantity || 1 }],
+            isOpen: true,
+          };
+        });
       },
-    },
-    {
-      id: 'hotel-skylight-cart',
-      type: 'hotel',
-      title: 'Ethiopian Skylight Hotel Addis Ababa',
-      subtitle: '2 Nights Deluxe Suite (Pre-Tour Stay)',
-      imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800',
-      unitPrice: 180,
-      quantity: 2,
-      date: '2026-09-18',
-      details: {
-        location: 'Bole Road, Addis Ababa',
-        roomType: 'Deluxe King Suite (Breakfast Included)',
+
+      removeItem: (id) => {
+        const item = get().items.find((i) => i.id === id);
+        set((state) => ({
+          items: state.items.filter((item) => item.id !== id),
+        }));
+        if (item) {
+          toast.info(`"${item.title}" removed from cart.`, 'Cart Updated');
+        }
       },
-    },
-    {
-      id: 'transport-4x4-cart',
-      type: 'transport',
-      title: 'Private 4x4 Toyota Land Cruiser Charter',
-      subtitle: 'Airport Transfer & Scenic Route Chauffeur',
-      imageUrl: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800',
-      unitPrice: 120,
-      quantity: 3,
-      date: '2026-09-18',
-      details: {
-        vehicleType: '4x4 Land Cruiser (AC, Bottled Water, English Driver)',
+
+      updateQuantity: (id, quantity) => {
+        if (quantity <= 0) {
+          get().removeItem(id);
+          return;
+        }
+        set((state) => ({
+          items: state.items.map((item) => (item.id === id ? { ...item, quantity } : item)),
+        }));
       },
-    },
-  ],
-  isOpen: false,
-  promoCode: '',
-  discountPercent: 0,
 
-  openCart: () => set({ isOpen: true }),
-  closeCart: () => set({ isOpen: false }),
-  toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
+      clearCart: () => set({ items: [], promoCode: '', discountPercent: 0 }),
 
-  addItem: (newItem) => {
-    set((state) => {
-      const existingIndex = state.items.findIndex((item) => item.id === newItem.id);
-      if (existingIndex > -1) {
-        const updatedItems = [...state.items];
-        updatedItems[existingIndex].quantity += newItem.quantity || 1;
-        return { items: updatedItems, isOpen: true };
-      }
-      return {
-        items: [...state.items, { ...newItem, quantity: newItem.quantity || 1 }],
-        isOpen: true,
-      };
-    });
-  },
+      applyPromoCode: (code) => {
+        const cleanCode = code.trim().toUpperCase();
+        if (cleanCode === 'MICHUU15' || cleanCode === 'ETHIOPIA2026') {
+          set({ promoCode: cleanCode, discountPercent: 15 });
+          toast.success('15% Promotional Discount Applied!', 'Promo Code');
+          return { success: true, message: '15% Promotional Discount Applied!' };
+        }
+        if (cleanCode === 'WELCOME10') {
+          set({ promoCode: cleanCode, discountPercent: 10 });
+          toast.success('10% Welcome Discount Applied!', 'Promo Code');
+          return { success: true, message: '10% Welcome Discount Applied!' };
+        }
+        toast.warning('Invalid promo code. Try "MICHUU15"', 'Promo Code');
+        return { success: false, message: 'Invalid promo code. Try "MICHUU15"' };
+      },
 
-  removeItem: (id) => {
-    set((state) => ({
-      items: state.items.filter((item) => item.id !== id),
-    }));
-  },
+      getSubtotal: () => {
+        return get().items.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
+      },
 
-  updateQuantity: (id, quantity) => {
-    if (quantity <= 0) {
-      get().removeItem(id);
-      return;
+      getDiscountAmount: () => {
+        const subtotal = get().getSubtotal();
+        return Math.round((subtotal * get().discountPercent) / 100);
+      },
+
+      getTotalPrice: () => {
+        return get().getSubtotal() - get().getDiscountAmount();
+      },
+    }),
+    {
+      name: 'michuu-tms-cart',
+      partialize: (state) => ({ items: state.items, promoCode: state.promoCode, discountPercent: state.discountPercent }),
     }
-    set((state) => ({
-      items: state.items.map((item) => (item.id === id ? { ...item, quantity } : item)),
-    }));
-  },
-
-  clearCart: () => set({ items: [], promoCode: '', discountPercent: 0 }),
-
-  applyPromoCode: (code) => {
-    const cleanCode = code.trim().toUpperCase();
-    if (cleanCode === 'MICHUU15' || cleanCode === 'ETHIOPIA2026') {
-      set({ promoCode: cleanCode, discountPercent: 15 });
-      return { success: true, message: '15% Promotional Discount Applied!' };
-    }
-    if (cleanCode === 'WELCOME10') {
-      set({ promoCode: cleanCode, discountPercent: 10 });
-      return { success: true, message: '10% Welcome Discount Applied!' };
-    }
-    return { success: false, message: 'Invalid promo code. Try "MICHUU15"' };
-  },
-
-  getSubtotal: () => {
-    return get().items.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
-  },
-
-  getDiscountAmount: () => {
-    const subtotal = get().getSubtotal();
-    return Math.round((subtotal * get().discountPercent) / 100);
-  },
-
-  getTotalPrice: () => {
-    return get().getSubtotal() - get().getDiscountAmount();
-  },
-}));
+  )
+);

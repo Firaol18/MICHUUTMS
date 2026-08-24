@@ -47,6 +47,10 @@ export const UserDashboardOverview: React.FC = () => {
     });
   }, [fetchReviews, _user]);
 
+  const userReviews = _user?.email
+    ? reviews.filter((r) => r.authorEmail && r.authorEmail.toLowerCase() === _user.email.toLowerCase())
+    : [];
+
   const statCards = [
     {
       label: 'My Bookings',
@@ -66,7 +70,7 @@ export const UserDashboardOverview: React.FC = () => {
     },
     {
       label: 'My Reviews',
-      value: reviews.length,
+      value: userReviews.length,
       icon: <Star size={22} />,
       color: '#f59e0b',
       bg: 'rgba(245,158,11,0.1)',
