@@ -8,10 +8,14 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as express from 'express';
+import cookieParser from 'cookie-parser';
 import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Cookie parser for reading HttpOnly refresh token cookies
+  app.use(cookieParser());
 
   // Increase payload limit for screenshot receipts, vouchers, and profile avatars (50MB)
   app.use(express.json({ limit: '50mb' }));

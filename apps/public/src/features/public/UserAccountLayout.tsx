@@ -15,11 +15,28 @@ import {
   LogOut,
   Compass,
   HelpCircle,
+  MailWarning,
 } from 'lucide-react';
+import { http } from '@tms/shared/services/apiClient';
+import { toast } from '@tms/shared/store/useToastStore';
 
 export const UserAccountLayout: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [isResending, setIsResending] = React.useState(false);
+
+  const handleResendVerification = async () => {
+    if (!user?.email) return;
+    setIsResending(true);
+    try {
+      await http.post('/auth/forgot-password', { email: user.email });
+      toast.success(`Verification link re-sent to ${user.email}! Check your inbox.`, 'Email Sent');
+    } catch {
+      toast.error('Failed to resend verification email. Please try again later.');
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const isGuideOrAdmin =
     user?.role === 'ADMIN' ||
@@ -59,6 +76,40 @@ export const UserAccountLayout: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+      {/* ── Unverified Email Banner ── */}
+      {user?.emailVerified === false && (
+        <div
+          style={{
+            padding: '0.875rem 1.25rem',
+            marginBottom: '1.5rem',
+            borderRadius: 'var(--radius-md)',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: 'var(--font-size-xs)', color: '#b45309' }}>
+            <MailWarning size={18} style={{ flexShrink: 0 }} />
+            <span>
+              <strong>Verify your email address ({user.email}).</strong> Check your inbox for the verification link to unlock full account features.
+            </span>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleResendVerification}
+            isLoading={isResending}
+            style={{ fontSize: 'var(--font-size-xs)', padding: '0.35rem 0.75rem' }}
+          >
+            Resend Email
+          </Button>
+        </div>
+      )}
+
       {/* ── Top Profile Banner ── */}
       <Card
         glass

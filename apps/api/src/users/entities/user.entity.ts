@@ -103,6 +103,39 @@ export class User {
   @Column({ type: 'simple-array', nullable: true })
   tourTypes?: string[];
 
+  // ── Security / Auth ──
+  @ApiProperty({ description: 'Hashed refresh token stored server-side', required: false })
+  @Column({ type: 'text', nullable: true, select: false })
+  refreshToken?: string | null;
+
+  @ApiProperty({ description: 'Whether the email address has been verified', required: false })
+  @Column({ type: 'boolean', default: false })
+  emailVerified: boolean;
+
+  @ApiProperty({ description: 'Single-use email verification token (hashed)', required: false })
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
+  emailVerificationToken?: string | null;
+
+  @ApiProperty({ description: 'When the email verification token expires', required: false })
+  @Column({ type: 'timestamp', nullable: true })
+  emailVerificationExpiry?: Date | null;
+
+  @ApiProperty({ description: 'Single-use password reset token (hashed)', required: false })
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
+  passwordResetToken?: string | null;
+
+  @ApiProperty({ description: 'When the password reset token expires', required: false })
+  @Column({ type: 'timestamp', nullable: true })
+  passwordResetExpiry?: Date | null;
+
+  @ApiProperty({ description: 'Consecutive failed login attempts counter', required: false })
+  @Column({ type: 'int', default: 0 })
+  loginAttempts: number;
+
+  @ApiProperty({ description: 'Timestamp until which the account is locked', required: false })
+  @Column({ type: 'timestamp', nullable: true })
+  lockUntil?: Date | null;
+
   @ApiProperty({ description: 'User creation timestamp' })
   @CreateDateColumn()
   createdAt: Date;

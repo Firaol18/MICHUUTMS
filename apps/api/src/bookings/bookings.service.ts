@@ -153,6 +153,32 @@ export class BookingsService {
       }
     }
 
+    const travelerEmail = (dto.traveler.email || '').toLowerCase().trim();
+    const resolvedTourId = tour?.id || event?.id || (dto.tourId && uuidRegex.test(String(dto.tourId)) ? String(dto.tourId) : null);
+    const resolvedTitle = dto.tourTitle || tour?.title || event?.title || '';
+
+    // Enforce 1 active booking per customer for each tour or event
+    if (travelerEmail || userId) {
+      const allActiveBookings = await this.repo.find();
+      const existingUserBooking = allActiveBookings.find(
+        (b) =>
+          b.status !== 'cancelled' &&
+          ((b.traveler?.email && b.traveler.email.toLowerCase().trim() === travelerEmail) ||
+            (userId && b.userId && b.userId === userId)) &&
+          ((resolvedTourId && b.tourId && b.tourId === resolvedTourId) ||
+            (resolvedTitle &&
+              b.tourTitle &&
+              (b.tourTitle.toLowerCase().includes(resolvedTitle.toLowerCase()) ||
+                resolvedTitle.toLowerCase().includes(b.tourTitle.toLowerCase())))),
+      );
+
+      if (existingUserBooking) {
+        throw new BadRequestException(
+          `You already have an active reservation (Ref #${existingUserBooking.bookingReference}) for "${existingUserBooking.tourTitle || resolvedTitle}". Each customer can only book once per tour or event experience.`,
+        );
+      }
+    }
+
     const pricePerPerson = tour?.pricePerPerson ?? event?.price ?? (dto.totalPrice ? dto.totalPrice / numberOfTravelers : 1500);
     const tourTitle = dto.tourTitle || tour?.title || event?.title || 'Ethiopian Expedition';
     const destinationName = dto.destinationName || tour?.destinationName || event?.location || 'Ethiopia';
@@ -160,7 +186,9 @@ export class BookingsService {
     const children = dto.numberOfChildren ?? 0;
     const totalPrice = dto.totalPrice ?? (pricePerPerson * numberOfTravelers);
     const assignedGuideName = dto.assignedGuideName ?? null;
-    const status = (dto.status as any) || 'pending';
+    const isCashPayment = dto.paymentMethod === 'cash';
+    const status = isCashPayment ? 'pending' : ((dto.status as any) || 'confirmed');
+    const paymentStatus = isCashPayment ? 'unpaid' : ((dto.paymentStatus as any) || (dto.paymentReceiptUrl || dto.transactionReference ? 'paid' : 'paid'));
 
     const booking = this.repo.create({
       tourId: tour?.id ?? null,
@@ -180,7 +208,7 @@ export class BookingsService {
       numberOfChildren: children,
       totalPrice,
       status,
-      paymentStatus: (dto.paymentStatus as any) || (dto.paymentReceiptUrl ? 'paid' : 'paid'),
+      paymentStatus,
       refundStatus: 'none',
       paymentMethod: dto.paymentMethod || 'telebirr',
       paymentReceiptUrl: dto.paymentReceiptUrl || null,
@@ -190,7 +218,7 @@ export class BookingsService {
     });
 
     const saved = (await this.repo.save(booking)) as Booking;
-    this.logger.log(`Booking created: ${saved.bookingReference} (id=${saved.id})`);
+    this.logger.log(`Booking created: ${saved.bookingReference} (id=${saved.id}, status=${saved.status}, paymentStatus=${saved.paymentStatus})`);
     return saved;
   }
 
@@ -240,12 +268,23 @@ export class BookingsService {
   async updateStatus(id: string, status: string) {
     const booking = await this.findOne(id);
     booking.status = status as any;
+    if (status === 'paid') {
+      booking.paymentStatus = 'paid';
+      booking.status = 'confirmed';
+    } else if (status === 'cancelled' && booking.paymentStatus === 'paid') {
+      booking.refundStatus = 'pending';
+    }
     return this.repo.save(booking);
   }
 
   async updatePaymentStatus(id: string, paymentStatus: string) {
     const booking = await this.findOne(id);
     booking.paymentStatus = paymentStatus as any;
+    if (paymentStatus === 'paid' && booking.status === 'pending') {
+      booking.status = 'confirmed';
+    } else if (paymentStatus === 'refunded') {
+      booking.refundStatus = 'processed';
+    }
     return this.repo.save(booking);
   }
 

@@ -26,6 +26,7 @@ export interface User {
   accommodation?: string;
   tourTypes?: string[];
   completedTripsCount?: number;
+  emailVerified?: boolean;
 }
 
 export interface AuthState {

@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
-import type { ApiResponse } from '@/types/common';
+import type { ApiResponse } from '@tms/shared/types/common';
 
 const API_BASE_URL =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
@@ -11,27 +11,32 @@ export const http: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000,
+  // Send credentials (HttpOnly cookies) with every request
+  withCredentials: true,
 });
 
-// Request interceptor: automatically attach JWT token if available
+// ── In-memory access token (never stored in localStorage) ─────────────────────
+// Exported so useAuthStore can set it after login/register/refresh
+export let _inMemoryAccessToken: string | null = null;
+export const setInMemoryToken = (t: string | null) => { _inMemoryAccessToken = t; };
+
+// ── Request interceptor: attach in-memory access token ────────────────────────
 http.interceptors.request.use(
   (config) => {
-    try {
-      const token = localStorage.getItem('tms_token');
-      if (token && typeof token === 'string' && token.split('.').length === 3 && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    } catch {
-      // ignore in environments without localStorage
+    if (_inMemoryAccessToken && config.headers) {
+      config.headers.Authorization = `Bearer ${_inMemoryAccessToken}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-import { toast } from '@/store/useToastStore';
+import { toast } from '@tms/shared/store/useToastStore';
 
-// Response interceptor: standard error handling & backend-driven toast feedback
+// ── Response interceptor: auto-refresh on 401 ─────────────────────────────────
+let _refreshing = false;
+let _refreshQueue: Array<(token: string | null) => void> = [];
+
 http.interceptors.response.use(
   (response) => {
     const method = response.config.method?.toUpperCase();
@@ -42,16 +47,56 @@ http.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
     const method = error.config?.method?.toUpperCase();
     const isMutation = method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
     const isNetworkError = error.message === 'Network Error' || error.code === 'ERR_NETWORK' || !error.response;
 
-    if (error.response?.status === 401) {
+    // Auto-refresh access token on 401 (skip for auth routes to avoid loops)
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/auth/') 
+    ) {
+      originalRequest._retry = true;
+
+      if (_refreshing) {
+        // Queue this request until refresh completes
+        return new Promise((resolve, reject) => {
+          _refreshQueue.push((newToken) => {
+            if (newToken) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              resolve(http(originalRequest));
+            } else {
+              reject(error);
+            }
+          });
+        });
+      }
+
+      _refreshing = true;
       try {
-        localStorage.removeItem('tms_token');
-        localStorage.removeItem('auth_user');
-      } catch {}
+        const res = await http.post('/auth/refresh', {});
+        const newToken: string = res.data.accessToken;
+        setInMemoryToken(newToken);
+        _refreshQueue.forEach((cb) => cb(newToken));
+        _refreshQueue = [];
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return http(originalRequest);
+      } catch {
+        // Refresh failed — clear auth state
+        setInMemoryToken(null);
+        _refreshQueue.forEach((cb) => cb(null));
+        _refreshQueue = [];
+        // Dynamically import to avoid circular dep
+        try {
+          const { useAuthStore } = await import('@tms/shared/store/useAuthStore');
+          useAuthStore.getState().logout();
+        } catch {}
+      } finally {
+        _refreshing = false;
+      }
     }
 
     const errMsg =
@@ -61,7 +106,6 @@ http.interceptors.response.use(
       error.response?.data?.error ||
       (isMutation ? error.message : null);
 
-    // Only show toast error on active user mutations (POST/PUT/PATCH/DELETE) or when not a background GET network dropout
     if (errMsg && !error.config?.headers?.['X-Skip-Toast'] && (isMutation || !isNetworkError)) {
       toast.error(String(errMsg));
     }
@@ -134,4 +178,3 @@ export const apiClient = {
     }
   },
 };
-

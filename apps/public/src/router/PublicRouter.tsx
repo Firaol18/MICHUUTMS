@@ -29,6 +29,8 @@ import { GuideDashboardPage } from '@/features/guide/GuideDashboardPage';
 
 // Auth
 import { LoginPage } from '@/features/auth/LoginPage';
+import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
+import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 
 export const PublicRouter: React.FC = () => {
   return (
@@ -67,6 +69,12 @@ export const PublicRouter: React.FC = () => {
               <Route path="/guide/dashboard" element={<GuideDashboardPage />} />
             </Route>
           </Route>
+        </Route>
+
+        {/* ── Auth Routes (publicly accessible with query tokens) ── */}
+        <Route element={<PublicLayout />}>
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
 
         {/* ── Guest Only: Login & Register ── */}
