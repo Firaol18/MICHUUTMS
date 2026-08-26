@@ -39,94 +39,8 @@ const CHANNEL_LABELS: Record<CommunicationEntry['channel'], string> = {
   email: '📧 Email', phone: '📞 Phone', whatsapp: '💬 WhatsApp', 'in-app': '🌐 In-App', 'walk-in': '🚶 Walk-in',
 };
 
-const INITIAL_CUSTOMERS: CustomerProfile[] = [
-  {
-    id: 'usr-1',
-    name: 'Eleanor Vance',
-    email: 'eleanor.vance@example.com',
-    mobile: '+1 (555) 321-7890',
-    role: 'Tourist',
-    regDate: '2026-07-15',
-    status: 'active',
-    totalBookings: 4,
-    totalSpend: 3600,
-    loyaltyTier: 'silver',
-    passport: { documentType: 'passport', documentNumber: 'US-7712341', issuingCountry: 'United States', expiryDate: '2029-04-20', nationality: 'American' },
-    emergencyContact: { name: 'Robert Vance', relationship: 'Spouse', phone: '+1 (555) 987-6543', email: 'robert.vance@example.com' },
-    travelPreferences: { preferredTourTypes: ['cultural', 'luxury'], dietaryNeeds: 'Vegetarian, no shellfish', languages: ['English', 'French'], accessibilityNeeds: '', preferredCurrency: 'USD ($)', accommodationPreference: 'Luxury Lodge' },
-    communicationHistory: [
-      { id: 'cm-1', date: '2026-08-01', channel: 'email', subject: 'Booking Confirmation', summary: 'Sent booking confirmation for Wenchi Crater Lake tour.', staffName: 'Alex Morgan' },
-      { id: 'cm-2', date: '2026-08-05', channel: 'phone', subject: 'Dietary Query', summary: 'Customer called about vegetarian meal options. Confirmed with kitchen.', staffName: 'Tigist Assefa' },
-    ],
-  },
-  {
-    id: 'usr-4',
-    name: 'Sophia Rossi',
-    email: 'sophia.r@example.it',
-    mobile: '+39 06 6987 1234',
-    role: 'Tourist',
-    regDate: '2026-08-01',
-    status: 'active',
-    totalBookings: 2,
-    totalSpend: 2500,
-    loyaltyTier: 'bronze',
-    passport: { documentType: 'passport', documentNumber: 'IT-AA1234567', issuingCountry: 'Italy', expiryDate: '2028-11-30', nationality: 'Italian' },
-    emergencyContact: { name: 'Marco Rossi', relationship: 'Brother', phone: '+39 06 1111 2222' },
-    travelPreferences: { preferredTourTypes: ['cultural', 'mountain'], dietaryNeeds: '', languages: ['Italian', 'English'], accessibilityNeeds: '', preferredCurrency: 'EUR (€)', accommodationPreference: 'Luxury Lodge' },
-    communicationHistory: [
-      { id: 'cm-3', date: '2026-08-08', channel: 'email', subject: 'Danakil Tour Details', summary: 'Emailed safety briefing for Erta Ale expedition.', staffName: 'Alex Morgan' },
-    ],
-  },
-  {
-    id: 'usr-6',
-    name: 'Liam Hemsworth',
-    email: 'liam.h@example.co.uk',
-    mobile: '+44 20 7946 0912',
-    role: 'Tourist',
-    regDate: '2026-08-03',
-    status: 'active',
-    totalBookings: 9,
-    totalSpend: 11400,
-    loyaltyTier: 'gold',
-    passport: { documentType: 'passport', documentNumber: 'GB-500219631', issuingCountry: 'United Kingdom', expiryDate: '2031-06-15', nationality: 'British' },
-    emergencyContact: { name: 'Anna Hemsworth', relationship: 'Wife', phone: '+44 20 7946 1111', email: 'anna.h@example.co.uk' },
-    travelPreferences: { preferredTourTypes: ['safari', 'mountain', 'cultural'], dietaryNeeds: 'No pork', languages: ['English'], accessibilityNeeds: 'Mild altitude sensitivity', preferredCurrency: 'GBP (£)', accommodationPreference: 'Luxury Lodge' },
-    communicationHistory: [
-      { id: 'cm-4', date: '2026-07-20', channel: 'whatsapp', subject: 'Gold Tier Welcome', summary: 'Sent Gold member welcome and exclusive offer brochure.', staffName: 'Tigist Assefa' },
-    ],
-  },
-  {
-    id: 'usr-5',
-    name: 'Alex Morgan',
-    email: 'alex.m@tmslogistics.com',
-    mobile: '+1 (555) 998-1122',
-    role: 'Administrator',
-    regDate: '2026-05-01',
-    status: 'active',
-    totalBookings: 0,
-    totalSpend: 0,
-    loyaltyTier: 'bronze',
-    communicationHistory: [],
-  },
-  {
-    id: 'usr-2',
-    name: 'Juma Mwangi',
-    email: 'juma.m@tourismsystem.com',
-    mobile: '+255 712 345 678',
-    role: 'Tour Guide',
-    regDate: '2026-06-10',
-    status: 'active',
-    totalBookings: 0,
-    totalSpend: 0,
-    loyaltyTier: 'bronze',
-    emergencyContact: { name: 'Aisha Mwangi', relationship: 'Sister', phone: '+255 713 000 111' },
-    travelPreferences: { preferredTourTypes: ['safari', 'mountain'], dietaryNeeds: 'Halal', languages: ['English', 'Swahili', 'Amharic'], accessibilityNeeds: '', preferredCurrency: 'USD ($)', accommodationPreference: 'Mid-range Hotel' },
-    communicationHistory: [],
-  },
-];
-
 export const AdminUsersPage: React.FC = () => {
-  const [customers, setCustomers] = React.useState<CustomerProfile[]>(INITIAL_CUSTOMERS);
+  const [customers, setCustomers] = React.useState<CustomerProfile[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(true);
 
@@ -237,10 +151,10 @@ export const AdminUsersPage: React.FC = () => {
       if (list.length > 0) {
         setCustomers(list.map((u: any) => mapBackendUserToProfile(u, allBookings)));
       } else {
-        setCustomers(INITIAL_CUSTOMERS);
+        setCustomers([]);
       }
     } catch {
-      setCustomers(INITIAL_CUSTOMERS);
+      setCustomers([]);
     } finally {
       setIsLoading(false);
     }

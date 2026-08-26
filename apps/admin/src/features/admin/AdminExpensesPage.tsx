@@ -44,142 +44,6 @@ interface TourRevenueProfit {
   expenses: { category: ExpenseCategory; amount: number; description: string }[];
 }
 
-const INITIAL_TOURS_PROFIT: TourRevenueProfit[] = [
-  {
-    id: 'tour-101',
-    title: 'Historic Route Ethiopia & Lalibela Churches',
-    revenue: 8000,
-    expenses: [
-      { category: 'Accommodation', amount: 2000, description: 'Kuriftu Resort & Hotel Lodge Payout' },
-      { category: 'Transportation', amount: 1200, description: '4x4 Cruiser & Bus Rental Fleet' },
-      { category: 'Guide Salary', amount: 500, description: 'Senior Guide Abebe Bekele Stipend' },
-      { category: 'Food', amount: 600, description: 'Traditional Cultural Dinners & Catering' },
-      { category: 'Fuel', amount: 300, description: 'TotalEnergies Diesel Fuel Voucher' },
-    ],
-  },
-  {
-    id: 'tour-102',
-    title: 'Danakil Depression & Erta Ale Volcano Expedition',
-    revenue: 12500,
-    expenses: [
-      { category: 'Accommodation', amount: 3200, description: 'Afar Eco-Camp & Hotel Bookings' },
-      { category: 'Transportation', amount: 2400, description: 'Heavy Patrol 4x4 Cruisers & Convoy Escort' },
-      { category: 'Guide Salary', amount: 900, description: 'Volcano Certified Ranger Stipend' },
-      { category: 'Food', amount: 850, description: 'Expedition Provisions & Desert Chef' },
-      { category: 'Fuel', amount: 650, description: 'Semera-Danakil Fuel Refills' },
-    ],
-  },
-  {
-    id: 'tour-103',
-    title: 'Simien Mountains Gelada Baboon Trek',
-    revenue: 6400,
-    expenses: [
-      { category: 'Accommodation', amount: 1400, description: 'Simien Lodge & Mountain Campsite' },
-      { category: 'Transportation', amount: 800, description: 'Gonder Pickup & Coaster Bus' },
-      { category: 'Guide Salary', amount: 450, description: 'Mountain Trekking Guide Salary' },
-      { category: 'Food', amount: 350, description: 'Trekking Ration Packs & Meal Box' },
-      { category: 'Fuel', amount: 200, description: 'Vehicle Expedition Fuel' },
-    ],
-  },
-];
-
-const INITIAL_EXPENSES: ExpenseItem[] = [
-  {
-    id: 'exp-1',
-    voucherNo: 'EXP-2026-9001',
-    category: 'Accommodation',
-    description: 'Hotel accommodation 14 rooms payout for Historic Route group',
-    amount: 2000,
-    date: '2026-08-12',
-    supplier: 'Kuriftu Resorts & Lodges',
-    relatedTourId: 'tour-101',
-    relatedTourTitle: 'Historic Route Ethiopia & Lalibela Churches',
-    paymentMethod: 'Bank Transfer',
-    receiptNo: 'RCP-98102',
-    approvalStatus: 'Approved',
-  },
-  {
-    id: 'exp-2',
-    voucherNo: 'EXP-2026-9002',
-    category: 'Transportation',
-    description: 'Transport fleet convoy 4x4 Land Cruisers dispatch',
-    amount: 1200,
-    date: '2026-08-11',
-    supplier: 'Highland Transport Logistics',
-    relatedTourId: 'tour-101',
-    relatedTourTitle: 'Historic Route Ethiopia & Lalibela Churches',
-    paymentMethod: 'Bank Transfer',
-    receiptNo: 'RCP-88123',
-    approvalStatus: 'Approved',
-  },
-  {
-    id: 'exp-3',
-    voucherNo: 'EXP-2026-9003',
-    category: 'Guide Salary',
-    description: 'Lead ranger guide daily stipend & hazard allowance',
-    amount: 500,
-    date: '2026-08-10',
-    supplier: 'Abebe Bekele (Lead Guide)',
-    relatedTourId: 'tour-101',
-    relatedTourTitle: 'Historic Route Ethiopia & Lalibela Churches',
-    paymentMethod: 'Mobile Money (Telebirr)',
-    receiptNo: 'RCP-77102',
-    approvalStatus: 'Approved',
-  },
-  {
-    id: 'exp-4',
-    voucherNo: 'EXP-2026-9004',
-    category: 'Food',
-    description: 'Traditional habesha cultural buffet dinners & wine tasting',
-    amount: 600,
-    date: '2026-08-09',
-    supplier: 'Yod Abyssinia Cultural Restaurant',
-    relatedTourId: 'tour-101',
-    relatedTourTitle: 'Historic Route Ethiopia & Lalibela Churches',
-    paymentMethod: 'Cash',
-    receiptNo: 'RCP-66109',
-    approvalStatus: 'Approved',
-  },
-  {
-    id: 'exp-5',
-    voucherNo: 'EXP-2026-9005',
-    category: 'Fuel',
-    description: 'Diesel fuel refill for 4x4 expedition vehicles',
-    amount: 300,
-    date: '2026-08-08',
-    supplier: 'TotalEnergies Station',
-    relatedTourId: 'tour-101',
-    relatedTourTitle: 'Historic Route Ethiopia & Lalibela Churches',
-    paymentMethod: 'Mobile Money (Telebirr)',
-    receiptNo: 'RCP-55102',
-    approvalStatus: 'Approved',
-  },
-  {
-    id: 'exp-6',
-    voucherNo: 'EXP-2026-9006',
-    category: 'Marketing',
-    description: 'Digital tourism campaign & Google Search Ads promotion',
-    amount: 850,
-    date: '2026-08-05',
-    supplier: 'Global Digital Media Corp',
-    paymentMethod: 'Credit Card',
-    receiptNo: 'RCP-44109',
-    approvalStatus: 'Approved',
-  },
-  {
-    id: 'exp-7',
-    voucherNo: 'EXP-2026-9007',
-    category: 'Office',
-    description: 'Headquarters high-speed fiber broadband & cloud server hosting',
-    amount: 420,
-    date: '2026-08-02',
-    supplier: 'Ethio Telecom Cloud Services',
-    paymentMethod: 'Bank Transfer',
-    receiptNo: 'RCP-33104',
-    approvalStatus: 'Pending Approval',
-  },
-];
-
 const CATEGORIES_LIST: ExpenseCategory[] = [
   'Transportation',
   'Accommodation',
@@ -276,7 +140,7 @@ export const AdminExpensesPage: React.FC = () => {
 
   // Selected Tour Profitability Analysis with Real Backend Data
   const toursProfitList = useMemo(() => {
-    if (liveTours.length === 0) return INITIAL_TOURS_PROFIT;
+    if (liveTours.length === 0) return [];
     return liveTours.map((t: any) => {
       const tourIdStr = String(t.id);
       const tourBookings = liveBookings.filter((b: any) => b.tourId === tourIdStr || b.tourTitle === t.title);
@@ -294,7 +158,14 @@ export const AdminExpensesPage: React.FC = () => {
     });
   }, [liveTours, liveBookings]);
 
-  const activeTourObj = toursProfitList.find((t) => t.id === selectedTourId) || toursProfitList[0] || INITIAL_TOURS_PROFIT[0];
+  const activeTourObj = toursProfitList.find((t) => t.id === selectedTourId) || toursProfitList[0] || {
+    id: '',
+    title: 'No Active Tour Selected',
+    departureDate: 'N/A',
+    confirmedTravelers: 0,
+    packagePrice: 0,
+    revenue: 0,
+  };
   
   // Calculate expenses connected to selected tour dynamically from expenses state
   const connectedExpenses = expenses.filter((e) => e.relatedTourId === activeTourObj.id || (e.relatedTourTitle && e.relatedTourTitle === activeTourObj.title));

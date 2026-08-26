@@ -46,152 +46,6 @@ interface BookingLedger {
   }[];
 }
 
-const INITIAL_BOOKING_LEDGERS: BookingLedger[] = [
-  {
-    bookingRef: 'BK-00125',
-    tourTitle: 'Historic Route Ethiopia & Lalibela Churches',
-    customerName: 'John Smith',
-    totalAmount: 2400,
-    paidAmount: 1500,
-    status: 'Partially Paid',
-    history: [
-      { id: 'h-1', amount: 500, date: '2026-08-01', method: 'Mobile Money', receiptNo: 'RCP-88120', type: 'Deposit' },
-      { id: 'h-2', amount: 1000, date: '2026-08-10', method: 'Credit/Debit Card', receiptNo: 'RCP-91024', type: 'Partial Payment' },
-    ],
-  },
-  {
-    bookingRef: 'BK-00126',
-    tourTitle: 'Danakil Depression & Erta Ale Volcano Expedition',
-    customerName: 'Sarah Jones',
-    totalAmount: 3800,
-    paidAmount: 3800,
-    status: 'Paid',
-    history: [
-      { id: 'h-3', amount: 1200, date: '2026-07-25', method: 'Bank Transfer', receiptNo: 'RCP-77102', type: 'Deposit' },
-      { id: 'h-4', amount: 2600, date: '2026-08-05', method: 'Online Payment', receiptNo: 'RCP-88291', type: 'Full Payment' },
-    ],
-  },
-  {
-    bookingRef: 'BK-00127',
-    tourTitle: 'Simien Mountains Gelada Baboon Trek',
-    customerName: 'David Brown',
-    totalAmount: 1800,
-    paidAmount: 500,
-    status: 'Partially Paid',
-    history: [
-      { id: 'h-5', amount: 500, date: '2026-08-08', method: 'Cash', receiptNo: 'RCP-66109', type: 'Deposit' },
-    ],
-  },
-  {
-    bookingRef: 'BK-00128',
-    tourTitle: 'Omo Valley Cultural Expeditions',
-    customerName: 'Eleanor Vance',
-    totalAmount: 2200,
-    paidAmount: 0,
-    status: 'Pending',
-    history: [],
-  },
-  {
-    bookingRef: 'BK-00129',
-    tourTitle: 'Bale Mountains Wildlife Safari',
-    customerName: 'Marcus Vance',
-    totalAmount: 1600,
-    paidAmount: 1600,
-    status: 'Refunded',
-    history: [
-      { id: 'h-6', amount: 1600, date: '2026-07-10', method: 'Credit/Debit Card', receiptNo: 'RCP-44102', type: 'Full Payment' },
-      { id: 'h-7', amount: -1600, date: '2026-07-15', method: 'Bank Transfer', receiptNo: 'REF-10029', type: 'Refund' },
-    ],
-  },
-];
-
-const INITIAL_TRANSACTIONS: PaymentTransaction[] = [
-  {
-    id: 'tx-1',
-    txRef: 'TX-2026-9918',
-    receiptNo: 'RCP-88120',
-    bookingRef: 'BK-00125',
-    customerName: 'John Smith',
-    type: 'Deposit',
-    amount: 500,
-    currency: 'USD',
-    method: 'Mobile Money',
-    status: 'Partially Paid',
-    date: '2026-08-01',
-    notes: 'Initial 20% deposit received via Telebirr',
-  },
-  {
-    id: 'tx-2',
-    txRef: 'TX-2026-9102',
-    receiptNo: 'RCP-91024',
-    bookingRef: 'BK-00125',
-    customerName: 'John Smith',
-    type: 'Partial Payment',
-    amount: 1000,
-    currency: 'USD',
-    method: 'Credit/Debit Card',
-    status: 'Partially Paid',
-    date: '2026-08-10',
-    notes: 'Second installment card payment settled',
-  },
-  {
-    id: 'tx-3',
-    txRef: 'TX-2026-7710',
-    receiptNo: 'RCP-77102',
-    bookingRef: 'BK-00126',
-    customerName: 'Sarah Jones',
-    type: 'Deposit',
-    amount: 1200,
-    currency: 'USD',
-    method: 'Bank Transfer',
-    status: 'Paid',
-    date: '2026-07-25',
-    notes: 'CBE Wire Transfer deposit confirmed',
-  },
-  {
-    id: 'tx-4',
-    txRef: 'TX-2026-8829',
-    receiptNo: 'RCP-88291',
-    bookingRef: 'BK-00126',
-    customerName: 'Sarah Jones',
-    type: 'Full Payment',
-    amount: 2600,
-    currency: 'USD',
-    method: 'Online Payment',
-    status: 'Paid',
-    date: '2026-08-05',
-    notes: 'Final balance settlement via Chapa Online Checkout',
-  },
-  {
-    id: 'tx-5',
-    txRef: 'TX-2026-6610',
-    receiptNo: 'RCP-66109',
-    bookingRef: 'BK-00127',
-    customerName: 'David Brown',
-    type: 'Deposit',
-    amount: 500,
-    currency: 'USD',
-    method: 'Cash',
-    status: 'Partially Paid',
-    date: '2026-08-08',
-    notes: 'Cash deposit paid at HQ counter',
-  },
-  {
-    id: 'tx-6',
-    txRef: 'TX-2026-4410',
-    receiptNo: 'REF-10029',
-    bookingRef: 'BK-00129',
-    customerName: 'Marcus Vance',
-    type: 'Refund',
-    amount: 1600,
-    currency: 'USD',
-    method: 'Bank Transfer',
-    status: 'Refunded',
-    date: '2026-07-15',
-    notes: '100% full booking refund processed due to schedule cancellation',
-  },
-];
-
 const METHODS_LIST: PaymentMethod[] = ['Cash', 'Bank Transfer', 'Credit/Debit Card', 'Mobile Money', 'Online Payment'];
 const STATUSES_LIST: PaymentStatus[] = ['Pending', 'Paid', 'Partially Paid', 'Failed', 'Refunded', 'Partially Refunded'];
 
@@ -203,7 +57,7 @@ export const AdminPaymentsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [methodFilter, setMethodFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [selectedBookingRef, setSelectedBookingRef] = useState<string>('BK-00125');
+  const [selectedBookingRef, setSelectedBookingRef] = useState<string>('');
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -278,7 +132,7 @@ export const AdminPaymentsPage: React.FC = () => {
 
   // Selected Booking Ledger Calculation with Real Backend Data
   const bookingLedgers = useMemo(() => {
-    if (liveBookings.length === 0) return INITIAL_BOOKING_LEDGERS;
+    if (liveBookings.length === 0) return [];
     return liveBookings.map((b: any) => {
       const bRef = b.bookingReference || `BK-${b.id}`;
       const cName = b.traveler?.name || b.customerName || 'Customer';
@@ -297,7 +151,16 @@ export const AdminPaymentsPage: React.FC = () => {
     });
   }, [liveBookings]);
 
-  const activeBooking = bookingLedgers.find((b) => b.bookingRef === selectedBookingRef) || bookingLedgers[0] || INITIAL_BOOKING_LEDGERS[0];
+  const activeBooking = bookingLedgers.find((b) => b.bookingRef === selectedBookingRef) || bookingLedgers[0] || {
+    bookingRef: 'N/A',
+    tourTitle: 'No active reservations found',
+    customerName: 'N/A',
+    totalAmount: 0,
+    paidAmount: 0,
+    remainingBalance: 0,
+    status: 'Pending' as PaymentStatus,
+    departureDate: 'N/A',
+  };
   const totalAmount = activeBooking.totalAmount;
   
   // Calculate total paid dynamically from transaction list for this booking
@@ -443,7 +306,7 @@ export const AdminPaymentsPage: React.FC = () => {
             value={selectedBookingRef}
             onChange={(e) => {
               setSelectedBookingRef(e.target.value);
-              const b = INITIAL_BOOKING_LEDGERS.find((x) => x.bookingRef === e.target.value);
+              const b = bookingLedgers.find((x) => x.bookingRef === e.target.value);
               if (b) {
                 setBookingRef(b.bookingRef);
                 setCustomerName(b.customerName);
@@ -819,13 +682,14 @@ export const AdminPaymentsPage: React.FC = () => {
                 value={bookingRef}
                 onChange={(e) => {
                   setBookingRef(e.target.value);
-                  const b = INITIAL_BOOKING_LEDGERS.find((x) => x.bookingRef === e.target.value);
+                  const b = bookingLedgers.find((x) => x.bookingRef === e.target.value);
                   if (b) setCustomerName(b.customerName);
                 }}
                 style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-xs)' }}
                 required
               >
-                {INITIAL_BOOKING_LEDGERS.map((b) => (
+                <option value="">-- Select Booking Reference --</option>
+                {bookingLedgers.map((b) => (
                   <option key={b.bookingRef} value={b.bookingRef}>
                     {b.bookingRef} ({b.customerName})
                   </option>

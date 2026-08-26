@@ -38,6 +38,7 @@ function paymentVariant(p: PaymentStatus) {
 
 export const AdminBookingsPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [guides, setGuides] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatus, setActiveStatus] = useState<BookingStatus | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -71,8 +72,14 @@ export const AdminBookingsPage: React.FC = () => {
   const fetchBookings = async () => {
     setIsLoading(true);
     try {
-      const data = await tourismService.getBookings(activeStatus, searchQuery);
-      setBookings(data);
+      const [bookingsData, guidesData] = await Promise.all([
+        tourismService.getBookings(activeStatus, searchQuery),
+        tourismService.getGuides().catch(() => []),
+      ]);
+      setBookings(bookingsData);
+      if (Array.isArray(guidesData) && guidesData.length > 0) {
+        setGuides(guidesData.map((g: any) => g.name));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -189,7 +196,7 @@ export const AdminBookingsPage: React.FC = () => {
             }}
           >
             <option value="">-- Assign Guide --</option>
-            {AVAILABLE_GUIDES.map((g) => <option key={g} value={g}>{g}</option>)}
+            {(guides.length > 0 ? guides : AVAILABLE_GUIDES).map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         </div>
       ),
