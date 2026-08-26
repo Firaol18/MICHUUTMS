@@ -21,6 +21,12 @@ export class EventsController {
     return this.eventsService.findAll({ category, search, status });
   }
 
+  @Get(':id/availability')
+  @ApiOperation({ summary: 'Get live ticket availability and capacity for an event' })
+  getAvailability(@Param('id') id: string) {
+    return this.eventsService.getAvailability(id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get single event (public)' })
   findOne(@Param('id') id: string) {

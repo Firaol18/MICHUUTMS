@@ -181,6 +181,12 @@ export const EventDetailsPage: React.FC = () => {
   const totalPrice = basePrice * ticketQuantity;
   const activePaymentOption = PAYMENT_METHODS.find((p) => p.id === paymentMethod) || PAYMENT_METHODS[0];
 
+  const totalCapacity = event.capacity ?? 50;
+  const availablePasses = event.availableSlots !== undefined ? event.availableSlots : totalCapacity;
+  const isEventSoldOut = availablePasses <= 0 || event.status === 'completed';
+  const spotsRemaining = availablePasses - ticketQuantity;
+  const isOverCapacity = ticketQuantity > availablePasses || availablePasses === 0;
+
   const handleShare = () => {
     navigator.clipboard?.writeText(window.location.href);
     setCopiedLink(true);
@@ -599,6 +605,19 @@ export const EventDetailsPage: React.FC = () => {
                 <span style={{ fontWeight: 700, textTransform: 'capitalize' }}>{event.category}</span>
               </div>
               <div className="flex-between">
+                <span style={{ color: 'var(--text-muted)' }}>Ticket Capacity:</span>
+                <span style={{ fontWeight: 700 }}>{totalCapacity} Passes</span>
+              </div>
+              <div className="flex-between">
+                <span style={{ color: 'var(--text-muted)' }}>Availability:</span>
+                <span style={{
+                  fontWeight: 800,
+                  color: isEventSoldOut ? '#dc2626' : availablePasses <= 5 ? '#ea580c' : '#16a34a',
+                }}>
+                  {isEventSoldOut ? 'Sold Out (0 Left)' : `${availablePasses} / ${totalCapacity} Left`}
+                </span>
+              </div>
+              <div className="flex-between">
                 <span style={{ color: 'var(--text-muted)' }}>Guide Escort:</span>
                 <span style={{ fontWeight: 700, color: '#10b981' }}>Included</span>
               </div>
@@ -616,6 +635,7 @@ export const EventDetailsPage: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
+                  disabled={ticketQuantity <= 1 || isEventSoldOut}
                   style={{ width: 36, height: 36, padding: 0 }}
                 >
                   -
@@ -626,7 +646,8 @@ export const EventDetailsPage: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setTicketQuantity(ticketQuantity + 1)}
+                  onClick={() => setTicketQuantity(Math.min(availablePasses, ticketQuantity + 1))}
+                  disabled={ticketQuantity >= availablePasses || isEventSoldOut}
                   style={{ width: 36, height: 36, padding: 0 }}
                 >
                   +
@@ -654,9 +675,17 @@ export const EventDetailsPage: React.FC = () => {
                 size="lg"
                 icon={<Ticket size={18} />}
                 onClick={handleBookNow}
-                style={{ backgroundColor: '#f59e0b', color: '#000000', fontWeight: 800, width: '100%' }}
+                disabled={isEventSoldOut}
+                style={{
+                  backgroundColor: isEventSoldOut ? 'var(--status-danger)' : '#f59e0b',
+                  color: isEventSoldOut ? '#ffffff' : '#000000',
+                  fontWeight: 800,
+                  width: '100%',
+                  opacity: isEventSoldOut ? 0.6 : 1,
+                  cursor: isEventSoldOut ? 'not-allowed' : 'pointer',
+                }}
               >
-                {event.isFree ? 'Reserve Free Entry Spot' : 'Book Festival Pass Now'}
+                {isEventSoldOut ? 'Sold Out' : event.isFree ? 'Reserve Free Entry Spot' : 'Book Festival Pass Now'}
               </Button>
 
               {!event.isFree && (
@@ -863,6 +892,31 @@ export const EventDetailsPage: React.FC = () => {
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-xs)' }}>
               <strong>Event:</strong> {event.title} ({event.location})<br />
               <strong>Date:</strong> {event.date} {event.ethiopianDate ? `• 🇪🇹 ${event.ethiopianDate}` : ''}
+            </div>
+
+            {/* Live Capacity Info Bar */}
+            <div
+              style={{
+                padding: '0.625rem 0.875rem',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: isOverCapacity ? 'rgba(220, 38, 38, 0.08)' : 'rgba(22, 163, 74, 0.08)',
+                border: `1px solid ${isOverCapacity ? 'rgba(220, 38, 38, 0.3)' : 'rgba(22, 163, 74, 0.3)'}`,
+                fontSize: 'var(--font-size-xs)',
+                fontWeight: 700,
+                color: isOverCapacity ? '#dc2626' : '#16a34a',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>Capacity: {availablePasses} / {totalCapacity} passes available</span>
+              <span>
+                {isOverCapacity
+                  ? availablePasses === 0
+                    ? '⚠ Event is completely sold out'
+                    : `⚠ Only ${availablePasses} pass${availablePasses !== 1 ? 'es' : ''} left`
+                  : `✓ ${spotsRemaining} pass${spotsRemaining !== 1 ? 'es' : ''} remaining after your party`}
+              </span>
             </div>
 
             <Input

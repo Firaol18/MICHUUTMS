@@ -55,6 +55,7 @@ export const AdminEventsPage: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [tipForVisitors, setTipForVisitors] = useState('');
+  const [capacity, setCapacity] = useState<string>('50');
   // Offer/Price fields
   const [price, setPrice] = useState<string>('');
   const [hasOffer, setHasOffer] = useState(false);
@@ -74,6 +75,7 @@ export const AdminEventsPage: React.FC = () => {
     setImageUrl('https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800');
     setIsFeatured(false);
     setTipForVisitors('');
+    setCapacity('50');
     setPrice('');
     setHasOffer(false);
     setOfferTag('');
@@ -94,6 +96,7 @@ export const AdminEventsPage: React.FC = () => {
     setImageUrl(evt.imageUrl);
     setIsFeatured(evt.isFeatured);
     setTipForVisitors(evt.tipForVisitors || '');
+    setCapacity(evt.capacity !== undefined ? String(evt.capacity) : '50');
     setPrice(evt.price !== undefined ? String(evt.price) : '');
     setHasOffer(evt.hasOffer ?? false);
     setOfferTag(evt.offerTag ?? '');
@@ -106,23 +109,30 @@ export const AdminEventsPage: React.FC = () => {
     e.preventDefault();
     if (!title || !date || !location || !description) return;
 
+    const numPrice = price.trim() !== '' ? Number(price) : 0;
+    const numDiscount = discountPercent.trim() !== '' ? Number(discountPercent) : undefined;
+    const numOrigPrice = originalPrice.trim() !== '' ? Number(originalPrice) : undefined;
+    const numCapacity = capacity.trim() !== '' ? Number(capacity) : 50;
+
     if (editingEvent) {
       updateEvent(editingEvent.id, {
         title,
         date,
         endDate: endDate || undefined,
         location,
-        region,
+        region: region || 'Oromia',
         category,
         description,
         imageUrl: imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
         isFeatured,
         tipForVisitors: tipForVisitors || undefined,
-        price: price !== '' ? Number(price) : 0,
+        price: numPrice,
+        isFree: numPrice === 0,
         hasOffer,
         offerTag: hasOffer && offerTag ? offerTag : undefined,
-        discountPercent: hasOffer && discountPercent !== '' ? Number(discountPercent) : undefined,
-        originalPrice: hasOffer && originalPrice !== '' ? Number(originalPrice) : undefined,
+        discountPercent: hasOffer ? numDiscount : undefined,
+        originalPrice: hasOffer ? numOrigPrice : undefined,
+        capacity: numCapacity,
       });
     } else {
       addEvent({
@@ -130,17 +140,19 @@ export const AdminEventsPage: React.FC = () => {
         date,
         endDate: endDate || undefined,
         location,
-        region,
+        region: region || 'Oromia',
         category,
         description,
         imageUrl: imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
         isFeatured,
         tipForVisitors: tipForVisitors || undefined,
-        price: price !== '' ? Number(price) : 0,
+        price: numPrice,
+        isFree: numPrice === 0,
         hasOffer,
         offerTag: hasOffer && offerTag ? offerTag : undefined,
-        discountPercent: hasOffer && discountPercent !== '' ? Number(discountPercent) : undefined,
-        originalPrice: hasOffer && originalPrice !== '' ? Number(originalPrice) : undefined,
+        discountPercent: hasOffer ? numDiscount : undefined,
+        originalPrice: hasOffer ? numOrigPrice : undefined,
+        capacity: numCapacity,
       });
     }
     setIsModalOpen(false);
@@ -217,6 +229,41 @@ export const AdminEventsPage: React.FC = () => {
           {row.category}
         </span>
       ),
+    },
+    {
+      header: 'Capacity & Passes',
+      minWidth: '150px',
+      noWrap: true,
+      cell: (row) => {
+        const totalCap = row.capacity ?? 50;
+        const booked = row.bookedSeats ?? 0;
+        const available = row.availableSlots ?? Math.max(0, totalCap - booked);
+        const isSoldOut = available <= 0;
+        const pct = Math.min(100, Math.round((booked / (totalCap || 1)) * 100));
+        return (
+          <div style={{ minWidth: 120 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', fontWeight: 700 }}>
+              <span style={{ color: isSoldOut ? '#dc2626' : available <= 5 ? '#ea580c' : '#16a34a' }}>
+                {isSoldOut ? 'Sold Out' : `${available} Available`}
+              </span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '10.5px', fontWeight: 500 }}>
+                {booked}/{totalCap}
+              </span>
+            </div>
+            <div style={{ width: '100%', height: 4, backgroundColor: 'var(--bg-tertiary)', borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${pct}%`,
+                  height: '100%',
+                  backgroundColor: isSoldOut ? '#dc2626' : available <= 5 ? '#ea580c' : '#2563eb',
+                  borderRadius: 2,
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
+          </div>
+        );
+      },
     },
     {
       header: 'Featured',
@@ -372,6 +419,26 @@ export const AdminEventsPage: React.FC = () => {
               value={region}
               onChange={(e) => setRegion(e.target.value)}
               required
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <Input
+              label="Ticket / Pass Capacity *"
+              type="number"
+              min={1}
+              placeholder="e.g. 50"
+              value={capacity}
+              onChange={(e) => setCapacity(e.target.value)}
+              required
+            />
+            <Input
+              label="Pass Price in USD ($0 for Free)"
+              type="number"
+              min={0}
+              placeholder="0"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
             />
           </div>
 

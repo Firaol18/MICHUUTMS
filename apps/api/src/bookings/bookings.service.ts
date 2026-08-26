@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking } from './entities/booking.entity';
+import { Event } from '../events/entities/event.entity';
 import { CreateBookingDto, CancelBookingDto } from './dto/booking.dto';
 import { ToursService } from '../tours/tours.service';
 
@@ -11,6 +12,7 @@ export class BookingsService {
 
   constructor(
     @InjectRepository(Booking) private repo: Repository<Booking>,
+    @InjectRepository(Event) private eventsRepo: Repository<Event>,
     private readonly toursService: ToursService,
   ) { }
 
@@ -30,26 +32,31 @@ export class BookingsService {
     }
 
     let tour: any = null;
+    let event: any = null;
 
-    // Only look up tour if a UUID-looking tourId is provided
+    // Look up tour or event if a UUID-looking tourId is provided
     if (dto.tourId) {
-      const tourId = String(dto.tourId).trim();
-      // UUID format check (basic)
+      const targetId = String(dto.tourId).trim();
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (uuidRegex.test(tourId)) {
+      if (uuidRegex.test(targetId)) {
         try {
-          tour = await this.toursService.findOne(tourId);
+          tour = await this.toursService.findOne(targetId);
         } catch {
-          this.logger.warn(`Tour with id ${tourId} not found in DB — proceeding without tour reference`);
+          // If not a tour, check if it's an event
+          try {
+            event = await this.eventsRepo.findOneBy({ id: targetId });
+          } catch {
+            this.logger.warn(`Item with id ${targetId} not found in Tours or Events`);
+          }
         }
       } else {
-        this.logger.warn(`tourId "${tourId}" is not a UUID, skipping tour lookup`);
+        this.logger.warn(`tourId "${targetId}" is not a UUID, skipping entity lookup`);
       }
     }
 
     const numberOfTravelers = Number(dto.numberOfTravelers) || 1;
 
-    // Strict slot availability check against real-time booked seats
+    // Strict slot availability check for Tours
     if (tour && tour.maxGroupSize) {
       const existingBookings = await this.repo.find({
         where: { tourId: tour.id },
@@ -76,9 +83,36 @@ export class BookingsService {
       }
     }
 
-    const pricePerPerson = tour?.pricePerPerson ?? (dto.totalPrice ? dto.totalPrice / numberOfTravelers : 1500);
-    const tourTitle = dto.tourTitle || tour?.title || 'Ethiopian Tour Expedition';
-    const destinationName = dto.destinationName || tour?.destinationName || 'Ethiopia';
+    // Strict slot availability check for Events
+    if (event && event.capacity) {
+      const existingBookings = await this.repo.find({
+        where: { tourId: event.id },
+      });
+
+      const activeBookings = existingBookings.filter((b) => b.status !== 'cancelled');
+      const bookedSeats = activeBookings.reduce(
+        (sum, b) => sum + (Number(b.numberOfTravelers) || 1),
+        0,
+      );
+
+      const availableSlots = Math.max(0, Number(event.capacity) - bookedSeats);
+
+      if (availableSlots <= 0) {
+        throw new BadRequestException(
+          `Sorry, tickets for event "${event.title}" are completely sold out (${event.capacity}/${event.capacity} passes reserved).`,
+        );
+      }
+
+      if (numberOfTravelers > availableSlots) {
+        throw new BadRequestException(
+          `Only ${availableSlots} pass${availableSlots > 1 ? 'es are' : ' is'} available for "${event.title}" (${bookedSeats} of ${event.capacity} reserved). You requested ${numberOfTravelers}.`,
+        );
+      }
+    }
+
+    const pricePerPerson = tour?.pricePerPerson ?? event?.price ?? (dto.totalPrice ? dto.totalPrice / numberOfTravelers : 1500);
+    const tourTitle = dto.tourTitle || tour?.title || event?.title || 'Ethiopian Expedition';
+    const destinationName = dto.destinationName || tour?.destinationName || event?.location || 'Ethiopia';
     const adults = dto.numberOfAdults ?? numberOfTravelers;
     const children = dto.numberOfChildren ?? 0;
     const totalPrice = dto.totalPrice ?? (pricePerPerson * numberOfTravelers);

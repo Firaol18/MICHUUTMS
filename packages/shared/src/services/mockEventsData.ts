@@ -26,6 +26,10 @@ export interface EthiopianEvent {
   offerTag?: string;
   discountPercent?: number;
   originalPrice?: number;
+  // Slot & ticket capacity
+  capacity?: number;
+  bookedSeats?: number;
+  availableSlots?: number;
 }
 
 export interface BlogArticle {

@@ -2,15 +2,15 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Card } from '@/components/common/Card';
-import { Badge } from '@/components/common/Badge';
-import { Button } from '@/components/common/Button';
-import { Modal } from '@/components/common/Modal';
-import { Input } from '@/components/common/Input';
-import { useContentStore } from '@/store/useContentStore';
-import { useCartStore } from '@/store/useCartStore';
-import { useAuthStore } from '@/store/useAuthStore';
-import { ETHIOPIAN_REGIONS, type EthiopianEvent } from '@/services/mockEventsData';
+import { Card } from '@tms/shared/components/common/Card';
+import { Badge } from '@tms/shared/components/common/Badge';
+import { Button } from '@tms/shared/components/common/Button';
+import { Modal } from '@tms/shared/components/common/Modal';
+import { Input } from '@tms/shared/components/common/Input';
+import { useContentStore } from '@tms/shared/store/useContentStore';
+import { useCartStore } from '@tms/shared/store/useCartStore';
+import { useAuthStore } from '@tms/shared/store/useAuthStore';
+import { ETHIOPIAN_REGIONS, type EthiopianEvent } from '@tms/shared/services/mockEventsData';
 import {
   CalendarDays,
   MapPin,
@@ -63,15 +63,6 @@ const MONTH_NAMES = [
 ];
 
 type ViewMode = 'cards' | 'timeline' | 'map';
-
-interface EventPackageOption {
-  id: 'vip' | 'standard' | 'community';
-  title: string;
-  pricePerPerson: number;
-  badge: string;
-  description: string;
-  features: string[];
-}
 
 export interface EventPackageOption {
   id: 'vip' | 'standard' | 'community';
@@ -376,9 +367,9 @@ export const EventsCalendarPage: React.FC = () => {
   // Open Booking Modal for an Event
   const handleOpenBooking = (evt: EthiopianEvent) => {
     setBookingEvent(evt);
-    setTravelerName(user?.fullName || '');
+    setTravelerName((user as any)?.name || (user as any)?.fullName || '');
     setTravelerEmail(user?.email || '');
-    setTravelerPhone(user?.phone || '');
+    setTravelerPhone((user as any)?.phone || '');
     setTravelersCount(2);
     setSelectedPackageId('standard');
     setBookingSuccessMsg(null);
@@ -799,7 +790,7 @@ export const EventsCalendarPage: React.FC = () => {
               }}
             >
               <div style={{ height: 200, backgroundImage: `url(${evt.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', display: 'flex', gap: '0.4rem' }}>
+                <div style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '10px', fontWeight: 800, color: '#ffffff', backgroundColor: CATEGORY_COLORS[evt.category], padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', textTransform: 'uppercase' }}>
                     {CATEGORY_LABELS[evt.category]}
                   </span>
@@ -808,6 +799,15 @@ export const EventsCalendarPage: React.FC = () => {
                       ⭐ FEATURED
                     </span>
                   )}
+                  {evt.availableSlots !== undefined && evt.availableSlots <= 0 ? (
+                    <span style={{ fontSize: '10px', fontWeight: 800, color: '#ffffff', backgroundColor: '#dc2626', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)' }}>
+                      SOLD OUT
+                    </span>
+                  ) : evt.availableSlots !== undefined && evt.availableSlots <= 5 ? (
+                    <span style={{ fontSize: '10px', fontWeight: 800, color: '#ffffff', backgroundColor: '#ea580c', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)' }}>
+                      🔥 {evt.availableSlots} LEFT
+                    </span>
+                  ) : null}
                 </div>
 
                 {evt.ethiopianDate && (
@@ -844,11 +844,19 @@ export const EventsCalendarPage: React.FC = () => {
                     size="sm"
                     icon={<Ticket size={14} />}
                     onClick={() => handleOpenBooking(evt)}
-                    style={{ backgroundColor: '#f59e0b', color: '#000000', fontWeight: 800 }}
+                    disabled={evt.availableSlots !== undefined && evt.availableSlots <= 0}
+                    style={{
+                      backgroundColor: evt.availableSlots !== undefined && evt.availableSlots <= 0 ? 'var(--status-danger)' : '#f59e0b',
+                      color: evt.availableSlots !== undefined && evt.availableSlots <= 0 ? '#ffffff' : '#000000',
+                      fontWeight: 800,
+                      opacity: evt.availableSlots !== undefined && evt.availableSlots <= 0 ? 0.6 : 1,
+                    }}
                   >
-                    {evt.category === 'sport'
-                      ? `Register ($${getEventBasePrice(evt)})`
-                      : `Book Pass ($${getEventBasePrice(evt)})`}
+                    {evt.availableSlots !== undefined && evt.availableSlots <= 0
+                      ? 'Sold Out'
+                      : evt.category === 'sport'
+                        ? `Register ($${getEventBasePrice(evt)})`
+                        : `Book Pass ($${getEventBasePrice(evt)})`}
                   </Button>
 
                   <Button variant="ghost" size="sm" onClick={() => setActiveModalEvent(evt)}>

@@ -141,6 +141,9 @@ export const useContentStore = create<ContentStoreState>()(
                 offerTag: e.offerTag ?? undefined,
                 discountPercent: e.discountPercent ?? undefined,
                 originalPrice: e.originalPrice ?? undefined,
+                capacity: e.capacity !== undefined ? Number(e.capacity) : 50,
+                bookedSeats: e.bookedSeats !== undefined ? Number(e.bookedSeats) : 0,
+                availableSlots: e.availableSlots !== undefined ? Number(e.availableSlots) : (e.capacity ?? 50),
                 tipForVisitors: e.tipForVisitors,
                 dressCode: e.dressCode,
               };
@@ -173,6 +176,7 @@ export const useContentStore = create<ContentStoreState>()(
             offerTag: eventData.offerTag,
             discountPercent: eventData.discountPercent,
             originalPrice: eventData.originalPrice,
+            capacity: eventData.capacity ? Number(eventData.capacity) : 50,
           });
           if (res.data) {
             const locMatch = typeof res.data.location === 'string' ? res.data.location.match(/\(([^)]+)\)$/) : null;
@@ -188,6 +192,9 @@ export const useContentStore = create<ContentStoreState>()(
               offerTag: res.data.offerTag ?? eventData.offerTag,
               discountPercent: res.data.discountPercent ?? eventData.discountPercent,
               originalPrice: res.data.originalPrice ?? eventData.originalPrice,
+              capacity: res.data.capacity ?? eventData.capacity ?? 50,
+              bookedSeats: res.data.bookedSeats ?? 0,
+              availableSlots: res.data.availableSlots ?? eventData.capacity ?? 50,
             };
             set((state) => ({ events: [newEvent, ...state.events] }));
             return newEvent;
@@ -200,6 +207,9 @@ export const useContentStore = create<ContentStoreState>()(
         const newEvent: EthiopianEvent = {
           ...eventData,
           id: `evt-${Date.now()}`,
+          capacity: eventData.capacity ?? 50,
+          bookedSeats: 0,
+          availableSlots: eventData.capacity ?? 50,
         };
         set((state) => ({ events: [newEvent, ...state.events] }));
         return newEvent;
@@ -222,6 +232,7 @@ export const useContentStore = create<ContentStoreState>()(
             ...(updates.offerTag !== undefined && { offerTag: updates.offerTag }),
             ...(updates.discountPercent !== undefined && { discountPercent: updates.discountPercent }),
             ...(updates.originalPrice !== undefined && { originalPrice: updates.originalPrice }),
+            ...(updates.capacity !== undefined && { capacity: updates.capacity }),
           });
         } catch (error) {
           console.error('Failed to update event on backend:', error);

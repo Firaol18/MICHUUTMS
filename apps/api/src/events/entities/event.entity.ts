@@ -21,6 +21,10 @@ export class Event {
   @ApiProperty() @Column({ type: 'varchar', length: 100, nullable: true }) offerTag: string | null;
   @ApiProperty() @Column({ type: 'float', nullable: true }) discountPercent: number | null;
   @ApiProperty() @Column({ type: 'float', nullable: true }) originalPrice: number | null;
+  @ApiProperty({ default: 50, required: false }) @Column({ type: 'int', default: 50 }) capacity: number;
+  @ApiProperty({ required: false }) bookedSeats?: number;
+  @ApiProperty({ required: false }) availableSlots?: number;
+
   @ApiProperty() @CreateDateColumn() createdAt: Date;
   @ApiProperty() @UpdateDateColumn() updatedAt: Date;
 }

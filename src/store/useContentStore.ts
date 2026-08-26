@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { http } from '@/services/apiClient';
-import { BLOG_ARTICLES, type EthiopianEvent, type BlogArticle } from '@/services/mockEventsData';
+import { http } from '@tms/shared/services/apiClient';
+import { BLOG_ARTICLES, type EthiopianEvent, type BlogArticle } from '@tms/shared/services/mockEventsData';
 
 export interface CustomDestinationOption {
   id: string;
@@ -113,50 +113,49 @@ export const useContentStore = create<ContentStoreState>()(
           const res = await http.get('/events');
           if (Array.isArray(res.data)) {
             const mapped: EthiopianEvent[] = res.data.map((e: any) => {
+              // Extract region from location or tags if available
               const locMatch = typeof e.location === 'string' ? e.location.match(/\(([^)]+)\)$/) : null;
               const regionFromLoc = locMatch ? locMatch[1] : undefined;
               const region = e.region || regionFromLoc || (Array.isArray(e.tags) && e.tags[0]) || 'Oromia';
 
-              const parseEventDate = (val: any) => {
-                if (!val) return '2026-09-01';
-                if (typeof val === 'string' && val.includes('T')) return val.split('T')[0];
-                return String(val);
-              };
-
-              const catMap: Record<string, EthiopianEvent['category']> = {
-                RELIGIOUS: 'religious',
-                CULTURAL: 'cultural',
-                NATURE: 'nature',
-                MUSIC: 'music',
-                FOOD: 'food',
-                SPORT: 'sport',
-              };
-              const rawCat = (e.category || '').toUpperCase();
-              const category = catMap[rawCat] || (rawCat.toLowerCase() as EthiopianEvent['category']) || 'cultural';
+              const ethiopianDate = e.ethiopianDate || (Array.isArray(e.tags) ? e.tags.find((t: string) => t.includes('(') || t.includes('፲') || t.includes('፩') || t.includes('፳') || t.includes('፮')) : undefined);
 
               return {
                 id: String(e.id),
                 title: e.title,
-                date: parseEventDate(e.startDate || e.date),
-                endDate: e.endDate ? parseEventDate(e.endDate) : undefined,
-                location: e.location || 'Ethiopia',
+                date: typeof e.eventDate === 'string' ? e.eventDate.split('T')[0] : (e.date || '2026-10-01'),
+                endDate: e.endDate ? (typeof e.endDate === 'string' ? e.endDate.split('T')[0] : e.endDate) : undefined,
+                ethiopianDate,
+                location: e.location,
                 region,
-                category,
-                description: e.description || '',
+                category: e.category || 'cultural',
+                description: e.description,
                 imageUrl: e.imageUrl || 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800',
-                isFeatured: Boolean(e.isActive ?? true),
-                tipForVisitors: e.tags ? `Cultural highlight: ${e.tags.join(', ')}` : undefined,
-                price: e.price ? Number(e.price) : undefined,
-                hasOffer: Boolean(e.discountPercent && Number(e.discountPercent) > 0),
-                discountPercent: e.discountPercent ? Number(e.discountPercent) : undefined,
-                originalPrice: e.originalPrice ? Number(e.originalPrice) : undefined,
-                offerTag: e.offerTag || undefined,
+                // status is auto-computed by backend from real dates
+                status: e.status as 'upcoming' | 'ongoing' | 'completed',
+                // isFeatured = isActive AND not already completed
+                isFeatured: Boolean(e.isActive) && e.status !== 'completed',
+                price: typeof e.price === 'number' ? e.price : 0,
+                isFree: Boolean(e.isFree),
+                hasOffer: Boolean(e.hasOffer),
+                offerTag: e.offerTag ?? undefined,
+                discountPercent: e.discountPercent ?? undefined,
+                originalPrice: e.originalPrice ?? undefined,
+                capacity: e.capacity !== undefined ? Number(e.capacity) : 50,
+                bookedSeats: e.bookedSeats !== undefined ? Number(e.bookedSeats) : 0,
+                availableSlots: e.availableSlots !== undefined ? Number(e.availableSlots) : (e.capacity ?? 50),
+                tipForVisitors: e.tipForVisitors,
+                dressCode: e.dressCode,
               };
             });
+
             set({ events: mapped });
+          } else {
+            set({ events: [] });
           }
         } catch (error) {
-          console.error('Failed to fetch events from backend:', error);
+          console.error('Failed to fetch events from backend API:', error);
+          set({ events: [] });
         }
       },
 
@@ -165,34 +164,52 @@ export const useContentStore = create<ContentStoreState>()(
           const res = await http.post('/events', {
             title: eventData.title,
             description: eventData.description,
-            location: `${eventData.location} (${eventData.region})`,
-            startDate: eventData.date,
-            endDate: eventData.endDate || eventData.date,
-            category: eventData.category.toUpperCase(),
+            eventDate: eventData.date,
+            endDate: eventData.endDate,
+            location: eventData.location,
+            category: eventData.category,
             imageUrl: eventData.imageUrl,
-            tags: [eventData.region, eventData.category],
-            price: eventData.price ? Number(eventData.price) : 0,
-            discountPercent: eventData.discountPercent ? Number(eventData.discountPercent) : undefined,
-            originalPrice: eventData.originalPrice ? Number(eventData.originalPrice) : undefined,
-            offerTag: eventData.offerTag || undefined,
-            isActive: eventData.isFeatured,
+            isActive: eventData.isFeatured !== false,
+            price: eventData.price ?? 0,
+            isFree: eventData.isFree ?? (!eventData.price || eventData.price === 0),
+            hasOffer: eventData.hasOffer ?? false,
+            offerTag: eventData.offerTag,
+            discountPercent: eventData.discountPercent,
+            originalPrice: eventData.originalPrice,
+            capacity: eventData.capacity ? Number(eventData.capacity) : 50,
           });
-
           if (res.data) {
+            const locMatch = typeof res.data.location === 'string' ? res.data.location.match(/\(([^)]+)\)$/) : null;
+            const regionFromLoc = locMatch ? locMatch[1] : undefined;
+            const region = res.data.region || regionFromLoc || (Array.isArray(res.data.tags) && res.data.tags[0]) || eventData.region || 'Oromia';
             const newEvent: EthiopianEvent = {
               ...eventData,
               id: String(res.data.id),
+              region,
+              price: typeof res.data.price === 'number' ? res.data.price : (eventData.price ?? 0),
+              isFree: res.data.isFree ?? eventData.isFree ?? false,
+              hasOffer: res.data.hasOffer ?? eventData.hasOffer ?? false,
+              offerTag: res.data.offerTag ?? eventData.offerTag,
+              discountPercent: res.data.discountPercent ?? eventData.discountPercent,
+              originalPrice: res.data.originalPrice ?? eventData.originalPrice,
+              capacity: res.data.capacity ?? eventData.capacity ?? 50,
+              bookedSeats: res.data.bookedSeats ?? 0,
+              availableSlots: res.data.availableSlots ?? eventData.capacity ?? 50,
             };
             set((state) => ({ events: [newEvent, ...state.events] }));
             return newEvent;
           }
         } catch (error) {
-          console.error('Failed to create event on backend:', error);
+          console.error('Failed to add event on backend:', error);
+          throw error;
         }
 
         const newEvent: EthiopianEvent = {
           ...eventData,
           id: `evt-${Date.now()}`,
+          capacity: eventData.capacity ?? 50,
+          bookedSeats: 0,
+          availableSlots: eventData.capacity ?? 50,
         };
         set((state) => ({ events: [newEvent, ...state.events] }));
         return newEvent;
@@ -203,21 +220,23 @@ export const useContentStore = create<ContentStoreState>()(
           await http.patch(`/events/${id}`, {
             ...(updates.title && { title: updates.title }),
             ...(updates.description && { description: updates.description }),
-            ...(updates.location && { location: `${updates.location} (${updates.region || ''})` }),
-            ...(updates.date && { startDate: updates.date }),
-            ...(updates.endDate && { endDate: updates.endDate }),
-            ...(updates.category && { category: updates.category.toUpperCase() }),
+            ...(updates.date && { eventDate: updates.date }),
+            ...(updates.endDate !== undefined && { endDate: updates.endDate }),
+            ...(updates.location && { location: updates.location }),
+            ...(updates.category && { category: updates.category }),
             ...(updates.imageUrl && { imageUrl: updates.imageUrl }),
-            ...(updates.price !== undefined && { price: Number(updates.price) }),
-            ...(updates.discountPercent !== undefined && { discountPercent: Number(updates.discountPercent) }),
-            ...(updates.originalPrice !== undefined && { originalPrice: Number(updates.originalPrice) }),
-            ...(updates.offerTag !== undefined && { offerTag: updates.offerTag }),
             ...(updates.isFeatured !== undefined && { isActive: updates.isFeatured }),
+            ...(updates.price !== undefined && { price: updates.price }),
+            ...(updates.isFree !== undefined && { isFree: updates.isFree }),
+            ...(updates.hasOffer !== undefined && { hasOffer: updates.hasOffer }),
+            ...(updates.offerTag !== undefined && { offerTag: updates.offerTag }),
+            ...(updates.discountPercent !== undefined && { discountPercent: updates.discountPercent }),
+            ...(updates.originalPrice !== undefined && { originalPrice: updates.originalPrice }),
+            ...(updates.capacity !== undefined && { capacity: updates.capacity }),
           });
         } catch (error) {
           console.error('Failed to update event on backend:', error);
         }
-
         set((state) => ({
           events: state.events.map((e) => (e.id === id ? { ...e, ...updates } : e)),
         }));
@@ -235,9 +254,9 @@ export const useContentStore = create<ContentStoreState>()(
       },
 
       toggleFeaturedEvent: async (id) => {
-        const event = get().events.find((e) => e.id === id);
-        if (!event) return;
-        const newFeatured = !event.isFeatured;
+        const current = get().events.find((e) => e.id === id);
+        if (!current) return;
+        const newFeatured = !current.isFeatured;
         set((state) => ({
           events: state.events.map((e) => (e.id === id ? { ...e, isFeatured: newFeatured } : e)),
         }));
