@@ -28,6 +28,15 @@ import {
   LogOut,
   Send,
   ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  UserCheck,
+  Car,
+  Building,
+  CreditCard,
+  Receipt,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
 
 export const UserDashboardPage: React.FC = () => {
@@ -51,11 +60,34 @@ export const UserDashboardPage: React.FC = () => {
   const [dietaryPref, setDietaryPref] = useState('Standard / Local Cuisine');
   const [profileSaveMessage, setProfileSaveMessage] = useState(false);
 
-  // Review Form State
   const [reviewTourId, setReviewTourId] = useState('tour-101');
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewDisplayCount, setReviewDisplayCount] = useState(3);
+  const [expandedReviewIds, setExpandedReviewIds] = useState<Set<string>>(new Set());
+
+  // Invoice Pagination & Expander state
+  const [invoiceDisplayCount, setInvoiceDisplayCount] = useState(3);
+  const [expandedInvoiceIds, setExpandedInvoiceIds] = useState<Set<string>>(new Set());
+
+  const toggleInvoiceExpand = (id: string) => {
+    setExpandedInvoiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleReviewExpand = (id: string) => {
+    setExpandedReviewIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Guard: redirect unauthenticated visitors to login (after all hooks)
   useEffect(() => {
@@ -382,35 +414,201 @@ export const UserDashboardPage: React.FC = () => {
 
       {/* ─── TAB 2: INVOICES & RECEIPTS ─── */}
       {activeTab === 'invoices' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {bookings.map((bkg) => (
-            <Card key={bkg.id} glass style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  Official Tax Invoice #{bkg.bookingReference}-INV
-                </div>
-                <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
-                  {bkg.tourTitle}
-                </div>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                  Date Issued: {bkg.travelDate} • Status: <strong style={{ color: '#16a34a' }}>PAID FULL</strong>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Amount</div>
-                  <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, color: 'var(--brand-primary)' }}>
-                    ${bkg.totalPrice.toLocaleString()} USD
-                  </div>
-                </div>
-
-                <Button variant="outline" size="sm" icon={<Download size={14} />} onClick={() => setSelectedETicket(bkg)}>
-                  Download Tax PDF
-                </Button>
-              </div>
+        <div>
+          {bookings.length === 0 ? (
+            <Card glass style={{ textAlign: 'center', padding: '3.5rem 2rem' }}>
+              <Receipt size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem auto' }} />
+              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, margin: '0 0 0.5rem 0' }}>No Invoices Generated Yet</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', margin: 0 }}>
+                Invoices and official receipts will appear here once you make an expedition booking.
+              </p>
             </Card>
-          ))}
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {bookings.slice(0, invoiceDisplayCount).map((bkg) => {
+                const isExpanded = expandedInvoiceIds.has(bkg.id);
+                const isPaid = (bkg.paymentStatus || '').toLowerCase() === 'paid';
+
+                return (
+                  <Card
+                    key={bkg.id}
+                    glass
+                    style={{
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      border: isExpanded ? '1px solid rgba(37, 99, 235, 0.4)' : '1px solid var(--border-color)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {/* Top Bar */}
+                    <div
+                      className="flex-between"
+                      style={{
+                        flexWrap: 'wrap',
+                        gap: '1rem',
+                        borderBottom: '1px solid var(--border-color)',
+                        paddingBottom: '0.875rem',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', fontWeight: 700, letterSpacing: '0.04em' }}>
+                          TAX INVOICE #{bkg.bookingReference}-INV
+                        </div>
+                        <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.15rem' }}>
+                          {bkg.tourTitle}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Amount Payable</div>
+                          <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, color: isPaid ? '#16a34a' : 'var(--brand-primary)' }}>
+                            ${bkg.totalPrice.toLocaleString()} USD
+                          </div>
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          icon={<Download size={14} />}
+                          onClick={() => setSelectedETicket(bkg)}
+                        >
+                          PDF Receipt
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Summary Row */}
+                    <div
+                      className="flex-between"
+                      style={{
+                        fontSize: 'var(--font-size-xs)',
+                        color: 'var(--text-muted)',
+                        flexWrap: 'wrap',
+                        gap: '0.75rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span>Date Issued: <strong>{bkg.travelDate}</strong></span>
+                        <span>
+                          Status:{' '}
+                          <strong style={{ color: isPaid ? '#16a34a' : '#ea580c' }}>
+                            {isPaid ? 'PAID FULL' : 'UNPAID (DUE ON ARRIVAL)'}
+                          </strong>
+                        </span>
+                        <span>Method: <strong>{bkg.paymentMethod ? bkg.paymentMethod.toUpperCase() : 'TELEBIRR'}</strong></span>
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        onClick={() => toggleInvoiceExpand(bkg.id)}
+                        style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, padding: '0.25rem 0.5rem' }}
+                      >
+                        {isExpanded ? 'See Less' : 'See More'}
+                      </Button>
+                    </div>
+
+                    {/* Expanded Full Accounting Breakdown */}
+                    {isExpanded && (
+                      <div
+                        style={{
+                          padding: '1.25rem',
+                          backgroundColor: 'rgba(37, 99, 235, 0.03)',
+                          borderRadius: 'var(--radius-md)',
+                          border: '1px dashed rgba(37, 99, 235, 0.25)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '1rem',
+                          fontSize: 'var(--font-size-xs)',
+                          animation: 'fadeIn 0.2s ease-in-out',
+                        }}
+                      >
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                          {/* Column 1: Financial */}
+                          <div>
+                            <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.4rem' }}>
+                              <CreditCard size={14} style={{ color: 'var(--brand-primary)' }} /> Itemized Accounting
+                            </span>
+                            <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                              <div>Booking Reference: <strong style={{ fontFamily: 'monospace' }}>{bkg.bookingReference}</strong></div>
+                              {bkg.transactionReference && (
+                                <div>Tx ID / CBE Ref: <strong style={{ fontFamily: 'monospace' }}>{bkg.transactionReference}</strong></div>
+                              )}
+                              <div>Base Rate: <strong>${Math.round(bkg.totalPrice / (bkg.numberOfTravelers || 1)).toLocaleString()} / Person</strong></div>
+                              <div>VAT & Tourist Levy (15%): <strong>Included in Total</strong></div>
+                              <div>
+                                Settlement:{' '}
+                                <strong style={{ color: isPaid ? '#16a34a' : '#ea580c' }}>
+                                  {isPaid ? '100% Fully Settled' : 'Payable on Arrival'}
+                                </strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Column 2: Traveler info */}
+                          <div>
+                            <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.4rem' }}>
+                              <Users size={14} style={{ color: 'var(--brand-primary)' }} /> Billed Traveler Details
+                            </span>
+                            <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                              <div>Bill To: <strong>{bkg.traveler.name}</strong></div>
+                              <div>Email: <strong>{bkg.traveler.email}</strong></div>
+                              <div>Phone: <strong>{bkg.traveler.phone || 'N/A'}</strong></div>
+                              <div>Group: <strong>{bkg.numberOfAdults || bkg.numberOfTravelers} Adults, {bkg.numberOfChildren || 0} Children</strong></div>
+                            </div>
+                          </div>
+
+                          {/* Column 3: Logistics */}
+                          <div>
+                            <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.4rem' }}>
+                              <MapPin size={14} style={{ color: 'var(--brand-primary)' }} /> Logistics & Dispatch
+                            </span>
+                            <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                              <div>Destination: <strong>{bkg.destinationName}</strong></div>
+                              <div>Departure Date: <strong>{bkg.travelDate}</strong></div>
+                              <div>Ranger Guide: <strong>{bkg.assignedGuideName || 'Certified Guide Assigned'}</strong></div>
+                              <div>Issuing Branch: <strong>MICHUU Tourism Central Bureau</strong></div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bottom Action Shortcuts */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={<QrCode size={13} />}
+                            onClick={() => setSelectedETicket(bkg)}
+                          >
+                            View Official E-Pass & Tax Slip
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+
+              {/* Load More Invoices Button */}
+              {bookings.length > invoiceDisplayCount && (
+                <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setInvoiceDisplayCount((prev) => prev + 3)}
+                    icon={<ChevronDown size={14} />}
+                    style={{ fontWeight: 700, padding: '0.55rem 2rem' }}
+                  >
+                    See More Invoices ({bookings.length - invoiceDisplayCount} remaining)
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -531,32 +729,149 @@ export const UserDashboardPage: React.FC = () => {
 
           {/* List of Posted Reviews */}
           <div>
-            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, marginBottom: '1rem' }}>
-              My Published Reviews ({reviews.length})
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {reviews.map((rev) => (
-                <Card key={rev.id} glass style={{ padding: '1.25rem' }}>
-                  <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#fbbf24' }}>
-                      {'★'.repeat(rev.overallRating || rev.rating || 5)}
-                    </div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{rev.date}</span>
-                  </div>
-                  <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: 'var(--brand-primary)', marginBottom: '0.35rem' }}>
-                    {rev.tourTitle}
-                  </h4>
-                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                    "{rev.comment}"
-                  </p>
-                  {rev.isVerifiedBooking && (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '10px', fontWeight: 700, color: '#16a34a', marginTop: '0.5rem' }}>
-                      <ShieldCheck size={12} /> Verified MICHUU Traveler
-                    </div>
-                  )}
-                </Card>
-              ))}
+            <div className="flex-between" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, margin: 0 }}>
+                My Published Reviews ({myReviews.length > 0 ? myReviews.length : reviews.length})
+              </h3>
+              {myReviews.length > 0 && reviews.length > myReviews.length && (
+                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                  Filtered to your verified account feedback
+                </span>
+              )}
             </div>
+
+            {(myReviews.length > 0 ? myReviews : reviews).length === 0 ? (
+              <Card glass style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
+                <Star size={32} style={{ color: 'var(--text-muted)', margin: '0 auto 0.75rem auto' }} />
+                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', margin: 0 }}>
+                  You haven't posted any reviews yet. Share your expedition experience above!
+                </p>
+              </Card>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {(myReviews.length > 0 ? myReviews : reviews)
+                  .slice(0, reviewDisplayCount)
+                  .map((rev) => {
+                    const isExpanded = expandedReviewIds.has(rev.id);
+
+                    return (
+                      <Card
+                        key={rev.id}
+                        glass
+                        style={{
+                          padding: '1.25rem',
+                          border: isExpanded ? '1px solid rgba(37, 99, 235, 0.4)' : '1px solid var(--border-color)',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <div className="flex-between" style={{ marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#fbbf24', fontSize: '1rem' }}>
+                              {'★'.repeat(rev.overallRating || rev.rating || 5)}
+                              <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--text-primary)', marginLeft: '0.25rem' }}>
+                                ({rev.overallRating || rev.rating || 5}/5)
+                              </span>
+                            </div>
+                            {rev.isVerifiedBooking && (
+                              <Badge variant="success" icon={<ShieldCheck size={12} />}>
+                                Verified Traveler
+                              </Badge>
+                            )}
+                          </div>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{rev.date}</span>
+                        </div>
+
+                        <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: 'var(--brand-primary)', marginBottom: '0.35rem' }}>
+                          {rev.tourTitle}
+                        </h4>
+
+                        <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+                          "{rev.comment}"
+                        </p>
+
+                        {/* Expand / Collapse Action Bar */}
+                        <div className="flex-between" style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {rev.guideName && (
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                Guide: <strong>{rev.guideName}</strong>
+                              </span>
+                            )}
+                          </div>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            onClick={() => toggleReviewExpand(rev.id)}
+                            style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, padding: '0.25rem 0.5rem' }}
+                          >
+                            {isExpanded ? 'See Less' : 'See More'}
+                          </Button>
+                        </div>
+
+                        {/* Expanded Full Multi-Aspect Breakdown Drawer */}
+                        {isExpanded && (
+                          <div
+                            style={{
+                              marginTop: '0.75rem',
+                              padding: '0.875rem 1rem',
+                              backgroundColor: 'rgba(37, 99, 235, 0.04)',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px dashed rgba(37, 99, 235, 0.25)',
+                              fontSize: 'var(--font-size-xs)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.5rem',
+                              animation: 'fadeIn 0.2s ease-in-out',
+                            }}
+                          >
+                            <span style={{ fontWeight: 700, color: 'var(--brand-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '11px' }}>
+                              Detailed Experience Aspect Ratings:
+                            </span>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem', marginTop: '0.25rem' }}>
+                              <div style={{ padding: '0.4rem 0.6rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '10px' }}>Ranger Guide</span>
+                                <strong>★ {rev.guideRating || rev.overallRating || 5}/5 ({rev.guideName || 'Abebe'})</strong>
+                              </div>
+
+                              <div style={{ padding: '0.4rem 0.6rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '10px' }}>Transportation</span>
+                                <strong>★ {rev.transportRating || 5}/5 (4x4 Expedition Fleet)</strong>
+                              </div>
+
+                              <div style={{ padding: '0.4rem 0.6rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '10px' }}>Accommodations & Meals</span>
+                                <strong>★ {rev.accommodationRating || 5}/5 (Eco-Lodge)</strong>
+                              </div>
+                            </div>
+
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                              Author: <strong>{rev.authorName}</strong> ({rev.authorEmail || 'Verified Traveler'}) · Published {rev.date}
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+
+                {/* See More Reviews Incremental Pagination */}
+                {(myReviews.length > 0 ? myReviews : reviews).length > reviewDisplayCount && (
+                  <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<ChevronDown size={14} />}
+                      onClick={() => setReviewDisplayCount((prev) => prev + 3)}
+                      style={{ fontWeight: 700, padding: '0.5rem 1.5rem' }}
+                    >
+                      See More Reviews ({(myReviews.length > 0 ? myReviews : reviews).length - reviewDisplayCount} remaining)
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

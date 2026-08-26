@@ -6,7 +6,7 @@ import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { useReviewStore } from '@tms/shared/store/useReviewStore';
 import { tourismService } from '@tms/shared/services/tourismService';
 import type { TourPackage } from '@tms/shared/types/tour';
-import { Star, Send, Loader2 } from 'lucide-react';
+import { Star, Send, Loader2, ChevronDown, ChevronUp, ShieldCheck, Filter, User as UserIcon } from 'lucide-react';
 
 const StarPickerRow: React.FC<{
   label: string;
@@ -52,6 +52,20 @@ export const ReviewsPage: React.FC = () => {
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Pagination & Filtering State
+  const [filterMode, setFilterMode] = useState<'all' | 'my'>('all');
+  const [displayCount, setDisplayCount] = useState(4);
+  const [expandedReviewIds, setExpandedReviewIds] = useState<Set<string>>(new Set());
+
+  const toggleReviewExpand = (id: string) => {
+    setExpandedReviewIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchReviews();
@@ -229,47 +243,217 @@ export const ReviewsPage: React.FC = () => {
 
         {/* Published Reviews List */}
         <div>
-          <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, marginBottom: '1rem' }}>
-            Published Reviews Feed ({reviews.length})
-          </h3>
+          <div className="flex-between" style={{ marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, margin: 0 }}>
+              Expedition Reviews Feed
+            </h3>
+
+            {/* Filter Pills */}
+            <div style={{ display: 'flex', gap: '0.35rem', backgroundColor: 'var(--bg-tertiary)', padding: '0.2rem', borderRadius: 'var(--radius-full)' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterMode('all');
+                  setDisplayCount(4);
+                }}
+                style={{
+                  padding: '0.35rem 0.875rem',
+                  borderRadius: 'var(--radius-full)',
+                  border: 'none',
+                  fontSize: '11px',
+                  fontWeight: filterMode === 'all' ? 700 : 500,
+                  cursor: 'pointer',
+                  backgroundColor: filterMode === 'all' ? 'var(--brand-primary)' : 'transparent',
+                  color: filterMode === 'all' ? '#fff' : 'var(--text-secondary)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                All Community ({reviews.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterMode('my');
+                  setDisplayCount(4);
+                }}
+                style={{
+                  padding: '0.35rem 0.875rem',
+                  borderRadius: 'var(--radius-full)',
+                  border: 'none',
+                  fontSize: '11px',
+                  fontWeight: filterMode === 'my' ? 700 : 500,
+                  cursor: 'pointer',
+                  backgroundColor: filterMode === 'my' ? 'var(--brand-primary)' : 'transparent',
+                  color: filterMode === 'my' ? '#fff' : 'var(--text-secondary)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                My Reviews (
+                {
+                  user?.email
+                    ? reviews.filter((r) => r.authorEmail && r.authorEmail.toLowerCase() === user.email.toLowerCase()).length
+                    : 0
+                }
+                )
+              </button>
+            </div>
+          </div>
+
           {isLoading ? (
-            <Card glass style={{ textAlign: 'center', padding: '2rem' }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>Loading live reviews from backend...</p>
-            </Card>
-          ) : reviews.length === 0 ? (
-            <Card glass style={{ textAlign: 'center', padding: '2rem' }}>
-              <Star size={32} style={{ color: 'var(--text-muted)', margin: '0 auto 0.75rem auto' }} />
-              <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>
-                No reviews yet in database. Submit your first review using the form.
+            <Card glass style={{ textAlign: 'center', padding: '2.5rem' }}>
+              <Loader2 size={28} className="animate-spin" style={{ color: 'var(--brand-primary)', margin: '0 auto 0.75rem auto' }} />
+              <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', margin: 0 }}>
+                Loading live expedition reviews from backend...
               </p>
             </Card>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {reviews.map((rev) => (
-                <Card key={rev.id} glass style={{ padding: '1.25rem' }}>
-                  <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
-                    <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)' }}>{rev.authorName}</div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{rev.date}</span>
-                  </div>
+          ) : (() => {
+              const myReviewsList = user?.email
+                ? reviews.filter((r) => r.authorEmail && r.authorEmail.toLowerCase() === user.email.toLowerCase())
+                : [];
+              const activeList = filterMode === 'my' ? myReviewsList : reviews;
 
-                  <h4 style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--brand-primary)', marginBottom: '0.5rem' }}>
-                    {rev.tourTitle}
-                  </h4>
+              if (activeList.length === 0) {
+                return (
+                  <Card glass style={{ textAlign: 'center', padding: '2.5rem' }}>
+                    <Star size={32} style={{ color: 'var(--text-muted)', margin: '0 auto 0.75rem auto' }} />
+                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', margin: 0 }}>
+                      {filterMode === 'my'
+                        ? 'You haven’t published any reviews yet. Share your experience using the form!'
+                        : 'No reviews found in the catalog. Submit the first review!'}
+                    </p>
+                  </Card>
+                );
+              }
 
-                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.625rem' }}>
-                    <Badge variant="warning">★ {rev.overallRating}/5 Overall</Badge>
-                    <Badge variant="info">Guide: {rev.guideName || 'Abebe'} ★{rev.guideRating || 5}/5</Badge>
-                    <Badge variant="success">Transport: ★{rev.transportRating || 4}/5</Badge>
-                    <Badge variant="info">Accom: ★{rev.accommodationRating || 5}/5</Badge>
-                  </div>
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {activeList.slice(0, displayCount).map((rev) => {
+                    const isExpanded = expandedReviewIds.has(rev.id);
 
-                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', margin: 0 }}>
-                    "{rev.comment}"
-                  </p>
-                </Card>
-              ))}
-            </div>
-          )}
+                    return (
+                      <Card
+                        key={rev.id}
+                        glass
+                        style={{
+                          padding: '1.25rem',
+                          border: isExpanded ? '1px solid rgba(37, 99, 235, 0.4)' : '1px solid var(--border-color)',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <div className="flex-between" style={{ marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
+                              {rev.authorName}
+                            </div>
+                            {rev.isVerifiedBooking && (
+                              <Badge variant="success" icon={<ShieldCheck size={11} />}>
+                                Verified
+                              </Badge>
+                            )}
+                          </div>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{rev.date}</span>
+                        </div>
+
+                        <h4 style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--brand-primary)', marginBottom: '0.5rem' }}>
+                          {rev.tourTitle}
+                        </h4>
+
+                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.625rem' }}>
+                          <Badge variant="warning">★ {rev.overallRating || rev.rating || 5}/5 Overall</Badge>
+                          {rev.guideName && (
+                            <Badge variant="info">
+                              Guide: {rev.guideName} ★{rev.guideRating || 5}/5
+                            </Badge>
+                          )}
+                        </div>
+
+                        <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', margin: 0 }}>
+                          "{rev.comment}"
+                        </p>
+
+                        {/* Bottom action bar */}
+                        <div className="flex-between" style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            Category: <strong style={{ textTransform: 'capitalize' }}>{rev.category || 'Tour Package'}</strong>
+                          </span>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            onClick={() => toggleReviewExpand(rev.id)}
+                            style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, padding: '0.2rem 0.5rem' }}
+                          >
+                            {isExpanded ? 'See Less' : 'See More'}
+                          </Button>
+                        </div>
+
+                        {/* Expanded Full Aspect Ratings Drawer */}
+                        {isExpanded && (
+                          <div
+                            style={{
+                              marginTop: '0.75rem',
+                              padding: '0.875rem 1rem',
+                              backgroundColor: 'rgba(37, 99, 235, 0.04)',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px dashed rgba(37, 99, 235, 0.25)',
+                              fontSize: 'var(--font-size-xs)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.625rem',
+                              animation: 'fadeIn 0.2s ease-in-out',
+                            }}
+                          >
+                            <span style={{ fontWeight: 700, color: 'var(--brand-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '11px' }}>
+                              Multi-Aspect Experience Scores:
+                            </span>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem' }}>
+                              <div style={{ padding: '0.4rem 0.6rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '10px' }}>⭐ Overall Tour</span>
+                                <strong>★ {rev.overallRating || rev.rating || 5}/5</strong>
+                              </div>
+                              <div style={{ padding: '0.4rem 0.6rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '10px' }}>👤 Ranger Guide</span>
+                                <strong>★ {rev.guideRating || 5}/5 ({rev.guideName || 'Abebe'})</strong>
+                              </div>
+                              <div style={{ padding: '0.4rem 0.6rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '10px' }}>🚐 Transport Comfort</span>
+                                <strong>★ {rev.transportRating || 4}/5</strong>
+                              </div>
+                              <div style={{ padding: '0.4rem 0.6rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '10px' }}>🏨 Hotels & Dining</span>
+                                <strong>★ {rev.accommodationRating || 5}/5</strong>
+                              </div>
+                            </div>
+
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                              Verified Author: <strong>{rev.authorName}</strong> ({rev.authorEmail || 'Registered Traveler'}) · Published {rev.date}
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+
+                  {/* See More Reviews Button */}
+                  {activeList.length > displayCount && (
+                    <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={<ChevronDown size={14} />}
+                        onClick={() => setDisplayCount((prev) => prev + 4)}
+                        style={{ fontWeight: 700, padding: '0.5rem 1.75rem' }}
+                      >
+                        See More Reviews ({activeList.length - displayCount} remaining)
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
         </div>
       </div>
     </div>
