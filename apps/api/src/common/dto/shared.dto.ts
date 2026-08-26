@@ -17,6 +17,7 @@ export class CreateEventDto {
   @ApiProperty() @IsOptional() @IsString() offerTag?: string;
   @ApiProperty() @IsOptional() @IsNumber() discountPercent?: number;
   @ApiProperty() @IsOptional() @IsNumber() originalPrice?: number;
+  @ApiProperty() @IsOptional() @IsNumber() capacity?: number;
 }
 
 export class CreateBlogPostDto {

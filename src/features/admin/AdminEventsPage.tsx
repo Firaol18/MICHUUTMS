@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@tms/shared/components/layout/PageHeader';
 import type { Column } from '@tms/shared/components/data-display/DataTable';
 import { DataTable } from '@tms/shared/components/data-display/DataTable';
@@ -15,6 +15,7 @@ import {
   Star,
   MapPin,
   Plus,
+  Tag,
 } from 'lucide-react';
 
 const CATEGORY_COLORS: Record<EthiopianEvent['category'], string> = {
@@ -36,7 +37,11 @@ const CATEGORIES: EthiopianEvent['category'][] = [
 ];
 
 export const AdminEventsPage: React.FC = () => {
-  const { events, addEvent, updateEvent, deleteEvent, toggleFeaturedEvent } = useContentStore();
+  const { events, fetchEvents, addEvent, updateEvent, deleteEvent, toggleFeaturedEvent } = useContentStore();
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -468,6 +473,46 @@ export const AdminEventsPage: React.FC = () => {
                 ⭐ Highlight as Featured Event
               </label>
             </div>
+          </div>
+
+          {/* Promotional Offer / Discount Tag Section */}
+          <div style={{ padding: '1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', cursor: 'pointer', fontWeight: 700, fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)' }}>
+              <input
+                type="checkbox"
+                checked={hasOffer}
+                onChange={(e) => setHasOffer(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: 'var(--brand-primary)' }}
+              />
+              <Tag size={16} style={{ color: 'var(--status-danger)' }} /> Apply Special Promotional Offer / Discount Tag
+            </label>
+            {hasOffer && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <Input
+                    label="Original Pre-Discount Price ($)"
+                    type="number"
+                    value={originalPrice}
+                    onChange={(e) => setOriginalPrice(e.target.value)}
+                    required={hasOffer}
+                  />
+                  <Input
+                    label="Discount Percentage (%)"
+                    type="number"
+                    value={discountPercent}
+                    onChange={(e) => setDiscountPercent(e.target.value)}
+                    required={hasOffer}
+                  />
+                </div>
+                <Input
+                  label="Offer Badge Tag Text"
+                  placeholder="e.g. 20% OFF EARLY BIRD"
+                  value={offerTag}
+                  onChange={(e) => setOfferTag(e.target.value)}
+                  required={hasOffer}
+                />
+              </div>
+            )}
           </div>
 
           <Input
