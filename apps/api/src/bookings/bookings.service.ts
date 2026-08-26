@@ -48,10 +48,32 @@ export class BookingsService {
     }
 
     const numberOfTravelers = Number(dto.numberOfTravelers) || 1;
-    if (tour && tour.maxGroupSize && numberOfTravelers > tour.maxGroupSize) {
-      throw new BadRequestException(
-        `This tour only has ${tour.maxGroupSize} spots available.`,
+
+    // Strict slot availability check against real-time booked seats
+    if (tour && tour.maxGroupSize) {
+      const existingBookings = await this.repo.find({
+        where: { tourId: tour.id },
+      });
+
+      const activeBookings = existingBookings.filter((b) => b.status !== 'cancelled');
+      const bookedSeats = activeBookings.reduce(
+        (sum, b) => sum + (Number(b.numberOfTravelers) || 1),
+        0,
       );
+
+      const availableSlots = Math.max(0, Number(tour.maxGroupSize) - bookedSeats);
+
+      if (availableSlots <= 0) {
+        throw new BadRequestException(
+          `Sorry, "${tour.title}" is completely sold out (${tour.maxGroupSize}/${tour.maxGroupSize} seats already booked).`,
+        );
+      }
+
+      if (numberOfTravelers > availableSlots) {
+        throw new BadRequestException(
+          `Only ${availableSlots} seat${availableSlots > 1 ? 's are' : ' is'} available for "${tour.title}" (${bookedSeats} of ${tour.maxGroupSize} booked). You requested ${numberOfTravelers}.`,
+        );
+      }
     }
 
     const pricePerPerson = tour?.pricePerPerson ?? (dto.totalPrice ? dto.totalPrice / numberOfTravelers : 1500);

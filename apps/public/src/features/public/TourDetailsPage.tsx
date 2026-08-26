@@ -219,9 +219,11 @@ export const TourDetailsPage: React.FC = () => {
     );
   }
 
+  const totalAvailable = tour.availableSlots !== undefined ? tour.availableSlots : tour.maxGroupSize;
+  const isTourSoldOut = totalAvailable <= 0 || tour.status === 'sold_out';
   const totalTravelers = adultsCount + childrenCount;
-  const spotsRemaining = tour.maxGroupSize - totalTravelers;
-  const isOverCapacity = spotsRemaining < 0;
+  const spotsRemaining = totalAvailable - totalTravelers;
+  const isOverCapacity = totalTravelers > totalAvailable || totalAvailable === 0;
   const basePrice = tour.pricePerPerson * totalTravelers;
   const discountAmount = promoDiscountPercent > 0 ? Math.round((tour.pricePerPerson * promoDiscountPercent) / 100) : 0;
   const totalPrice = Math.max(0, basePrice - discountAmount);
@@ -557,14 +559,36 @@ export const TourDetailsPage: React.FC = () => {
                 <span style={{ fontWeight: 700 }}>Max {tour.maxGroupSize} Guests</span>
               </div>
               <div className="flex-between">
+                <span style={{ color: 'var(--text-muted)' }}>Availability:</span>
+                <span style={{
+                  fontWeight: 800,
+                  color: isTourSoldOut ? '#dc2626' : totalAvailable <= 3 ? '#ea580c' : '#16a34a',
+                }}>
+                  {isTourSoldOut ? 'Sold Out (0 Left)' : `${totalAvailable} / ${tour.maxGroupSize} Available`}
+                </span>
+              </div>
+              <div className="flex-between">
                 <span style={{ color: 'var(--text-muted)' }}>Lead Ranger:</span>
                 <span style={{ fontWeight: 700, color: 'var(--brand-primary)' }}>{tour.assignedGuideName || 'Abebe Bekele'}</span>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              <Button variant="primary" size="lg" icon={<Ticket size={18} />} onClick={handleBookNow} style={{ width: '100%', fontWeight: 800 }}>
-                Book Now
+              <Button
+                variant="primary"
+                size="lg"
+                icon={<Ticket size={18} />}
+                onClick={handleBookNow}
+                disabled={isTourSoldOut}
+                style={{
+                  width: '100%',
+                  fontWeight: 800,
+                  opacity: isTourSoldOut ? 0.6 : 1,
+                  cursor: isTourSoldOut ? 'not-allowed' : 'pointer',
+                  backgroundColor: isTourSoldOut ? 'var(--status-danger)' : undefined,
+                }}
+              >
+                {isTourSoldOut ? 'Sold Out' : 'Book Now'}
               </Button>
 
               <Button
@@ -706,15 +730,21 @@ export const TourDetailsPage: React.FC = () => {
                 backgroundColor: isOverCapacity ? 'rgba(239,68,68,0.08)' : 'rgba(22,163,74,0.08)',
                 border: `1px solid ${isOverCapacity ? 'rgba(239,68,68,0.3)' : 'rgba(22,163,74,0.3)'}`,
                 fontSize: 'var(--font-size-xs)',
-                fontWeight: 600,
+                fontWeight: 700,
                 color: isOverCapacity ? '#dc2626' : '#16a34a',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
               }}
             >
-              <span>Max Group Size: {tour.maxGroupSize} guests</span>
-              <span>{isOverCapacity ? `⚠ Over capacity by ${Math.abs(spotsRemaining)}` : `✓ ${spotsRemaining} spot${spotsRemaining !== 1 ? 's' : ''} remaining`}</span>
+              <span>Capacity: {totalAvailable} / {tour.maxGroupSize} seats available</span>
+              <span>
+                {isOverCapacity
+                  ? totalAvailable === 0
+                    ? '⚠ Tour is completely sold out'
+                    : `⚠ Only ${totalAvailable} seat${totalAvailable !== 1 ? 's' : ''} left`
+                  : `✓ ${spotsRemaining} seat${spotsRemaining !== 1 ? 's' : ''} remaining after your party`}
+              </span>
             </div>
 
             {/* Traveler Details Grid */}
@@ -723,7 +753,7 @@ export const TourDetailsPage: React.FC = () => {
                 label="Adults"
                 type="number"
                 min={1}
-                max={tour.maxGroupSize}
+                max={Math.max(1, totalAvailable)}
                 value={adultsCount}
                 onChange={(e) => setAdultsCount(Number(e.target.value))}
                 required
@@ -732,7 +762,7 @@ export const TourDetailsPage: React.FC = () => {
                 label="Children (under 12)"
                 type="number"
                 min={0}
-                max={tour.maxGroupSize}
+                max={Math.max(0, totalAvailable - adultsCount)}
                 value={childrenCount}
                 onChange={(e) => setChildrenCount(Number(e.target.value))}
               />

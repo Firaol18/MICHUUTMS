@@ -68,6 +68,8 @@ function mapBackendTour(t: any): TourPackage {
     hasOffer: Boolean(t.hasOffer),
     assignedGuideId: t.assignedGuideId,
     assignedGuideName: t.assignedGuideName,
+    bookedSeats: t.bookedSeats !== undefined ? Number(t.bookedSeats) : 0,
+    availableSlots: t.availableSlots !== undefined ? Number(t.availableSlots) : Number(t.maxGroupSize),
   };
 }
 
@@ -200,6 +202,21 @@ class TourismService {
   async getTourById(id: string): Promise<TourPackage | null> {
     const res = await http.get(`/tours/${id}`);
     return res.data ? mapBackendTour(res.data) : null;
+  }
+
+  async getTourAvailability(id: string, travelDate?: string): Promise<{
+    tourId: string;
+    tourTitle: string;
+    maxGroupSize: number;
+    bookedSeats: number;
+    availableSlots: number;
+    isSoldOut: boolean;
+    travelDate?: string | null;
+  } | null> {
+    const res = await http.get(`/tours/${id}/availability`, {
+      params: travelDate ? { travelDate } : {},
+    });
+    return res.data || null;
   }
 
   async createTourPackage(newTour: Omit<TourPackage, 'id' | 'rating' | 'reviewCount'>): Promise<TourPackage> {

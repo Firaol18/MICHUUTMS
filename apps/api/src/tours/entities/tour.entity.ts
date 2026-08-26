@@ -52,6 +52,12 @@ export class Tour {
   @ApiProperty() @CreateDateColumn() createdAt: Date;
   @ApiProperty() @UpdateDateColumn() updatedAt: Date;
 
+  @ApiProperty({ required: false })
+  bookedSeats?: number;
+
+  @ApiProperty({ required: false })
+  availableSlots?: number;
+
   @OneToMany(() => Booking, (b) => b.tour)
   bookings: Booking[];
 }

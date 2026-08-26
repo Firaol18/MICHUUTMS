@@ -374,6 +374,40 @@ export const AdminToursPage: React.FC = () => {
       cell: (row) => <span style={{ fontWeight: 600 }}>{row.durationDays} Days</span>,
     },
     {
+      header: 'Capacity & Slots',
+      minWidth: '150px',
+      noWrap: true,
+      cell: (row) => {
+        const booked = row.bookedSeats ?? 0;
+        const available = row.availableSlots ?? Math.max(0, row.maxGroupSize - booked);
+        const isSoldOut = available <= 0;
+        const pct = Math.min(100, Math.round((booked / (row.maxGroupSize || 1)) * 100));
+        return (
+          <div style={{ minWidth: 120 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', fontWeight: 700 }}>
+              <span style={{ color: isSoldOut ? '#dc2626' : available <= 3 ? '#ea580c' : '#16a34a' }}>
+                {isSoldOut ? 'Sold Out' : `${available} Available`}
+              </span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '10.5px', fontWeight: 500 }}>
+                {booked}/{row.maxGroupSize}
+              </span>
+            </div>
+            <div style={{ width: '100%', height: 4, backgroundColor: 'var(--bg-tertiary)', borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${pct}%`,
+                  height: '100%',
+                  backgroundColor: isSoldOut ? '#dc2626' : available <= 3 ? '#ea580c' : '#2563eb',
+                  borderRadius: 2,
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       header: 'Ranger Guide',
       minWidth: '140px',
       noWrap: true,

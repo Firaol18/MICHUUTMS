@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { PageHeader } from '@/components/layout/PageHeader';
-import type { Column } from '@/components/data-display/DataTable';
-import { DataTable } from '@/components/data-display/DataTable';
-import { Badge } from '@/components/common/Badge';
-import { Button } from '@/components/common/Button';
-import { Input } from '@/components/common/Input';
-import { Modal } from '@/components/common/Modal';
-import { ConfirmModal } from '@/components/common/ConfirmModal';
-import { PermissionGuard } from '@/components/common/PermissionGuard';
-import { tourismService } from '@/services/tourismService';
-import type { TourPackage, TourCategory, DifficultyLevel, ItineraryDay } from '@/types/tour';
-import type { TourGuide } from '@/types/guide';
+import { PageHeader } from '@tms/shared/components/layout/PageHeader';
+import type { Column } from '@tms/shared/components/data-display/DataTable';
+import { DataTable } from '@tms/shared/components/data-display/DataTable';
+import { Badge } from '@tms/shared/components/common/Badge';
+import { Button } from '@tms/shared/components/common/Button';
+import { Input } from '@tms/shared/components/common/Input';
+import { Modal } from '@tms/shared/components/common/Modal';
+import { ConfirmModal } from '@tms/shared/components/common/ConfirmModal';
+import { PermissionGuard } from '@tms/shared/components/common/PermissionGuard';
+import { tourismService } from '@tms/shared/services/tourismService';
+import type { TourPackage, TourCategory, DifficultyLevel, ItineraryDay } from '@tms/shared/types/tour';
+import type { TourGuide } from '@tms/shared/types/guide';
 import {
   Plus,
   Palmtree,
@@ -161,6 +161,7 @@ export const AdminToursPage: React.FC = () => {
   const [tours, setTours] = useState<TourPackage[]>([]);
   const [guides, setGuides] = useState<TourGuide[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
 
   // Create state
@@ -373,6 +374,40 @@ export const AdminToursPage: React.FC = () => {
       cell: (row) => <span style={{ fontWeight: 600 }}>{row.durationDays} Days</span>,
     },
     {
+      header: 'Capacity & Slots',
+      minWidth: '150px',
+      noWrap: true,
+      cell: (row) => {
+        const booked = row.bookedSeats ?? 0;
+        const available = row.availableSlots ?? Math.max(0, row.maxGroupSize - booked);
+        const isSoldOut = available <= 0;
+        const pct = Math.min(100, Math.round((booked / (row.maxGroupSize || 1)) * 100));
+        return (
+          <div style={{ minWidth: 120 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', fontWeight: 700 }}>
+              <span style={{ color: isSoldOut ? '#dc2626' : available <= 3 ? '#ea580c' : '#16a34a' }}>
+                {isSoldOut ? 'Sold Out' : `${available} Available`}
+              </span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '10.5px', fontWeight: 500 }}>
+                {booked}/{row.maxGroupSize}
+              </span>
+            </div>
+            <div style={{ width: '100%', height: 4, backgroundColor: 'var(--bg-tertiary)', borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${pct}%`,
+                  height: '100%',
+                  backgroundColor: isSoldOut ? '#dc2626' : available <= 3 ? '#ea580c' : '#2563eb',
+                  borderRadius: 2,
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       header: 'Ranger Guide',
       minWidth: '140px',
       noWrap: true,
@@ -394,22 +429,26 @@ export const AdminToursPage: React.FC = () => {
       noWrap: true,
       align: 'center',
       cell: (row) => (
-        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', justifyContent: 'center' }}>
-          <Button variant="outline" size="sm" icon={<Edit size={13} />} onClick={() => handleStartEdit(row)}>
-            Edit
-          </Button>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={() => handleStartEdit(row)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+            title="Edit Tour"
+          >
+            <Edit size={16} />
+          </button>
           <PermissionGuard resource="tours" action="delete">
-            <Button
-              variant="ghost"
-              size="sm"
-              style={{ color: '#ef4444' }}
-              icon={<Trash2 size={13} />}
+            <button
+              type="button"
               onClick={() => {
                 setDeleteTarget({ id: row.id, title: row.title });
               }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, display: 'inline-flex', alignItems: 'center' }}
+              title="Delete Tour"
             >
-              Delete
-            </Button>
+              <Trash2 size={16} />
+            </button>
           </PermissionGuard>
         </div>
       ),
@@ -476,13 +515,33 @@ export const AdminToursPage: React.FC = () => {
 
       <DataTable
         columns={columns}
-        data={tours}
+        data={tours.filter((t) => categoryFilter === 'all' || t.category === categoryFilter)}
         keyExtractor={(item) => item.id}
         isLoading={isLoading}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search tour package title, destination, or category..."
-        entityName="tours"
+        filterModalTitle="Filter Tour Packages"
+        filterFields={[
+          {
+            id: 'category',
+            label: 'Tour Category',
+            value: categoryFilter,
+            onChange: (v) => setCategoryFilter(v as any),
+            options: [
+              { label: 'All Category', value: 'all' },
+              { label: 'Cultural', value: 'cultural' },
+              { label: 'Safari', value: 'safari' },
+              { label: 'Mountain', value: 'mountain' },
+              { label: 'City', value: 'city' },
+              { label: 'Luxury', value: 'luxury' },
+            ],
+          },
+        ]}
+        onApplyFilters={() => fetchTours()}
+        onClearFilters={() => {
+          setCategoryFilter('all');
+        }}
       />
 
       {/* CREATE MODAL */}

@@ -54,4 +54,6 @@ export interface TourPackage {
   hasOffer?: boolean;
   assignedGuideId?: string;
   assignedGuideName?: string;
+  bookedSeats?: number;
+  availableSlots?: number;
 }

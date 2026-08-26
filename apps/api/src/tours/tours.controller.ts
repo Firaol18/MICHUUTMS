@@ -18,6 +18,12 @@ export class ToursController {
     return this.toursService.findAll(query);
   }
 
+  @Get(':id/availability')
+  @ApiOperation({ summary: 'Get live seat availability and booked slots for a tour' })
+  getAvailability(@Param('id') id: string, @Query('travelDate') travelDate?: string) {
+    return this.toursService.getAvailability(id, travelDate);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get tour by ID (UUID) or slug (public)' })
   findOne(@Param('id') id: string) {

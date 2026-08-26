@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@tms/shared/components/common/Card';
 import { Badge } from '@tms/shared/components/common/Badge';
@@ -149,7 +149,15 @@ export const TourCard: React.FC<TourCardProps> = ({ tour }) => {
 
           <div className="flex-center" style={{ gap: '0.375rem' }}>
             <Users size={14} style={{ color: 'var(--text-muted)' }} />
-            <span>Max {tour.maxGroupSize} Guests</span>
+            <span>
+              {tour.availableSlots !== undefined && tour.availableSlots <= 0 ? (
+                <span style={{ color: 'var(--status-danger)', fontWeight: 700 }}>Sold Out</span>
+              ) : tour.availableSlots !== undefined && tour.availableSlots <= 3 ? (
+                <span style={{ color: '#ea580c', fontWeight: 700 }}>🔥 {tour.availableSlots} left</span>
+              ) : (
+                <span>{tour.availableSlots !== undefined ? `${tour.availableSlots} / ` : 'Max '}{tour.maxGroupSize} Seats</span>
+              )}
+            </span>
           </div>
         </div>
 
