@@ -280,6 +280,18 @@ export const TourDetailsPage: React.FC = () => {
         }
       );
       setConfirmedBooking(bkg);
+      const bookedCount = adultsCount + childrenCount;
+      setTour((prev) => {
+        if (!prev) return null;
+        const newBooked = (prev.bookedSeats ?? 0) + bookedCount;
+        const newAvailable = Math.max(0, (prev.availableSlots ?? prev.maxGroupSize) - bookedCount);
+        return {
+          ...prev,
+          bookedSeats: newBooked,
+          availableSlots: newAvailable,
+          status: newAvailable === 0 ? 'sold_out' : prev.status,
+        };
+      });
     } catch (err: unknown) {
       setBookingError(err instanceof Error ? err.message : 'Booking failed. Please try again.');
     } finally {

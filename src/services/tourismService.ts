@@ -1,9 +1,9 @@
 import { http } from './apiClient';
-import { useNotificationStore } from '@/store/useNotificationStore';
-import type { TourPackage, TourCategory, Destination } from '@/types/tour';
-import type { Booking, BookingStatus, PaymentStatus, TravelerInfo } from '@/types/booking';
-import type { TourGuide, GuideCertification, GuideAvailability, GuidePayment } from '@/types/guide';
-import type { MetricCardData } from '@/types/common';
+import { useNotificationStore } from '@tms/shared/store/useNotificationStore';
+import type { TourPackage, TourCategory, Destination } from '@tms/shared/types/tour';
+import type { Booking, BookingStatus, PaymentStatus, TravelerInfo } from '@tms/shared/types/booking';
+import type { TourGuide, GuideCertification, GuideAvailability, GuidePayment } from '@tms/shared/types/guide';
+import type { MetricCardData } from '@tms/shared/types/common';
 
 export interface IssueTicket {
   id: string;
@@ -259,6 +259,8 @@ class TourismService {
     traveler: TravelerInfo,
     travelDate: string,
     numberOfTravelers: number,
+    numberOfAdults?: number,
+    numberOfChildren?: number,
     options?: {
       title?: string;
       destination?: string;
@@ -304,6 +306,36 @@ class TourismService {
         created.bookingReference,
         '/admin/bookings',
       );
+    } catch {}
+
+    // Update local event capacity state in useContentStore so Admin table reflects immediately
+    try {
+      const { useContentStore } = await import('@tms/shared/store/useContentStore');
+      const contentStore = useContentStore.getState();
+      const cleanTourId = tourPackageId
+        .replace('-cart', '')
+        .replace('-event-cart', '')
+        .replace(/^event-/, '')
+        .replace(/-\d{10,14}$/, '');
+
+      const eventToUpdate = contentStore.events.find(
+        (e) =>
+          e.id === cleanTourId ||
+          e.id === tourPackageId ||
+          (cleanTourId && e.id.toLowerCase() === cleanTourId.toLowerCase()) ||
+          (created.tourTitle && e.title && created.tourTitle.toLowerCase().includes(e.title.toLowerCase())) ||
+          (options?.title && e.title && options.title.toLowerCase().includes(e.title.toLowerCase())),
+      );
+      if (eventToUpdate) {
+        const newBooked = (eventToUpdate.bookedSeats ?? 0) + numberOfTravelers;
+        const totalCap = eventToUpdate.capacity ?? 50;
+        const newAvailable = Math.max(0, totalCap - newBooked);
+        contentStore.updateEvent(eventToUpdate.id, {
+          bookedSeats: newBooked,
+          availableSlots: newAvailable,
+          status: newAvailable === 0 ? 'completed' : eventToUpdate.status,
+        });
+      }
     } catch {}
 
     return created;
@@ -408,10 +440,6 @@ class TourismService {
     issueType?: string;
     branch?: string;
     search?: string;
-    paymentMethod?: string;
-    paymentReceiptUrl?: string;
-    transactionReference?: string;
-    paymentStatus?: string;
   }): Promise<IssueTicket[]> {
     const params: Record<string, string> = {};
     if (filters?.status && filters.status !== 'all' && filters.status !== 'All Status')

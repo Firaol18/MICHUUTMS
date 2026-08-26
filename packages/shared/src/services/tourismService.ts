@@ -308,6 +308,36 @@ class TourismService {
       );
     } catch {}
 
+    // Update local event capacity state in useContentStore so Admin table reflects immediately
+    try {
+      const { useContentStore } = await import('@tms/shared/store/useContentStore');
+      const contentStore = useContentStore.getState();
+      const cleanTourId = tourPackageId
+        .replace('-cart', '')
+        .replace('-event-cart', '')
+        .replace(/^event-/, '')
+        .replace(/-\d{10,14}$/, '');
+
+      const eventToUpdate = contentStore.events.find(
+        (e) =>
+          e.id === cleanTourId ||
+          e.id === tourPackageId ||
+          (cleanTourId && e.id.toLowerCase() === cleanTourId.toLowerCase()) ||
+          (created.tourTitle && e.title && created.tourTitle.toLowerCase().includes(e.title.toLowerCase())) ||
+          (options?.title && e.title && options.title.toLowerCase().includes(e.title.toLowerCase())),
+      );
+      if (eventToUpdate) {
+        const newBooked = (eventToUpdate.bookedSeats ?? 0) + numberOfTravelers;
+        const totalCap = eventToUpdate.capacity ?? 50;
+        const newAvailable = Math.max(0, totalCap - newBooked);
+        contentStore.updateEvent(eventToUpdate.id, {
+          bookedSeats: newBooked,
+          availableSlots: newAvailable,
+          status: newAvailable === 0 ? 'completed' : eventToUpdate.status,
+        });
+      }
+    } catch {}
+
     return created;
   }
 

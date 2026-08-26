@@ -33,24 +33,67 @@ export class BookingsService {
 
     let tour: any = null;
     let event: any = null;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    // Look up tour or event if a UUID-looking tourId is provided
+    // Look up tour or event
     if (dto.tourId) {
       const targetId = String(dto.tourId).trim();
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(targetId)) {
         try {
           tour = await this.toursService.findOne(targetId);
         } catch {
-          // If not a tour, check if it's an event
           try {
             event = await this.eventsRepo.findOneBy({ id: targetId });
-          } catch {
-            this.logger.warn(`Item with id ${targetId} not found in Tours or Events`);
-          }
+          } catch {}
         }
       } else {
-        this.logger.warn(`tourId "${targetId}" is not a UUID, skipping entity lookup`);
+        // Not a UUID: try slug or search by destination / title
+        try {
+          tour = await this.toursService.findBySlug(targetId);
+        } catch {
+          try {
+            const allTours = await this.toursService.findAll({ limit: 100 });
+            tour = allTours.data?.find(
+              (t) =>
+                t.id === targetId ||
+                t.slug === targetId ||
+                (t.title && t.title.toLowerCase().includes(targetId.toLowerCase())),
+            );
+          } catch {}
+        }
+        if (!tour) {
+          try {
+            const allEvents = await this.eventsRepo.find();
+            event = allEvents.find(
+              (e) =>
+                e.id === targetId ||
+                (e.title && e.title.toLowerCase().includes(targetId.toLowerCase())),
+            );
+          } catch {}
+        }
+      }
+    }
+
+    // Fallback: match by tourTitle if still unresolved
+    if (!tour && !event && dto.tourTitle) {
+      const titleToMatch = dto.tourTitle;
+      try {
+        const matchingTours = await this.toursService.findAll({ search: titleToMatch, limit: 10 });
+        tour = matchingTours.data?.find(
+          (t) =>
+            t.title.toLowerCase().includes(titleToMatch.toLowerCase()) ||
+            titleToMatch.toLowerCase().includes(t.title.toLowerCase()),
+        );
+      } catch {}
+      if (!tour) {
+        try {
+          const allEvents = await this.eventsRepo.find();
+          event = allEvents.find(
+            (e) =>
+              (e.title && e.title.toLowerCase().includes(titleToMatch.toLowerCase())) ||
+              (e.title && titleToMatch.toLowerCase().includes(e.title.toLowerCase())),
+          );
+        } catch {}
       }
     }
 

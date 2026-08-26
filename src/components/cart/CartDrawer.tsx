@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCartStore } from '@/store/useCartStore';
-import { useAuthStore } from '@/store/useAuthStore';
-import { Modal } from '@/components/common/Modal';
-import { Button } from '@/components/common/Button';
-import { Input } from '@/components/common/Input';
-import { ETicketModal } from '@/components/common/ETicketModal';
-import { tourismService } from '@/services/tourismService';
-import type { Booking } from '@/types/booking';
+import { useCartStore } from '@tms/shared/store/useCartStore';
+import { useAuthStore } from '@tms/shared/store/useAuthStore';
+import { Modal } from '@tms/shared/components/common/Modal';
+import { Button } from '@tms/shared/components/common/Button';
+import { Input } from '@tms/shared/components/common/Input';
+import { Badge } from '@tms/shared/components/common/Badge';
+import { ETicketModal } from '@tms/shared/components/common/ETicketModal';
+import { tourismService } from '@tms/shared/services/tourismService';
+import type { Booking } from '@tms/shared/types/booking';
 import {
   ShoppingBag,
   Trash2,
@@ -23,6 +24,7 @@ import {
   UploadCloud,
   Copy,
   Check,
+  CheckCircle2,
 } from 'lucide-react';
 
 const PAYMENT_METHODS = [
@@ -203,7 +205,11 @@ export const CartDrawer: React.FC = () => {
 
     try {
       const primaryTour = items.find((i) => i.type === 'tour') || items[0];
-      const tourId = primaryTour.id.replace('-cart', '');
+      const tourId = primaryTour.id
+        .replace('-cart', '')
+        .replace('-event-cart', '')
+        .replace(/^event-/, '')
+        .replace(/-\d{10,14}$/, '');
       const totalPrice = getTotalPrice();
 
       const combinedTitle = items.map((i) => `${i.title} (x${i.quantity})`).join(' + ');

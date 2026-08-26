@@ -205,7 +205,11 @@ export const CartDrawer: React.FC = () => {
 
     try {
       const primaryTour = items.find((i) => i.type === 'tour') || items[0];
-      const tourId = primaryTour.id.replace('-cart', '');
+      const tourId = primaryTour.id
+        .replace('-cart', '')
+        .replace('-event-cart', '')
+        .replace(/^event-/, '')
+        .replace(/-\d{10,14}$/, '');
       const totalPrice = getTotalPrice();
 
       const combinedTitle = items.map((i) => `${i.title} (x${i.quantity})`).join(' + ');

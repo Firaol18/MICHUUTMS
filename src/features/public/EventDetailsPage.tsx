@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Card } from '@/components/common/Card';
-import { Button } from '@/components/common/Button';
-import { Badge } from '@/components/common/Badge';
-import { Input } from '@/components/common/Input';
-import { Modal } from '@/components/common/Modal';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { useContentStore } from '@/store/useContentStore';
-import { useCartStore } from '@/store/useCartStore';
-import { useAuthStore } from '@/store/useAuthStore';
-import { Virtual360Modal } from '@/components/common/Virtual360Modal';
-import { TourReviewsSection } from '@/components/reviews/TourReviewsSection';
-import { InteractiveLocationMap } from '@/components/common/InteractiveLocationMap';
-import { EthiopianPaymentQR } from '@/components/common/EthiopianPaymentQR';
-import { tourismService } from '@/services/tourismService';
-import type { EthiopianEvent } from '@/services/mockEventsData';
-import type { Booking } from '@/types/booking';
+import { Card } from '@tms/shared/components/common/Card';
+import { Button } from '@tms/shared/components/common/Button';
+import { Badge } from '@tms/shared/components/common/Badge';
+import { Input } from '@tms/shared/components/common/Input';
+import { Modal } from '@tms/shared/components/common/Modal';
+import { LoadingSpinner } from '@tms/shared/components/common/LoadingSpinner';
+import { useContentStore } from '@tms/shared/store/useContentStore';
+import { useCartStore } from '@tms/shared/store/useCartStore';
+import { useAuthStore } from '@tms/shared/store/useAuthStore';
+import { Virtual360Modal } from '@tms/shared/components/common/Virtual360Modal';
+import { TourReviewsSection } from '@tms/shared/components/reviews/TourReviewsSection';
+import { InteractiveLocationMap } from '@tms/shared/components/common/InteractiveLocationMap';
+import { EthiopianPaymentQR } from '@tms/shared/components/common/EthiopianPaymentQR';
+import { tourismService } from '@tms/shared/services/tourismService';
+import type { EthiopianEvent } from '@tms/shared/services/mockEventsData';
+import type { Booking } from '@tms/shared/types/booking';
 import {
   CalendarDays,
   MapPin,
@@ -267,6 +267,18 @@ export const EventDetailsPage: React.FC = () => {
       );
 
       setConfirmedBooking(created);
+      setEvent((prev) => {
+        if (!prev) return null;
+        const totalCap = prev.capacity ?? 50;
+        const newBooked = (prev.bookedSeats ?? 0) + ticketQuantity;
+        const newAvailable = Math.max(0, (prev.availableSlots ?? totalCap) - ticketQuantity);
+        return {
+          ...prev,
+          bookedSeats: newBooked,
+          availableSlots: newAvailable,
+          status: newAvailable === 0 ? 'completed' : prev.status,
+        };
+      });
     } catch (err: any) {
       setBookingError(err.message || 'Failed to complete festival pass reservation.');
     } finally {

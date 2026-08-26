@@ -267,6 +267,18 @@ export const EventDetailsPage: React.FC = () => {
       );
 
       setConfirmedBooking(created);
+      setEvent((prev) => {
+        if (!prev) return null;
+        const totalCap = prev.capacity ?? 50;
+        const newBooked = (prev.bookedSeats ?? 0) + ticketQuantity;
+        const newAvailable = Math.max(0, (prev.availableSlots ?? totalCap) - ticketQuantity);
+        return {
+          ...prev,
+          bookedSeats: newBooked,
+          availableSlots: newAvailable,
+          status: newAvailable === 0 ? 'completed' : prev.status,
+        };
+      });
     } catch (err: any) {
       setBookingError(err.message || 'Failed to complete festival pass reservation.');
     } finally {

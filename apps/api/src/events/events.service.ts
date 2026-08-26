@@ -18,13 +18,17 @@ export class EventsService {
    * Calculates live booked tickets and remaining available slots for an event
    */
   private async enrichEvent(event: Event): Promise<Event> {
-    // Find active non-cancelled bookings for this event
-    const eventBookings = await this.bookingsRepo.find({
-      where: { tourId: event.id },
-    });
+    // Find active non-cancelled bookings for this event (matching id or title)
+    const allBookings = await this.bookingsRepo.find();
+    const eventBookings = allBookings.filter(
+      (b) =>
+        (b.tourId === event.id ||
+          (b.tourTitle && event.title && b.tourTitle.toLowerCase().includes(event.title.toLowerCase())) ||
+          (event.title && b.tourTitle && event.title.toLowerCase().includes(b.tourTitle.toLowerCase()))) &&
+        b.status !== 'cancelled',
+    );
 
-    const activeBookings = eventBookings.filter((b) => b.status !== 'cancelled');
-    const bookedSeats = activeBookings.reduce(
+    const bookedSeats = eventBookings.reduce(
       (sum, b) => sum + (Number(b.numberOfTravelers) || 1),
       0,
     );
