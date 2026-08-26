@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Card } from '@/components/common/Card';
-import { Button } from '@/components/common/Button';
-import { Badge } from '@/components/common/Badge';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { ETicketModal } from '@/components/common/ETicketModal';
-import { tourismService } from '@/services/tourismService';
-import { useAuthStore } from '@/store/useAuthStore';
-import type { Booking } from '@/types/booking';
+import { Card } from '@tms/shared/components/common/Card';
+import { Button } from '@tms/shared/components/common/Button';
+import { Badge } from '@tms/shared/components/common/Badge';
+import { LoadingSpinner } from '@tms/shared/components/common/LoadingSpinner';
+import { ETicketModal } from '@tms/shared/components/common/ETicketModal';
+import { tourismService } from '@tms/shared/services/tourismService';
+import { useAuthStore } from '@tms/shared/store/useAuthStore';
+import type { Booking } from '@tms/shared/types/booking';
 import { Download, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 export const InvoicesPage: React.FC = () => {
@@ -34,7 +34,7 @@ export const InvoicesPage: React.FC = () => {
     const ps = (paymentStatus || '').toLowerCase();
     const st = (status || '').toLowerCase();
 
-    if (ps === 'paid' || st === 'confirmed') {
+    if (ps === 'paid') {
       return (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#16a34a', fontWeight: 700 }}>
           <CheckCircle2 size={13} /> PAID FULL
@@ -56,8 +56,8 @@ export const InvoicesPage: React.FC = () => {
       );
     }
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#6b7280', fontWeight: 700 }}>
-        <Clock size={13} /> PAYMENT PENDING
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#ea580c', fontWeight: 700 }}>
+        <Clock size={13} /> UNPAID (DUE ON ARRIVAL)
       </span>
     );
   };

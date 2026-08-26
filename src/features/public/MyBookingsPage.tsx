@@ -321,8 +321,8 @@ export const MyBookingsPage: React.FC = () => {
                           <Phone size={14} style={{ color: 'var(--brand-primary)' }} /> Contact & Party Info
                         </span>
                         <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                          <div>Phone: <strong>{bkg.traveler.phone || '+251 91 123 4567'}</strong></div>
-                          <div>Nationality: <strong>{bkg.traveler.nationality || 'Ethiopia'}</strong></div>
+                          <div>Phone: <strong>{bkg.traveler.phone || 'Not provided'}</strong></div>
+                          <div>Nationality: <strong>{bkg.traveler.nationality || 'Not specified'}</strong></div>
                           <div>Party Size: <strong>{bkg.numberOfAdults || bkg.numberOfTravelers} Adult(s), {bkg.numberOfChildren || 0} Child(ren)</strong></div>
                         </div>
                       </div>
@@ -330,12 +330,21 @@ export const MyBookingsPage: React.FC = () => {
                       {/* Guide & Operations */}
                       <div>
                         <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.4rem' }}>
-                          <UserCheck size={14} style={{ color: 'var(--brand-primary)' }} /> Ranger Guide & Support
+                          <UserCheck size={14} style={{ color: 'var(--brand-primary)' }} /> Ranger Guide & Operations
                         </span>
                         <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                          <div>Assigned Ranger: <strong>{bkg.assignedGuideName || 'Abebe Bekele (Lead Cultural Ranger)'}</strong></div>
+                          <div>
+                            Assigned Ranger:{' '}
+                            <strong>
+                              {bkg.assignedGuideName ? (
+                                <span style={{ color: 'var(--brand-primary)' }}>{bkg.assignedGuideName}</span>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Pending Ranger Assignment</span>
+                              )}
+                            </strong>
+                          </div>
                           <div>Safety Escort: <strong style={{ color: '#16a34a' }}>Active & Insured</strong></div>
-                          <div>Emergency Support: <strong>24/7 Concierge (+251 91 000 0000)</strong></div>
+                          <div>Direct Support: <strong>MICHUU Hub (+251 91 123 4567)</strong></div>
                         </div>
                       </div>
                     </div>
