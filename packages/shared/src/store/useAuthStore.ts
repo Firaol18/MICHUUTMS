@@ -32,6 +32,16 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({
           user: state.user ? { ...state.user, role } : null,
         })),
+
+      updateUser: (fields: Partial<User>) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...fields } : null,
+        })),
+
+      completePasswordChange: () =>
+        set((state) => ({
+          user: state.user ? { ...state.user, mustChangePassword: false } : null,
+        })),
     }),
     {
       name: 'michuu-tms-auth',

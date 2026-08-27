@@ -374,12 +374,24 @@ let corporateUsers = [...INITIAL_CORPORATE_USERS];
 let travelPolicies = [...INITIAL_TRAVEL_POLICIES];
 let corporateBookings = [...INITIAL_CORPORATE_BOOKINGS];
 
+// ── Helper: Secure Temporary Password Generator ──────────────────────────────
+export const generateTemporaryPassword = (): string => {
+  const words = ['Michuu', 'Habesha', 'Abyssinia', 'Safari', 'Expedition', 'Summit', 'Alpine'];
+  const prefix = words[Math.floor(Math.random() * words.length)];
+  const num = Math.floor(1000 + Math.random() * 9000);
+  const symbols = ['!', '@', '#', '$', '%', '*'];
+  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+  return `${prefix}#${num}${symbol}`;
+};
+
 export const corporateService = {
   // ── Companies ──────────────────────────────────────────────────────────────
   getCompanies: async (): Promise<Company[]> => {
     return new Promise((res) => setTimeout(() => res([...companies]), 150));
   },
-  addCompany: async (data: Omit<Company, 'id' | 'createdAt' | 'usedAmount' | 'availableBalance'>): Promise<Company> => {
+  addCompany: async (
+    data: Omit<Company, 'id' | 'createdAt' | 'usedAmount' | 'availableBalance'> & { tempAdminPassword?: string },
+  ): Promise<{ company: Company; initialAdmin?: CorporateUser }> => {
     const newCompId = `comp-${Date.now()}`;
     const newComp: Company = {
       ...data,
@@ -391,9 +403,12 @@ export const corporateService = {
     };
     companies = [newComp, ...companies];
 
-    // If an initial Corporate Admin was specified, automatically provision or invite them!
+    let initialAdmin: CorporateUser | undefined;
+
+    // If an initial Corporate Admin was specified, automatically provision them with temporary credentials
     if (data.adminEmail) {
-      const initialAdmin: CorporateUser = {
+      const generatedTempPass = data.tempAdminPassword || generateTemporaryPassword();
+      initialAdmin = {
         id: `c-usr-${Date.now()}`,
         name: data.adminName || 'Corporate Administrator',
         email: data.adminEmail,
@@ -403,6 +418,8 @@ export const corporateService = {
         departmentName: 'Executive Administration',
         corporateRole: 'CORPORATE_ADMIN',
         status: 'INVITED',
+        mustChangePassword: true,
+        tempPassword: generatedTempPass,
         invitedAt: new Date().toISOString(),
         isActive: true,
         totalBookings: 0,
@@ -412,7 +429,7 @@ export const corporateService = {
       corporateUsers = [initialAdmin, ...corporateUsers];
     }
 
-    return newComp;
+    return { company: newComp, initialAdmin };
   },
   updateCompany: async (id: string, data: Partial<Company>): Promise<Company | null> => {
     const idx = companies.findIndex((c) => c.id === id);
@@ -429,11 +446,16 @@ export const corporateService = {
   getCorporateUsers: async (): Promise<CorporateUser[]> => {
     return new Promise((res) => setTimeout(() => res([...corporateUsers]), 150));
   },
-  addCorporateUser: async (data: Omit<CorporateUser, 'id' | 'createdAt'>): Promise<CorporateUser> => {
+  addCorporateUser: async (
+    data: Omit<CorporateUser, 'id' | 'createdAt'> & { tempPassword?: string },
+  ): Promise<CorporateUser> => {
+    const generatedTempPass = data.tempPassword || generateTemporaryPassword();
     const newUser: CorporateUser = {
       ...data,
       id: `c-usr-${Date.now()}`,
-      status: data.status || 'ACTIVE',
+      status: data.status || 'INVITED',
+      mustChangePassword: true,
+      tempPassword: generatedTempPass,
       createdAt: new Date().toISOString().split('T')[0],
     };
     corporateUsers = [newUser, ...corporateUsers];
@@ -450,7 +472,9 @@ export const corporateService = {
     employeeId?: string;
     jobTitle?: string;
     phone?: string;
+    customTempPassword?: string;
   }): Promise<CorporateUser> => {
+    const generatedTempPass = data.customTempPassword || generateTemporaryPassword();
     const newEmployee: CorporateUser = {
       id: `c-usr-${Date.now()}`,
       name: data.name,
@@ -464,6 +488,8 @@ export const corporateService = {
       departmentName: data.department,
       corporateRole: data.corporateRole,
       status: 'INVITED',
+      mustChangePassword: true,
+      tempPassword: generatedTempPass,
       invitedAt: new Date().toISOString(),
       isActive: true,
       totalBookings: 0,
@@ -488,6 +514,19 @@ export const corporateService = {
     if (idx === -1) return null;
     corporateUsers[idx] = { ...corporateUsers[idx], ...data };
     return corporateUsers[idx];
+  },
+  changeCorporateUserPassword: async (email: string, _newPassword: string): Promise<boolean> => {
+    const idx = corporateUsers.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
+    if (idx !== -1) {
+      corporateUsers[idx] = {
+        ...corporateUsers[idx],
+        mustChangePassword: false,
+        status: 'ACTIVE',
+        tempPassword: undefined,
+      };
+      return true;
+    }
+    return true;
   },
   deleteCorporateUser: async (id: string): Promise<boolean> => {
     corporateUsers = corporateUsers.filter((u) => u.id !== id);

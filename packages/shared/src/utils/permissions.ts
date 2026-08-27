@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   Role,
   PermissionResource,
   PermissionAction,
@@ -138,6 +138,32 @@ export const ROLE_DEFINITIONS: Record<Role, RoleDefinition> = {
     label: 'Traveler / Customer (Legacy)',
     description: 'Public traveler.',
     permissions: ['booking:create', 'payment:create', 'tours:read', 'tours:book', 'bookings:create', 'bookings:read', 'reviews:read'],
+  },
+
+  // ── Corporate Roles ────────────────────────────────────────────────────────
+  CORPORATE_ADMIN: {
+    role: 'CORPORATE_ADMIN',
+    label: 'Corporate Administrator',
+    description: 'Full management of company account, travel policies, employees, and corporate approvals.',
+    permissions: ['booking:create', 'booking:approve', 'bookings:read', 'bookings:create', 'bookings:update', 'report:view', 'tours:read', 'tours:book'],
+  },
+  TRAVEL_MANAGER: {
+    role: 'TRAVEL_MANAGER',
+    label: 'Corporate Travel Manager',
+    description: 'Books travel for company employees and manages policy compliance.',
+    permissions: ['booking:create', 'booking:approve', 'bookings:read', 'bookings:create', 'bookings:update', 'report:view', 'tours:read', 'tours:book'],
+  },
+  APPROVER: {
+    role: 'APPROVER',
+    label: 'Line Budget Approver',
+    description: 'Reviews and approves or rejects corporate employee booking requests.',
+    permissions: ['booking:approve', 'bookings:read', 'report:view', 'tours:read'],
+  },
+  TRAVELER: {
+    role: 'TRAVELER',
+    label: 'Corporate Traveler',
+    description: 'Searches and books flights and accommodations under company travel policy.',
+    permissions: ['booking:create', 'bookings:read', 'bookings:create', 'tours:read', 'tours:book'],
   },
 };
 

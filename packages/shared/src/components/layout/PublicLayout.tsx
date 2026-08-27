@@ -4,6 +4,7 @@ import { PublicNavbar } from './PublicNavbar';
 import { PublicFooter } from './PublicFooter';
 import { NewsletterSection } from '@tms/shared/components/common/NewsletterSection';
 import { ChatbotWidget } from '@tms/shared/components/common/ChatbotWidget';
+import { MandatoryPasswordChangeModal } from '@tms/shared/components/auth/MandatoryPasswordChangeModal';
 import { useUIStore } from '@tms/shared/store/useUIStore';
 
 export const PublicLayout: React.FC = () => {
@@ -24,6 +25,8 @@ export const PublicLayout: React.FC = () => {
       <PublicFooter />
       {/* Global AI Chatbot Support Widget */}
       <ChatbotWidget />
+      {/* Mandatory First-Login Password Change Modal */}
+      <MandatoryPasswordChangeModal />
     </div>
   );
 };

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@tms/shared/components/common/Button';
 import { getTravelerAvatar } from '@tms/shared/utils/avatar';
+import { MandatoryPasswordChangeModal } from '@tms/shared/components/auth/MandatoryPasswordChangeModal';
 
 export const CorporateLayout: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -505,6 +506,9 @@ export const CorporateLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Mandatory First-Login Password Change Modal */}
+      <MandatoryPasswordChangeModal />
     </div>
   );
 };

@@ -22,6 +22,10 @@ import {
   Briefcase,
   Shield,
   Send,
+  KeyRound,
+  Copy,
+  Check,
+  RotateCcw,
 } from 'lucide-react';
 
 export const AdminCompaniesPage: React.FC = () => {
@@ -45,9 +49,19 @@ export const AdminCompaniesPage: React.FC = () => {
   const [creditLimit, setCreditLimit] = useState(150000);
   const [isActive, setIsActive] = useState(true);
   const [employeeCount, setEmployeeCount] = useState(50);
-  // Initial Corporate Admin
+  // Initial Corporate Admin & Temp Password
   const [adminName, setAdminName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
+
+  // Credentials Generated Modal
+  const [credentialsModalData, setCredentialsModalData] = useState<{
+    companyName: string;
+    adminName: string;
+    adminEmail: string;
+    tempPassword: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -62,6 +76,15 @@ export const AdminCompaniesPage: React.FC = () => {
   useEffect(() => {
     fetchCompanies();
   }, []);
+
+  const handleRandomizePassword = () => {
+    const words = ['Michuu', 'Habesha', 'Abyssinia', 'Safari', 'Expedition', 'Summit'];
+    const prefix = words[Math.floor(Math.random() * words.length)];
+    const num = Math.floor(1000 + Math.random() * 9000);
+    const symbols = ['!', '@', '#', '$', '&'];
+    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    setTempPassword(`${prefix}#${num}${symbol}`);
+  };
 
   const handleOpenAdd = () => {
     setEditingCompany(null);
@@ -78,6 +101,7 @@ export const AdminCompaniesPage: React.FC = () => {
     setEmployeeCount(50);
     setAdminName('');
     setAdminEmail('');
+    handleRandomizePassword();
     setIsModalOpen(true);
   };
 
@@ -117,8 +141,10 @@ export const AdminCompaniesPage: React.FC = () => {
         adminName,
         adminEmail,
       });
+      setIsModalOpen(false);
+      fetchCompanies();
     } else {
-      await corporateService.addCompany({
+      const result = await corporateService.addCompany({
         name,
         code,
         registrationNo,
@@ -132,10 +158,41 @@ export const AdminCompaniesPage: React.FC = () => {
         employeeCount,
         adminName,
         adminEmail,
+        tempAdminPassword: tempPassword,
       });
+
+      setIsModalOpen(false);
+      fetchCompanies();
+
+      // Show credentials popup if admin was created
+      if (result.initialAdmin) {
+        setCredentialsModalData({
+          companyName: name,
+          adminName: result.initialAdmin.name,
+          adminEmail: result.initialAdmin.email,
+          tempPassword: result.initialAdmin.tempPassword || tempPassword,
+        });
+      }
     }
-    setIsModalOpen(false);
-    fetchCompanies();
+  };
+
+  const handleCopyCredentials = () => {
+    if (!credentialsModalData) return;
+    const text = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MICHUU TMS — Corporate Admin Credentials
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Organization : ${credentialsModalData.companyName}
+Admin Name   : ${credentialsModalData.adminName}
+Email        : ${credentialsModalData.adminEmail}
+Temp Password: ${credentialsModalData.tempPassword}
+Portal URL   : ${window.location.origin.replace(':5174', ':5173')}/login
+
+🔒 NOTE: You will be prompted to change your temporary password immediately upon your first sign in.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const handleDelete = async (id: string) => {
@@ -337,11 +394,11 @@ export const AdminCompaniesPage: React.FC = () => {
 
                 {/* Initial Corporate Admin Invite Box */}
                 {!editingCompany && (
-                  <div style={{ gridColumn: 'span 2', padding: '1rem', borderRadius: '8px', backgroundColor: 'rgba(139,92,246,0.06)', border: '1.5px solid rgba(139,92,246,0.2)' }}>
+                  <div style={{ gridColumn: 'span 2', padding: '1rem', borderRadius: '10px', backgroundColor: 'rgba(139,92,246,0.06)', border: '1.5px solid rgba(139,92,246,0.25)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 800, fontSize: '12px', color: '#8b5cf6', marginBottom: '0.6rem' }}>
-                      <Shield size={14} /> First Corporate Admin (Will receive onboarding invite)
+                      <Shield size={14} /> First Corporate Admin (Will receive temporary credentials)
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
                       <div>
                         <label style={{ fontSize: '10px', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Admin Full Name *</label>
                         <input
@@ -365,8 +422,53 @@ export const AdminCompaniesPage: React.FC = () => {
                         />
                       </div>
                     </div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
-                      💡 This Corporate Admin will receive an email to activate their account and manage the rest of their company's employees.
+
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)' }}>Generated Temporary Password *</label>
+                        <button
+                          type="button"
+                          onClick={handleRandomizePassword}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#8b5cf6',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                          }}
+                        >
+                          <RotateCcw size={10} /> Generate New
+                        </button>
+                      </div>
+                      <div style={{ position: 'relative' }}>
+                        <KeyRound size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#8b5cf6' }} />
+                        <input
+                          type="text"
+                          value={tempPassword}
+                          onChange={(e) => setTempPassword(e.target.value)}
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.6rem 0.55rem 2rem',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(139,92,246,0.4)',
+                            backgroundColor: 'var(--bg-primary)',
+                            color: '#8b5cf6',
+                            fontWeight: 800,
+                            fontFamily: 'monospace',
+                            fontSize: '12px',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.4 }}>
+                      💡 A credentials confirmation dialog will appear once created so you can copy and provide these login details to the Corporate Admin. They will be required to change it on their first login.
                     </div>
                   </div>
                 )}
@@ -377,11 +479,151 @@ export const AdminCompaniesPage: React.FC = () => {
                   Cancel
                 </Button>
                 <Button variant="primary" type="submit">
-                  {editingCompany ? 'Save Changes' : 'Register Organization & Send Invite'}
+                  {editingCompany ? 'Save Changes' : 'Register Organization & Generate Credentials'}
                 </Button>
               </div>
             </form>
           </Card>
+        </div>
+      )}
+
+      {/* ── Credentials Created Confirmation Dialog ── */}
+      {credentialsModalData && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '1.25rem',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              backgroundColor: 'var(--bg-primary, #ffffff)',
+              borderRadius: '16px',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '1.5rem',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(37, 99, 235, 0.08) 100%)',
+                borderBottom: '1px solid var(--border-color)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  color: '#10b981',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>Corporate Client Registered</h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Corporate Admin account provisioned with temporary credentials
+                </p>
+              </div>
+            </div>
+
+            {/* Content & Credentials Box */}
+            <div style={{ padding: '1.5rem' }}>
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-secondary, #f8fafc)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.6rem',
+                  marginBottom: '1rem',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Organization:</span>
+                  <span style={{ fontWeight: 700 }}>{credentialsModalData.companyName}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Corporate Admin:</span>
+                  <span style={{ fontWeight: 700 }}>{credentialsModalData.adminName}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Login Email:</span>
+                  <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{credentialsModalData.adminEmail}</span>
+                </div>
+                <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '0.2rem 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Temporary Password:</span>
+                  <span
+                    style={{
+                      fontWeight: 800,
+                      fontFamily: 'monospace',
+                      color: '#2563eb',
+                      backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                    }}
+                  >
+                    {credentialsModalData.tempPassword}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  color: '#b45309',
+                  fontSize: '11px',
+                  lineHeight: 1.4,
+                  marginBottom: '1.25rem',
+                }}
+              >
+                🔒 <strong>Mandatory Reset:</strong> The admin will be prompted to create their permanent private password upon their first login to the portal.
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <Button
+                  variant="primary"
+                  onClick={handleCopyCredentials}
+                  icon={copied ? <Check size={15} /> : <Copy size={15} />}
+                  style={{ flex: 1, backgroundColor: copied ? '#10b981' : undefined }}
+                >
+                  {copied ? 'Credentials Copied!' : 'Copy Credentials'}
+                </Button>
+                <Button variant="ghost" onClick={() => setCredentialsModalData(null)}>
+                  Done
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

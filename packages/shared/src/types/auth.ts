@@ -27,6 +27,7 @@ export interface User {
   tourTypes?: string[];
   completedTripsCount?: number;
   emailVerified?: boolean;
+  mustChangePassword?: boolean;
   // ── Corporate identity fields (present when role is a corporate role) ──
   companyId?: string;
   companyName?: string;
@@ -43,4 +44,6 @@ export interface AuthState {
   login: (user: User, token: string) => void;
   logout: () => void;
   switchRole: (role: Role) => void;
+  updateUser: (fields: Partial<User>) => void;
+  completePasswordChange: () => void;
 }

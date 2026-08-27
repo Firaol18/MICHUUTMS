@@ -18,6 +18,10 @@ import {
   X,
   Shield,
   Key,
+  KeyRound,
+  Copy,
+  Check,
+  RotateCcw,
 } from 'lucide-react';
 
 const ROLE_COLORS: Record<string, string> = {
@@ -50,8 +54,18 @@ export const CorporateEmployeesPage: React.FC = () => {
   const [inviteDepartment, setInviteDepartment] = useState('Sales & Business Development');
   const [inviteRole, setInviteRole] = useState<CorporateRole>('TRAVELER');
   const [invitePhone, setInvitePhone] = useState('+251 9');
+  const [inviteTempPassword, setInviteTempPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [inviteSuccessMsg, setInviteSuccessMsg] = useState('');
+
+  // Credentials Generated Confirmation Dialog
+  const [credentialsModalData, setCredentialsModalData] = useState<{
+    name: string;
+    email: string;
+    role: string;
+    tempPassword: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const companyId = user?.companyId || 'comp-1';
   const companyName = user?.companyName || 'Ethiopian Airlines Group';
@@ -68,6 +82,15 @@ export const CorporateEmployeesPage: React.FC = () => {
     loadEmployees();
   }, [companyId]);
 
+  const handleRandomizePassword = () => {
+    const words = ['Michuu', 'Habesha', 'Abyssinia', 'Safari', 'Expedition', 'Summit'];
+    const prefix = words[Math.floor(Math.random() * words.length)];
+    const num = Math.floor(1000 + Math.random() * 9000);
+    const symbols = ['!', '@', '#', '$', '&'];
+    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    setInviteTempPassword(`${prefix}#${num}${symbol}`);
+  };
+
   const handleOpenInvite = () => {
     setInviteName('');
     setInviteEmail('');
@@ -77,6 +100,7 @@ export const CorporateEmployeesPage: React.FC = () => {
     setInviteRole('TRAVELER');
     setInvitePhone('+251 9');
     setInviteSuccessMsg('');
+    handleRandomizePassword();
     setIsInviteModalOpen(true);
   };
 
@@ -84,7 +108,7 @@ export const CorporateEmployeesPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await corporateService.inviteEmployee({
+      const created = await corporateService.inviteEmployee({
         name: inviteName,
         email: inviteEmail,
         companyId,
@@ -94,18 +118,43 @@ export const CorporateEmployeesPage: React.FC = () => {
         employeeId: inviteEmployeeId,
         jobTitle: inviteJobTitle || inviteDepartment,
         phone: invitePhone,
+        customTempPassword: inviteTempPassword,
       });
 
-      setInviteSuccessMsg(`✅ Invitation email sent to ${inviteEmail} with activation link!`);
+      setIsInviteModalOpen(false);
       loadEmployees();
 
-      setTimeout(() => {
-        setIsInviteModalOpen(false);
-        setInviteSuccessMsg('');
-      }, 1800);
+      // Show credentials dialog
+      setCredentialsModalData({
+        name: created.name,
+        email: created.email,
+        role: created.corporateRole,
+        tempPassword: created.tempPassword || inviteTempPassword,
+      });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCopyCredentials = () => {
+    if (!credentialsModalData) return;
+    const roleLabel = CORPORATE_ROLES.find((r) => r.role === credentialsModalData.role)?.label || credentialsModalData.role;
+    const text = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MICHUU TMS — Employee Travel Credentials
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Organization : ${companyName}
+Employee Name: ${credentialsModalData.name}
+Role         : ${roleLabel}
+Login Email  : ${credentialsModalData.email}
+Temp Password: ${credentialsModalData.tempPassword}
+Portal URL   : ${window.location.origin}/login
+
+🔒 NOTE: You will be required to change your temporary password immediately upon your first sign in.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const filtered = employees.filter((e) => {
@@ -455,6 +504,56 @@ export const CorporateEmployeesPage: React.FC = () => {
                       style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', boxSizing: 'border-box' }}
                     />
                   </div>
+
+                  {/* Temporary Password Box */}
+                  <div style={{ gridColumn: '1 / -1', padding: '0.85rem', borderRadius: '8px', backgroundColor: 'rgba(37, 99, 235, 0.05)', border: '1px solid rgba(37, 99, 235, 0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                      <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--brand-primary)' }}>
+                        Temporary Password (First-Time Login)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleRandomizePassword}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--brand-primary)',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}
+                      >
+                        <RotateCcw size={10} /> Generate New
+                      </button>
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <KeyRound size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--brand-primary)' }} />
+                      <input
+                        type="text"
+                        value={inviteTempPassword}
+                        onChange={(e) => setInviteTempPassword(e.target.value)}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem 0.6rem 0.5rem 2rem',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(37, 99, 235, 0.3)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--brand-primary)',
+                          fontWeight: 800,
+                          fontFamily: 'monospace',
+                          fontSize: '12px',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '0.4rem', lineHeight: 1.4 }}>
+                      🔒 The employee will be required to create their permanent private password when they first log in.
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
@@ -462,12 +561,154 @@ export const CorporateEmployeesPage: React.FC = () => {
                     Cancel
                   </Button>
                   <Button variant="primary" type="submit" disabled={isSubmitting} icon={<Send size={15} />}>
-                    {isSubmitting ? 'Sending Invitation...' : 'Send Invitation Email'}
+                    {isSubmitting ? 'Creating Employee...' : 'Create Employee & Generate Credentials'}
                   </Button>
                 </div>
               </form>
             )}
           </Card>
+        </div>
+      )}
+
+      {/* ── Credentials Created Confirmation Dialog ── */}
+      {credentialsModalData && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '1.25rem',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '460px',
+              backgroundColor: 'var(--bg-primary, #ffffff)',
+              borderRadius: '16px',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '1.5rem',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(37, 99, 235, 0.08) 100%)',
+                borderBottom: '1px solid var(--border-color)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  color: '#10b981',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>Employee Account Created</h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Ready to share credentials with team member
+                </p>
+              </div>
+            </div>
+
+            {/* Content & Credentials Box */}
+            <div style={{ padding: '1.5rem' }}>
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-secondary, #f8fafc)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.6rem',
+                  marginBottom: '1rem',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Employee Name:</span>
+                  <span style={{ fontWeight: 700 }}>{credentialsModalData.name}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Assigned Role:</span>
+                  <span style={{ fontWeight: 700, color: ROLE_COLORS[credentialsModalData.role] || 'inherit' }}>
+                    {CORPORATE_ROLES.find((r) => r.role === credentialsModalData.role)?.label || credentialsModalData.role}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Login Email:</span>
+                  <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{credentialsModalData.email}</span>
+                </div>
+                <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '0.2rem 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Temporary Password:</span>
+                  <span
+                    style={{
+                      fontWeight: 800,
+                      fontFamily: 'monospace',
+                      color: 'var(--brand-primary)',
+                      backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                    }}
+                  >
+                    {credentialsModalData.tempPassword}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  color: '#b45309',
+                  fontSize: '11px',
+                  lineHeight: 1.4,
+                  marginBottom: '1.25rem',
+                }}
+              >
+                🔒 <strong>First-Time Password Reset:</strong> When this employee signs in, the system will automatically prompt them to set their permanent private password.
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <Button
+                  variant="primary"
+                  onClick={handleCopyCredentials}
+                  icon={copied ? <Check size={15} /> : <Copy size={15} />}
+                  style={{ flex: 1, backgroundColor: copied ? '#10b981' : undefined }}
+                >
+                  {copied ? 'Credentials Copied!' : 'Copy Credentials'}
+                </Button>
+                <Button variant="ghost" onClick={() => setCredentialsModalData(null)}>
+                  Done
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -51,6 +51,8 @@ export interface CorporateUser {
   managerId?: string;
   managerName?: string;
   status?: CorporateUserStatus;
+  mustChangePassword?: boolean;
+  tempPassword?: string;
   invitedAt?: string;
   joinedAt?: string;
   isActive: boolean;
