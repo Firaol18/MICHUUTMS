@@ -2,12 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { http } from '@tms/shared/services/apiClient';
-import { Card } from '@tms/shared/components/common/Card';
-import { Input } from '@tms/shared/components/common/Input';
-import { Button } from '@tms/shared/components/common/Button';
+import { isCorporateRole } from '@tms/shared/types/rbac';
 import {
-  Compass, Lock, Mail, User as UserIcon, ArrowRight, AlertCircle,
-  CheckCircle2, Eye, EyeOff, KeyRound, ShieldAlert, MailCheck,
+  Compass,
+  Lock,
+  Mail,
+  User as UserIcon,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  ShieldAlert,
+  MailCheck,
+  Building2,
 } from 'lucide-react';
 
 type PageMode = 'signin' | 'signup' | 'forgot' | 'forgot-sent';
@@ -54,7 +63,7 @@ export const LoginPage: React.FC = () => {
     const status = err.response?.status;
     const msg = Array.isArray(data?.message)
       ? data.message.join('. ')
-      : String(data?.message || data?.error || err.message || 'Authentication failed.');
+      : String(data?.message || data?.error || err.message || 'Authentication failed. Please check your credentials.');
     return { msg, locked: status === 403 };
   };
 
@@ -70,11 +79,23 @@ export const LoginPage: React.FC = () => {
     const cleanName = name.trim();
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) { setErrorMsg('Please enter a valid email address.'); return; }
-    if (password.length < 8) { setErrorMsg('Password must be at least 8 characters.'); return; }
+    if (!emailRegex.test(cleanEmail)) {
+      setErrorMsg('Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMsg('Password must be at least 8 characters.');
+      return;
+    }
     if (mode === 'signup') {
-      if (cleanName.length < 2) { setErrorMsg('Full name must be at least 2 characters.'); return; }
-      if (password !== confirmPassword) { setErrorMsg('Passwords do not match.'); return; }
+      if (cleanName.length < 2) {
+        setErrorMsg('Full name must be at least 2 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setErrorMsg('Passwords do not match.');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -85,7 +106,6 @@ export const LoginPage: React.FC = () => {
         : { email: cleanEmail, password };
 
       const response = await http.post(endpoint, body);
-      // New API returns { user, accessToken } — support both old access_token and new accessToken
       const { user, accessToken, access_token } = response.data;
       const token = accessToken || access_token;
       if (!token || !user) throw new Error('Invalid response from authentication server.');
@@ -98,21 +118,28 @@ export const LoginPage: React.FC = () => {
           role: user.role || 'tourist',
           department: user.department || (user.role === 'admin' ? 'Tourism Operations' : 'Traveler Member'),
           avatarUrl: user.avatarUrl,
+          companyId: user.companyId,
+          companyName: user.companyName,
+          departmentId: user.departmentId,
+          departmentName: user.departmentName,
+          managerId: user.managerId,
+          managerName: user.managerName,
           emailVerified: user.emailVerified ?? true,
         },
         token,
       );
 
       if (mode === 'signup') {
-        setSuccessMsg('✅ Account created! A verification email has been sent to your inbox. Redirecting...');
+        setSuccessMsg('Account created successfully! Redirecting...');
       } else {
         setSuccessMsg(`Welcome back, ${user.name}! Redirecting...`);
       }
 
       setTimeout(() => {
         if (user.role === 'admin') navigate('/admin/dashboard');
+        else if (isCorporateRole(user.role)) navigate('/corporate/dashboard');
         else navigate('/user/dashboard');
-      }, 600);
+      }, 500);
     } catch (err: any) {
       const { msg, locked } = parseBackendError(err);
       setErrorMsg(msg);
@@ -126,7 +153,10 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setErrorMsg('');
     const cleanEmail = email.toLowerCase().trim();
-    if (!cleanEmail) { setErrorMsg('Please enter your email address.'); return; }
+    if (!cleanEmail) {
+      setErrorMsg('Please enter your email address.');
+      return;
+    }
     setIsLoading(true);
     try {
       await http.post('/auth/forgot-password', { email: cleanEmail });
@@ -143,140 +173,668 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div
-      className="flex-center"
       style={{
         minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem 1.25rem',
         backgroundColor: 'var(--bg-primary)',
-        padding: '2rem 1.5rem',
-        background: 'radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 50%), radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.08), transparent 50%)',
+        background: 'radial-gradient(ellipse at top, rgba(37, 99, 235, 0.06), transparent 70%), var(--bg-primary)',
       }}
     >
-      <Card glass style={{ width: '100%', maxWidth: '460px', padding: '2.5rem 2rem', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}>
-
-        {/* Header */}
-        <div className="flex-center" style={{ flexDirection: 'column', gap: '0.4rem', marginBottom: '1.75rem' }}>
-          <div className="flex-center" style={{ width: 52, height: 52, borderRadius: '16px', backgroundColor: 'var(--brand-primary-light)', marginBottom: '0.25rem' }}>
-            {mode === 'forgot' || mode === 'forgot-sent'
-              ? <KeyRound size={28} style={{ color: 'var(--brand-primary)' }} />
-              : <Compass size={30} style={{ color: 'var(--brand-primary)' }} />
-            }
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          backgroundColor: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '24px',
+          padding: '2.5rem 2.25rem',
+          boxShadow: '0 12px 36px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* ── Brand & Welcome Area ── */}
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: '14px',
+              backgroundColor: 'var(--brand-primary-light)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '0.75rem',
+              color: 'var(--brand-primary)',
+            }}
+          >
+            {mode === 'forgot' || mode === 'forgot-sent' ? (
+              <KeyRound size={24} />
+            ) : (
+              <Compass size={26} />
+            )}
           </div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
-            {mode === 'forgot' ? 'Forgot Password' : mode === 'forgot-sent' ? 'Check Your Email' : <>MICHUU <span style={{ color: 'var(--brand-primary)' }}>TMS</span></>}
-          </h2>
-          <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
-            {mode === 'signin' && 'Sign in to access your bookings, tickets & personalized trips'}
-            {mode === 'signup' && 'Create an account to begin your Ethiopian journey'}
-            {mode === 'forgot' && "Enter your email and we'll send a reset link"}
-            {mode === 'forgot-sent' && `We've sent a reset link to ${email}`}
+
+          <div
+            style={{
+              fontSize: '1.2rem',
+              fontWeight: 900,
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+              lineHeight: 1.2,
+            }}
+          >
+            MICHUU <span style={{ color: 'var(--brand-primary)' }}>TMS</span>
+          </div>
+
+          <h1
+            style={{
+              fontSize: '1.5rem',
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.02em',
+              margin: '0.5rem 0 0 0',
+            }}
+          >
+            {mode === 'forgot'
+              ? 'Reset Password'
+              : mode === 'forgot-sent'
+              ? 'Check Your Email'
+              : mode === 'signup'
+              ? 'Create Account'
+              : 'Welcome back'}
+          </h1>
+
+          <p
+            style={{
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--text-muted)',
+              marginTop: '0.35rem',
+              lineHeight: 1.5,
+            }}
+          >
+            {mode === 'signin' && 'Sign in to access your bookings, tickets and personalized trips.'}
+            {mode === 'signup' && 'Sign up to explore tours, book flights, and manage trips.'}
+            {mode === 'forgot' && "Enter your email address and we'll send you a password reset link."}
+            {mode === 'forgot-sent' && `We've sent a password recovery link to ${email}`}
           </p>
         </div>
 
-        {/* Email Verified Banner */}
+        {/* ── Email Verified Alert ── */}
         {justVerified && (
-          <div style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', fontSize: 'var(--font-size-xs)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              color: '#10b981',
+              fontSize: 'var(--font-size-xs)',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
             <MailCheck size={16} style={{ flexShrink: 0 }} />
-            <span>Email verified successfully! Sign in to continue.</span>
+            <span>Email verified successfully! Please sign in to continue.</span>
           </div>
         )}
 
-        {/* Tab Switcher (only on signin/signup) */}
+        {/* ── Sign In / Create Account Segmented Control ── */}
         {(mode === 'signin' || mode === 'signup') && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: 'var(--bg-tertiary)', padding: '0.25rem', borderRadius: 'var(--radius-full)', marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}>
-            {(['signin', 'signup'] as const).map((m) => (
-              <button key={m} type="button" onClick={() => switchMode(m)} style={{ padding: '0.55rem', borderRadius: 'var(--radius-full)', fontSize: 'var(--font-size-xs)', fontWeight: mode === m ? 800 : 500, backgroundColor: mode === m ? 'var(--bg-primary)' : 'transparent', color: mode === m ? 'var(--brand-primary)' : 'var(--text-secondary)', boxShadow: mode === m ? '0 2px 6px rgba(0,0,0,0.08)' : 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s ease' }}>
-                {m === 'signin' ? 'Sign In' : 'Create Account'}
-              </button>
-            ))}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              backgroundColor: 'var(--bg-tertiary)',
+              padding: '0.25rem',
+              borderRadius: '12px',
+              marginBottom: '1.5rem',
+              border: '1px solid var(--border-color)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => switchMode('signin')}
+              style={{
+                padding: '0.55rem',
+                borderRadius: '9px',
+                fontSize: 'var(--font-size-xs)',
+                fontWeight: mode === 'signin' ? 800 : 600,
+                backgroundColor: mode === 'signin' ? 'var(--bg-primary)' : 'transparent',
+                color: mode === 'signin' ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                boxShadow: mode === 'signin' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode('signup')}
+              style={{
+                padding: '0.55rem',
+                borderRadius: '9px',
+                fontSize: 'var(--font-size-xs)',
+                fontWeight: mode === 'signup' ? 800 : 600,
+                backgroundColor: mode === 'signup' ? 'var(--bg-primary)' : 'transparent',
+                color: mode === 'signup' ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                boxShadow: mode === 'signup' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              Create Account
+            </button>
           </div>
         )}
 
-        {/* Error Alert */}
+        {/* ── Error Banner ── */}
         {errorMsg && (
-          <div style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', backgroundColor: isLocked ? 'rgba(245,158,11,0.1)' : 'rgba(239, 68, 68, 0.1)', border: `1px solid ${isLocked ? 'rgba(245,158,11,0.3)' : 'rgba(239, 68, 68, 0.25)'}`, color: isLocked ? '#f59e0b' : '#ef4444', fontSize: 'var(--font-size-xs)', marginBottom: '1.25rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-            {isLocked ? <ShieldAlert size={16} style={{ flexShrink: 0, marginTop: 1 }} /> : <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />}
-            <span>{errorMsg}</span>
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '10px',
+              backgroundColor: isLocked ? 'rgba(245, 158, 11, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+              border: `1px solid ${isLocked ? 'rgba(245, 158, 11, 0.25)' : 'rgba(239, 68, 68, 0.2)'}`,
+              color: isLocked ? '#d97706' : '#ef4444',
+              fontSize: 'var(--font-size-xs)',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.5rem',
+            }}
+          >
+            {isLocked ? (
+              <ShieldAlert size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+            ) : (
+              <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+            )}
+            <span style={{ lineHeight: 1.4 }}>{errorMsg}</span>
           </div>
         )}
 
-        {/* Success Alert */}
+        {/* ── Success Banner ── */}
         {successMsg && (
-          <div style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', color: '#10b981', fontSize: 'var(--font-size-xs)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              color: '#10b981',
+              fontSize: 'var(--font-size-xs)',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
             <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
             <span>{successMsg}</span>
           </div>
         )}
 
-        {/* ── Sign In / Sign Up Form ── */}
+        {/* ── Main Form (Sign In / Sign Up) ── */}
         {(mode === 'signin' || mode === 'signup') && (
           <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
             {mode === 'signup' && (
-              <Input label="Full Name" placeholder="e.g. Firaol Desalegn" icon={<UserIcon size={16} />} value={name} onChange={(e) => setName(e.target.value)} required />
+              <div>
+                <label
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: 'var(--text-muted)',
+                    display: 'block',
+                    marginBottom: '0.4rem',
+                  }}
+                >
+                  Full Name
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <UserIcon
+                    size={16}
+                    style={{
+                      position: 'absolute',
+                      left: '14px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: 'var(--text-muted)',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      height: '48px',
+                      padding: '0 1rem 0 2.5rem',
+                      borderRadius: '10px',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      fontSize: 'var(--font-size-sm)',
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                      transition: 'border-color 0.15s ease',
+                    }}
+                  />
+                </div>
+              </div>
             )}
-            <Input label="Email Address" type="email" placeholder="e.g. name@example.com" icon={<Mail size={16} />} value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <div style={{ position: 'relative' }}>
-              <Input label="Password" type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters" icon={<Lock size={16} />} value={password} onChange={(e) => setPassword(e.target.value)} required />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '36px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+
+            {/* Email Field */}
+            <div>
+              <label
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: 'var(--text-muted)',
+                  display: 'block',
+                  marginBottom: '0.4rem',
+                }}
+              >
+                Email Address
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Mail
+                  size={16}
+                  style={{
+                    position: 'absolute',
+                    left: '14px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-muted)',
+                  }}
+                />
+                <input
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    padding: '0 1rem 0 2.5rem',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-primary)',
+                    color: 'var(--text-primary)',
+                    fontSize: 'var(--font-size-sm)',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    transition: 'border-color 0.15s ease',
+                  }}
+                />
+              </div>
             </div>
+
+            {/* Password Field */}
+            <div>
+              <label
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: 'var(--text-muted)',
+                  display: 'block',
+                  marginBottom: '0.4rem',
+                }}
+              >
+                Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Lock
+                  size={16}
+                  style={{
+                    position: 'absolute',
+                    left: '14px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-muted)',
+                  }}
+                />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    padding: '0 2.6rem 0 2.5rem',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-primary)',
+                    color: 'var(--text-primary)',
+                    fontSize: 'var(--font-size-sm)',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    transition: 'border-color 0.15s ease',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
             {mode === 'signup' && (
-              <Input label="Confirm Password" type={showPassword ? 'text' : 'password'} placeholder="Re-enter your password" icon={<Lock size={16} />} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+              <div>
+                <label
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: 'var(--text-muted)',
+                    display: 'block',
+                    marginBottom: '0.4rem',
+                  }}
+                >
+                  Confirm Password
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Lock
+                    size={16}
+                    style={{
+                      position: 'absolute',
+                      left: '14px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: 'var(--text-muted)',
+                    }}
+                  />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      height: '48px',
+                      padding: '0 1rem 0 2.5rem',
+                      borderRadius: '10px',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      fontSize: 'var(--font-size-sm)',
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                      transition: 'border-color 0.15s ease',
+                    }}
+                  />
+                </div>
+              </div>
             )}
 
             {/* Forgot password link */}
             {mode === 'signin' && (
-              <div style={{ textAlign: 'right', marginTop: '-0.5rem' }}>
-                <button type="button" onClick={() => switchMode('forgot')} style={{ fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+              <div style={{ textAlign: 'right', marginTop: '-0.3rem' }}>
+                <button
+                  type="button"
+                  onClick={() => switchMode('forgot')}
+                  style={{
+                    fontSize: 'var(--font-size-xs)',
+                    color: 'var(--brand-primary)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                  }}
+                >
                   Forgot password?
                 </button>
               </div>
             )}
 
-            <Button type="submit" variant="primary" size="lg" isLoading={isLoading} disabled={isLocked} icon={<ArrowRight size={18} />} style={{ marginTop: '0.25rem', fontWeight: 700 }}>
-              {mode === 'signin' ? 'Sign In' : 'Create Account'}
-            </Button>
+            {/* Primary Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading || isLocked}
+              style={{
+                width: '100%',
+                height: '48px',
+                backgroundColor: 'var(--brand-primary)',
+                color: '#ffffff',
+                borderRadius: '10px',
+                border: 'none',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 800,
+                cursor: isLoading || isLocked ? 'not-allowed' : 'pointer',
+                opacity: isLoading || isLocked ? 0.7 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                marginTop: '0.35rem',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>{isLoading ? 'Processing...' : mode === 'signin' ? 'Sign In' : 'Create Account'}</span>
+              {!isLoading && <ArrowRight size={16} />}
+            </button>
           </form>
         )}
 
         {/* ── Forgot Password Form ── */}
         {mode === 'forgot' && (
-          <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-            <Input label="Email Address" type="email" placeholder="Enter your registered email" icon={<Mail size={16} />} value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <Button type="submit" variant="primary" size="lg" isLoading={isLoading} icon={<KeyRound size={18} />} style={{ fontWeight: 700 }}>
-              Send Reset Link
-            </Button>
-            <Button type="button" variant="ghost" size="md" onClick={() => switchMode('signin')} style={{ fontWeight: 600 }}>
+          <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+            <div>
+              <label
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: 'var(--text-muted)',
+                  display: 'block',
+                  marginBottom: '0.4rem',
+                }}
+              >
+                Email Address
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Mail
+                  size={16}
+                  style={{
+                    position: 'absolute',
+                    left: '14px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-muted)',
+                  }}
+                />
+                <input
+                  type="email"
+                  placeholder="Enter your registered email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    padding: '0 1rem 0 2.5rem',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-primary)',
+                    color: 'var(--text-primary)',
+                    fontSize: 'var(--font-size-sm)',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                width: '100%',
+                height: '48px',
+                backgroundColor: 'var(--brand-primary)',
+                color: '#ffffff',
+                borderRadius: '10px',
+                border: 'none',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 800,
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <KeyRound size={16} />
+              <span>{isLoading ? 'Sending...' : 'Send Reset Link'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => switchMode('signin')}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                textAlign: 'center',
+              }}
+            >
               ← Back to Sign In
-            </Button>
+            </button>
           </form>
         )}
 
         {/* ── Forgot-Sent Confirmation ── */}
         {mode === 'forgot-sent' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem' }}>📨</div>
-            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              If <strong>{email}</strong> is registered, you'll receive a password reset link shortly. Check your spam folder too.
+            <div style={{ fontSize: '2.5rem' }}>📨</div>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              If <strong>{email}</strong> is registered, you'll receive a password reset link shortly.
             </p>
-            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>The link expires in <strong>1 hour</strong> and can only be used once.</p>
-            <Button type="button" variant="primary" size="lg" onClick={() => switchMode('signin')} icon={<ArrowRight size={18} />} style={{ fontWeight: 700, marginTop: '0.5rem' }}>
+            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', margin: 0 }}>
+              The link expires in <strong>1 hour</strong> and can only be used once.
+            </p>
+            <button
+              type="button"
+              onClick={() => switchMode('signin')}
+              style={{
+                width: '100%',
+                height: '46px',
+                backgroundColor: 'var(--brand-primary)',
+                color: '#ffffff',
+                borderRadius: '10px',
+                border: 'none',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 800,
+                cursor: 'pointer',
+                marginTop: '0.5rem',
+              }}
+            >
               Back to Sign In
-            </Button>
+            </button>
           </div>
         )}
 
-        {/* Footer */}
+        {/* ── Card Footer ── */}
         {(mode === 'signin' || mode === 'signup') && (
-          <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+          <div
+            style={{
+              textAlign: 'center',
+              marginTop: '1.75rem',
+              paddingTop: '1.25rem',
+              borderTop: '1px solid var(--border-color)',
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+            }}
+          >
             {mode === 'signin' ? (
-              <span>Don't have an account?{' '}<button type="button" onClick={() => switchMode('signup')} style={{ color: 'var(--brand-primary)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>Create Account</button></span>
+              <span>
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchMode('signup')}
+                  style={{
+                    color: 'var(--brand-primary)',
+                    fontWeight: 700,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  Create Account
+                </button>
+              </span>
             ) : (
-              <span>Already have an account?{' '}<button type="button" onClick={() => switchMode('signin')} style={{ color: 'var(--brand-primary)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>Sign In</button></span>
+              <span>
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchMode('signin')}
+                  style={{
+                    color: 'var(--brand-primary)',
+                    fontWeight: 700,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  Sign In
+                </button>
+              </span>
             )}
+
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+              Corporate traveler? Sign in with your company email.
+            </div>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 };

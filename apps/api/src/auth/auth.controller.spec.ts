@@ -28,27 +28,32 @@ describe('AuthController', () => {
 
   describe('register', () => {
     it('should call authService.register and return the result', async () => {
-      const mockResult = { user: { id: 1, email: 'test@example.com' }, access_token: 'token' };
+      const mockResult = { user: { id: 1, email: 'test@example.com' }, accessToken: 'token', refreshToken: 'refresh' };
       authServiceMock.register.mockResolvedValue(mockResult);
 
+      const mockRes: any = { cookie: jest.fn() };
       const dto = { name: 'Test User', email: 'test@example.com', password: 'password123' };
-      const result = await controller.register(dto);
+      const result = await controller.register(dto, mockRes);
 
       expect(authServiceMock.register).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual({ user: mockResult.user, accessToken: mockResult.accessToken });
+      expect(mockRes.cookie).toHaveBeenCalled();
     });
   });
 
   describe('login', () => {
     it('should call authService.login and return the result', async () => {
-      const mockResult = { user: { id: 1, email: 'test@example.com' }, access_token: 'token' };
+      const mockResult = { user: { id: 1, email: 'test@example.com' }, accessToken: 'token', refreshToken: 'refresh' };
       authServiceMock.login.mockResolvedValue(mockResult);
 
+      const mockRes: any = { cookie: jest.fn() };
       const dto = { email: 'test@example.com', password: 'password123' };
-      const result = await controller.login(dto);
+      const result = await controller.login(dto, mockRes);
 
       expect(authServiceMock.login).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual({ user: mockResult.user, accessToken: mockResult.accessToken });
+      expect(mockRes.cookie).toHaveBeenCalled();
     });
   });
 });
+

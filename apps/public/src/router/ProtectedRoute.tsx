@@ -75,16 +75,23 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   return <Outlet />;
 };
 
+import { isCorporateRole } from '@tms/shared/types/rbac';
+
 /**
  * GuestRoute — accessible only when NOT logged in.
- * If the user is already authenticated, redirect them to the user dashboard.
+ * If the user is already authenticated, redirect them to the corporate or user dashboard.
  */
 export const GuestRoute: React.FC = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   if (!isAuthenticated) {
     return <Outlet />;
   }
 
+  if (user && isCorporateRole(user.role)) {
+    return <Navigate to="/corporate/dashboard" replace />;
+  }
+
   return <Navigate to="/user/dashboard" replace />;
 };
+

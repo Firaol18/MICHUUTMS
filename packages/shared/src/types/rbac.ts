@@ -7,12 +7,22 @@ export type Role =
   | 'GUIDE'
   | 'DRIVER'
   | 'CUSTOMER'
+  // Corporate Travel Roles
+  | 'CORPORATE_ADMIN'
+  | 'TRAVEL_MANAGER'
+  | 'APPROVER'
+  | 'TRAVELER'
   // Legacy aliases
   | 'admin'
   | 'tour_operator'
   | 'tour_guide'
   | 'finance_manager'
   | 'tourist';
+
+// Helper: Check if a role is a corporate role
+export const CORPORATE_ROLES: Role[] = ['CORPORATE_ADMIN', 'TRAVEL_MANAGER', 'APPROVER', 'TRAVELER'];
+export const isCorporateRole = (role?: Role | string): boolean =>
+  !!role && CORPORATE_ROLES.includes(role as Role);
 
 export type PermissionResource =
   | 'tour'
@@ -24,6 +34,11 @@ export type PermissionResource =
   | 'guide'
   | 'driver'
   | 'system'
+  // Corporate resources
+  | 'corporate_booking'
+  | 'corporate_approval'
+  | 'corporate_employee'
+  | 'corporate_policy'
   // Legacy aliases
   | 'tours'
   | 'bookings'

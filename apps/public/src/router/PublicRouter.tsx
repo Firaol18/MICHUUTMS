@@ -13,6 +13,10 @@ import { EventsCalendarPage } from '@/features/public/EventsCalendarPage';
 import { TravelBlogPage } from '@/features/public/TravelBlogPage';
 import { ContactFaqPage } from '@/features/public/ContactFaqPage';
 import { CustomItineraryBuilderPage } from '@/features/public/CustomItineraryBuilderPage';
+import { FlightSearchPage } from '@/features/public/FlightSearchPage';
+import { FlightResultsPage } from '@/features/public/FlightResultsPage';
+import { HotelSearchPage } from '@/features/public/HotelSearchPage';
+import { HotelResultsPage } from '@/features/public/HotelResultsPage';
 
 // ── User Account (authenticated) ──
 import { UserAccountLayout } from '@/features/public/UserAccountLayout';
@@ -32,6 +36,15 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 
+// Corporate Portal Features
+import { CorporateLayout } from '@/features/corporate/CorporateLayout';
+import { CorporateDashboardPage } from '@/features/corporate/CorporateDashboardPage';
+import { CorporateBookingsPage } from '@/features/corporate/CorporateBookingsPage';
+import { CorporateApprovalsPage } from '@/features/corporate/CorporateApprovalsPage';
+import { CorporateEmployeesPage } from '@/features/corporate/CorporateEmployeesPage';
+import { CorporatePolicyPage } from '@/features/corporate/CorporatePolicyPage';
+import { CorporateReportsPage } from '@/features/corporate/CorporateReportsPage';
+
 export const PublicRouter: React.FC = () => {
   return (
     <BrowserRouter>
@@ -47,6 +60,10 @@ export const PublicRouter: React.FC = () => {
           <Route path="/faq" element={<ContactFaqPage />} />
           <Route path="/plan-trip" element={<CustomItineraryBuilderPage />} />
           <Route path="/custom-trip" element={<CustomItineraryBuilderPage />} />
+          <Route path="/flights" element={<FlightSearchPage />} />
+          <Route path="/flights/results" element={<FlightResultsPage />} />
+          <Route path="/hotels" element={<HotelSearchPage />} />
+          <Route path="/hotels/results" element={<HotelResultsPage />} />
 
           {/* ── Authenticated User Account ── */}
           <Route
@@ -71,6 +88,30 @@ export const PublicRouter: React.FC = () => {
           </Route>
         </Route>
 
+        {/* ── Dedicated Corporate Workspace (Independent of PublicLayout) ── */}
+        <Route
+          element={
+            <ProtectedRoute
+              allowedRoles={['CORPORATE_ADMIN', 'TRAVEL_MANAGER', 'APPROVER', 'TRAVELER', 'admin']}
+              redirectTo="/login"
+            />
+          }
+        >
+          <Route element={<CorporateLayout />}>
+            <Route path="/corporate" element={<CorporateDashboardPage />} />
+            <Route path="/corporate/dashboard" element={<CorporateDashboardPage />} />
+            <Route path="/corporate/bookings" element={<CorporateBookingsPage />} />
+            <Route path="/corporate/book-flight" element={<FlightSearchPage />} />
+            <Route path="/corporate/flights" element={<FlightSearchPage />} />
+            <Route path="/corporate/book-hotel" element={<HotelSearchPage />} />
+            <Route path="/corporate/hotels" element={<HotelSearchPage />} />
+            <Route path="/corporate/approvals" element={<CorporateApprovalsPage />} />
+            <Route path="/corporate/employees" element={<CorporateEmployeesPage />} />
+            <Route path="/corporate/policy" element={<CorporatePolicyPage />} />
+            <Route path="/corporate/reports" element={<CorporateReportsPage />} />
+          </Route>
+        </Route>
+
         {/* ── Auth Routes (publicly accessible with query tokens) ── */}
         <Route element={<PublicLayout />}>
           <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -88,3 +129,4 @@ export const PublicRouter: React.FC = () => {
     </BrowserRouter>
   );
 };
+

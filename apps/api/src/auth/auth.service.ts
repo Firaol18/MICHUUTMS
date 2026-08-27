@@ -93,9 +93,12 @@ export class AuthService {
       where: [{ email: dto.email }],
       select: [
         'id', 'name', 'email', 'password', 'isActive', 'roleId',
+        'roleName', 'companyId', 'companyName', 'departmentId', 'departmentName',
+        'managerId', 'managerName',
         'emailVerified', 'loginAttempts', 'lockUntil',
         'phone', 'nationality', 'avatarUrl',
       ],
+      relations: ['role'],
     });
 
     if (!user) {
@@ -139,9 +142,18 @@ export class AuthService {
     const hashedRefresh = await this.hashToken(refreshToken);
     await this.usersRepo.update(user.id, { refreshToken: hashedRefresh });
 
-    const { password, ...safe } = user as any;
-    return { user: safe, accessToken, refreshToken };
+    const { password, role, ...safe } = user as any;
+    const resolvedRole = user.roleName || (role?.name ? role.name.toLowerCase() : 'tourist');
+    return {
+      user: {
+        ...safe,
+        role: resolvedRole,
+      },
+      accessToken,
+      refreshToken,
+    };
   }
+
 
   // ── Refresh Tokens ─────────────────────────────────────────────────────────
 

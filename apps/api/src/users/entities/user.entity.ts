@@ -44,6 +44,35 @@ export class User {
   @Column({ type: 'text', nullable: true })
   avatarUrl?: string;
 
+  @ApiProperty({ description: 'The role name of the user (e.g. tourist, admin, CORPORATE_ADMIN, TRAVEL_MANAGER, APPROVER, TRAVELER)', required: false })
+  @Column({ type: 'varchar', length: 50, nullable: true, default: 'tourist' })
+  roleName?: string;
+
+  // ── Corporate Fields ──
+  @ApiProperty({ description: 'Associated Corporate Company ID', required: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  companyId?: string;
+
+  @ApiProperty({ description: 'Associated Corporate Company Name', required: false })
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  companyName?: string;
+
+  @ApiProperty({ description: 'Department ID', required: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  departmentId?: string;
+
+  @ApiProperty({ description: 'Department Name', required: false })
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  departmentName?: string;
+
+  @ApiProperty({ description: 'Line Manager ID', required: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  managerId?: string;
+
+  @ApiProperty({ description: 'Line Manager Name', required: false })
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  managerName?: string;
+
   // ── Emergency Contact ──
   @ApiProperty({ description: 'Emergency Contact Name', required: false })
   @Column({ type: 'varchar', length: 100, nullable: true })

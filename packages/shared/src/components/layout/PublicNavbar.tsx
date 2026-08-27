@@ -32,7 +32,13 @@ import {
   FileText,
   MessageSquare,
   CornerDownLeft,
+  Plane,
+  Hotel,
+  Building2,
+  Briefcase,
 } from 'lucide-react';
+import { isCorporateRole } from '@tms/shared/types/rbac';
+
 import { Button } from '@tms/shared/components/common/Button';
 import { RaiseIssueModal } from '@tms/shared/components/common/RaiseIssueModal';
 import { CartDrawer } from '@tms/shared/components/cart/CartDrawer';
@@ -75,6 +81,7 @@ export const PublicNavbar: React.FC = () => {
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user && (user.role === 'admin' || user.role === 'tour_operator' || user.role === 'finance_manager');
+  const isCorporate = user && isCorporateRole(user.role);
 
   const { items: cartItems, openCart } = useCartStore();
   const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -236,6 +243,14 @@ export const PublicNavbar: React.FC = () => {
               <Compass size={14} /> Tours
             </NavLink>
 
+            <NavLink to="/flights" style={({ isActive }) => getNavLinkStyle(isActive)}>
+              <Plane size={14} /> Flights
+            </NavLink>
+
+            <NavLink to="/hotels" style={({ isActive }) => getNavLinkStyle(isActive)}>
+              <Hotel size={14} /> Hotels
+            </NavLink>
+
             <NavLink to="/events" style={({ isActive }) => getNavLinkStyle(isActive)}>
               <Calendar size={14} /> Events
             </NavLink>
@@ -243,6 +258,21 @@ export const PublicNavbar: React.FC = () => {
             <NavLink to="/plan-trip" style={({ isActive }) => getNavLinkStyle(isActive)}>
               <Sparkles size={14} style={{ color: '#f59e0b' }} /> Custom Trip
             </NavLink>
+
+            {isCorporate && (
+              <NavLink
+                to="/corporate/dashboard"
+                style={({ isActive }) => ({
+                  ...getNavLinkStyle(isActive),
+                  background: isActive ? 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(6,182,212,0.15))' : 'rgba(37,99,235,0.08)',
+                  color: 'var(--brand-primary)',
+                  fontWeight: 800,
+                  border: '1px solid rgba(37,99,235,0.3)',
+                })}
+              >
+                <Building2 size={14} /> Corporate Portal
+              </NavLink>
+            )}
 
             {/* "More Resources & Support" Dropdown */}
             <div ref={moreMenuRef} style={{ position: 'relative' }}>
@@ -751,6 +781,20 @@ export const PublicNavbar: React.FC = () => {
                             <span>Admin Portal</span>
                           </button>
                         )}
+
+                        {isCorporate && (
+                          <button
+                            type="button"
+                            onClick={() => { setIsUserMenuOpen(false); navigate('/corporate/dashboard'); }}
+                            style={{ ...menuItemStyle, color: 'var(--brand-primary)', fontWeight: 700 }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--brand-primary-light)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                          >
+                            <Building2 size={15} style={{ color: 'var(--brand-primary)' }} />
+                            <span>Corporate Dashboard</span>
+                          </button>
+                        )}
+
 
                         <button
                           type="button"

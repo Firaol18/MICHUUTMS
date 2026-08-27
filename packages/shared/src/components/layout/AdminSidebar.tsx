@@ -31,6 +31,8 @@ import {
   LifeBuoy,
   MessageSquare,
   X,
+  ShieldAlert,
+  Briefcase,
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC = () => {
@@ -76,6 +78,13 @@ export const AdminSidebar: React.FC = () => {
     { to: '/reports', label: 'Reports', icon: <BarChart3 size={19} /> },
     { to: '/pages', label: 'CMS Pages', icon: <FileText size={19} /> },
     { to: '/settings', label: 'Settings', icon: <Settings size={19} /> },
+  ];
+
+  const corporateItems = [
+    { to: '/companies', label: 'Companies', icon: <Building2 size={18} /> },
+    { to: '/corporate-users', label: 'Corporate Users', icon: <Users size={18} /> },
+    { to: '/travel-policies', label: 'Travel Policies', icon: <ShieldAlert size={18} /> },
+    { to: '/corporate-bookings', label: 'Corporate Bookings', icon: <ListOrdered size={18} /> },
   ];
 
   const rbacItems = [
@@ -254,6 +263,37 @@ export const AdminSidebar: React.FC = () => {
             {!sidebarCollapsed && <span>{item.label}</span>}
           </NavLink>
         ))}
+
+        {/* ── Corporate Travel Management Section ── */}
+        <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+          {!sidebarCollapsed && (
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.25rem 0.75rem' }}>
+              CORPORATE MANAGEMENT
+            </div>
+          )}
+          {corporateItems.map((c) => (
+            <NavLink
+              key={c.to}
+              to={c.to}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.45rem 0.75rem',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                backgroundColor: isActive ? 'var(--brand-primary-light)' : 'transparent',
+                textDecoration: 'none',
+                transition: 'all var(--transition-fast)',
+              })}
+            >
+              <span style={{ display: 'flex', alignItems: 'center' }}>{c.icon}</span>
+              {!sidebarCollapsed && <span>{c.label}</span>}
+            </NavLink>
+          ))}
+        </div>
 
         {/* ── RBAC Authorization Governance Section (Display at Bottom) ── */}
         <div style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>

@@ -28,6 +28,10 @@ import { AdminEventsPage } from '@/features/admin/AdminEventsPage';
 import { AdminBlogPage } from '@/features/admin/AdminBlogPage';
 import { AdminCustomTripsPage } from '@/features/admin/AdminCustomTripsPage';
 import { AdminEmployeesPage } from '@/features/admin/AdminEmployeesPage';
+import { AdminCompaniesPage } from '@/features/admin/AdminCompaniesPage';
+import { AdminCorporateUsersPage } from '@/features/admin/AdminCorporateUsersPage';
+import { AdminTravelPoliciesPage } from '@/features/admin/AdminTravelPoliciesPage';
+import { AdminCorporateBookingsPage } from '@/features/admin/AdminCorporateBookingsPage';
 
 // Auth
 import { AdminLoginPage } from '@/features/auth/AdminLoginPage';
@@ -72,6 +76,12 @@ export const AdminRouter: React.FC = () => {
             <Route path="/employees" element={<AdminEmployeesPage />} />
             <Route path="/permission-resources" element={<AdminPermissionResourcesPage />} />
             <Route path="/permission-actions" element={<AdminPermissionActionsPage />} />
+
+            {/* Corporate Management */}
+            <Route path="/companies" element={<AdminCompaniesPage />} />
+            <Route path="/corporate-users" element={<AdminCorporateUsersPage />} />
+            <Route path="/travel-policies" element={<AdminTravelPoliciesPage />} />
+            <Route path="/corporate-bookings" element={<AdminCorporateBookingsPage />} />
 
             {/* Guarded Settings Route */}
             <Route

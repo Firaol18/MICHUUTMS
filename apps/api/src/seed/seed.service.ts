@@ -61,32 +61,104 @@ export class SeedService implements OnApplicationBootstrap {
     const hashedAdminPass = await bcrypt.hash('adminpass123', 10);
 
     const users: Partial<User>[] = [
-      { name: 'Eleanor Vance', email: 'eleanor.vance@example.com', password: hashedPass, isActive: true },
-      { name: 'Alex Morgan', email: 'admin@wanderlusttms.com', password: hashedAdminPass, isActive: true },
-      { name: 'Alex Morgan', email: 'admin@michuutms.com', password: hashedAdminPass, isActive: true },
-      { name: 'Sophia Rossi', email: 'sophia.r@example.it', password: hashedPass, isActive: true },
-      { name: 'Liam Hemsworth', email: 'liam.h@example.co.uk', password: hashedPass, isActive: true },
-      { name: 'David Miller', email: 'david.m@example.com', password: hashedPass, isActive: true },
-      { name: 'Sarah Jones', email: 'sarah.j@example.us', password: hashedPass, isActive: true },
-      { name: 'Marcus Vance', email: 'marcus.v@example.au', password: hashedPass, isActive: true },
+      // Standard Consumers / Tourists
+      { name: 'Eleanor Vance', email: 'eleanor.vance@example.com', password: hashedPass, isActive: true, roleName: 'tourist' },
+      { name: 'Sophia Rossi', email: 'sophia.r@example.it', password: hashedPass, isActive: true, roleName: 'tourist' },
+      { name: 'Liam Hemsworth', email: 'liam.h@example.co.uk', password: hashedPass, isActive: true, roleName: 'tourist' },
+      { name: 'David Miller', email: 'david.m@example.com', password: hashedPass, isActive: true, roleName: 'tourist' },
+      { name: 'Sarah Jones', email: 'sarah.j@example.us', password: hashedPass, isActive: true, roleName: 'tourist' },
+      { name: 'Marcus Vance', email: 'marcus.v@example.au', password: hashedPass, isActive: true, roleName: 'tourist' },
+
+      // Platform Master Admins
+      { name: 'Alex Morgan', email: 'admin@wanderlusttms.com', password: hashedAdminPass, isActive: true, roleName: 'admin' },
+      { name: 'Alex Morgan', email: 'admin@michuutms.com', password: hashedAdminPass, isActive: true, roleName: 'admin' },
+
+      // Enterprise: Ethiopian Airlines Group (Corporate Users)
+      {
+        name: 'Dawit Abebe',
+        email: 'dawit.abebe@ethiopianairlines.com',
+        password: hashedPass,
+        isActive: true,
+        roleName: 'CORPORATE_ADMIN',
+        companyId: 'comp-1',
+        companyName: 'Ethiopian Airlines Group',
+        departmentId: 'dept-exec',
+        departmentName: 'Executive Management',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      },
+      {
+        name: 'Selam Hailu',
+        email: 'selam.hailu@ethiopianairlines.com',
+        password: hashedPass,
+        isActive: true,
+        roleName: 'TRAVEL_MANAGER',
+        companyId: 'comp-1',
+        companyName: 'Ethiopian Airlines Group',
+        departmentId: 'dept-ops',
+        departmentName: 'Operations & Logistics',
+        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+      },
+      {
+        name: 'Biruk Tesfaye',
+        email: 'biruk.tesfaye@ethiopianairlines.com',
+        password: hashedPass,
+        isActive: true,
+        roleName: 'APPROVER',
+        companyId: 'comp-1',
+        companyName: 'Ethiopian Airlines Group',
+        departmentId: 'dept-fin',
+        departmentName: 'Finance & Risk Control',
+        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+      },
+      {
+        name: 'Mekdes Girma',
+        email: 'mekdes.girma@ethiopianairlines.com',
+        password: hashedPass,
+        isActive: true,
+        roleName: 'TRAVELER',
+        companyId: 'comp-1',
+        companyName: 'Ethiopian Airlines Group',
+        departmentId: 'dept-sales',
+        departmentName: 'Sales & BD',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      },
+      {
+        name: 'Kalkidan Tadesse',
+        email: 'kalkidan.t@ethiopianairlines.com',
+        password: hashedPass,
+        isActive: true,
+        roleName: 'TRAVELER',
+        companyId: 'comp-1',
+        companyName: 'Ethiopian Airlines Group',
+        departmentId: 'dept-legal',
+        departmentName: 'Legal & Compliance',
+        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+      },
     ];
 
     for (const u of users) {
       const existing = await this.userRepo.findOne({
         where: { email: u.email },
-        select: ['id', 'email', 'password', 'isActive'],
+        select: ['id', 'email', 'password', 'isActive', 'roleName', 'companyId', 'companyName', 'departmentName'],
       });
       if (!existing) {
         await this.userRepo.save(this.userRepo.create(u));
-        this.logger.log(`Created user: ${u.email}`);
+        this.logger.log(`Created user: ${u.email} (${u.roleName})`);
       } else {
         existing.password = u.password!;
         existing.isActive = true;
+        existing.roleName = u.roleName;
+        existing.companyId = u.companyId;
+        existing.companyName = u.companyName;
+        existing.departmentName = u.departmentName;
+        existing.departmentId = u.departmentId;
+        existing.avatarUrl = u.avatarUrl || existing.avatarUrl;
         await this.userRepo.save(existing);
       }
     }
     this.logger.log(`✅ Verified ${users.length} Users`);
   }
+
 
   private async seedSuppliers() {
     const count = await this.supplierRepo.count();

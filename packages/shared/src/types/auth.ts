@@ -27,6 +27,13 @@ export interface User {
   tourTypes?: string[];
   completedTripsCount?: number;
   emailVerified?: boolean;
+  // ── Corporate identity fields (present when role is a corporate role) ──
+  companyId?: string;
+  companyName?: string;
+  departmentId?: string;
+  departmentName?: string;
+  managerId?: string;
+  managerName?: string;
 }
 
 export interface AuthState {
