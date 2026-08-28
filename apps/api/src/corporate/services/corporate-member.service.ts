@@ -90,18 +90,19 @@ export class CorporateMemberService {
         });
         user = await qr.manager.save(User, user);
       } else {
-        // User already exists — update their corporate association
-        user.companyId = company.id;
-        user.companyName = company.name;
-        if (department) {
-          user.departmentId = department.id;
-          user.departmentName = department.name;
-        }
-        if (dto.managerId) {
-          user.managerId = dto.managerId;
-        }
-        user.roleName = dto.corporateRole;
-        await qr.manager.save(User, user);
+        await qr.manager.update(User, user.id, {
+          name: dto.name.trim(),
+          password: hashedPassword,
+          companyId: company.id,
+          companyName: company.name,
+          departmentId: department?.id,
+          departmentName: department?.name,
+          managerId: dto.managerId,
+          roleName: dto.corporateRole,
+          isActive: true,
+          loginAttempts: 0,
+          lockUntil: null,
+        });
       }
 
       // Check if CorporateMember already exists

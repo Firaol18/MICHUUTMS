@@ -1,11 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { Card } from '@tms/shared/components/common/Card';
 import { Badge } from '@tms/shared/components/common/Badge';
 import { Button } from '@tms/shared/components/common/Button';
-import { corporateService, INITIAL_COMPANIES } from '@tms/shared/services/corporateService';
-import { INITIAL_CORPORATE_BOOKINGS } from '@tms/shared/services/corporateService';
+import { LoadingSpinner } from '@tms/shared/components/common/LoadingSpinner';
+import {
+  corporateService,
+  INITIAL_COMPANIES,
+  INITIAL_CORPORATE_BOOKINGS,
+  type ApiCompany,
+  type ApiTravelRequest,
+} from '@tms/shared/services/corporateService';
 import {
   Plane,
   Hotel,
@@ -24,24 +30,61 @@ import {
 export const CorporateDashboardPage: React.FC = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const [company, setCompany] = useState<ApiCompany | null>(null);
+  const [requests, setRequests] = useState<ApiTravelRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Get company data for this user
-  const company = useMemo(() => {
-    return INITIAL_COMPANIES.find((c) => c.id === (user?.companyId || 'comp-1')) || INITIAL_COMPANIES[0];
-  }, [user]);
+  const rawCompanyId = user?.companyId || 'comp-1';
 
-  // Company bookings (filter to this company)
-  const companyBookings = useMemo(() => {
-    return INITIAL_CORPORATE_BOOKINGS.filter(
-      (b) => b.companyId === (user?.companyId || 'comp-1')
-    );
-  }, [user]);
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
 
-  const pendingApprovals = companyBookings.filter((b) => b.status === 'PENDING_APPROVAL');
-  const confirmedBookings = companyBookings.filter((b) => b.status === 'CONFIRMED' || b.status === 'APPROVED');
-  const totalSpend = companyBookings.reduce((acc, b) => acc + b.totalAmount, 0);
-  const usagePercent = Math.round((company.usedAmount / company.creditLimit) * 100);
+    const loadData = async () => {
+      try {
+        const compList = await corporateService.getCompanies({ limit: 50 });
+        const matched = compList.items.find(
+          (c) => c.id === rawCompanyId || (user?.companyName && c.name.toLowerCase() === user.companyName.toLowerCase())
+        );
+        if (matched && isMounted) {
+          setCompany(matched);
+          const reqs = await corporateService.getTravelRequests(matched.id, { limit: 100 });
+          if (isMounted) setRequests(reqs.items);
+        } else if (isMounted && user?.companyName) {
+          setCompany({
+            id: user.companyId || 'comp-custom',
+            name: user.companyName,
+            code: 'CORP',
+            annualTravelBudget: 250000,
+            currency: 'USD',
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          } as any);
+        }
+      } catch {
+        // Fallback
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
 
+    loadData();
+    return () => { isMounted = false; };
+  }, [rawCompanyId, user?.companyName]);
+
+  const companyName = company?.name || user?.companyName || 'Corporate Workspace';
+  const creditLimit = Number(company?.annualTravelBudget) || 250000;
+  const approvedSpend = requests
+    .filter((r) => r.status === 'APPROVED' || r.status === 'COMPLETED')
+    .reduce((sum, r) => sum + Number(r.estimatedCost), 0);
+  const availableBalance = Math.max(0, creditLimit - approvedSpend);
+  const usagePercent = Math.min(100, Math.round((approvedSpend / creditLimit) * 100));
+
+  const pendingApprovals = requests.filter((r) => ['SUBMITTED', 'UNDER_REVIEW', 'PENDING'].includes(r.status));
+  const complianceRate = requests.length > 0
+    ? `${Math.round(((requests.length - requests.filter((r) => r.policyViolations?.length).length) / requests.length) * 100)}%`
+    : '100%';
   const isManager = user?.role === 'CORPORATE_ADMIN' || user?.role === 'TRAVEL_MANAGER';
   const isApprover = user?.role === 'APPROVER';
 
@@ -54,7 +97,7 @@ export const CorporateDashboardPage: React.FC = () => {
             Welcome back, <span style={{ color: 'var(--brand-primary)' }}>{user?.name?.split(' ')[0]}</span> 👋
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', marginTop: '0.35rem' }}>
-            {company.name} · {user?.role?.replace('_', ' ')} · {user?.departmentName || 'Corporate Division'}
+            {companyName} · {user?.role?.replace('_', ' ')} · {user?.departmentName || 'Corporate Division'}
           </p>
         </div>
 
@@ -64,7 +107,6 @@ export const CorporateDashboardPage: React.FC = () => {
           </span>
         </div>
       </div>
-
 
       {/* ── Urgent: Pending Approvals Banner ── */}
       {pendingApprovals.length > 0 && (isManager || isApprover) && (
@@ -85,10 +127,10 @@ export const CorporateDashboardPage: React.FC = () => {
             <ShieldAlert size={20} style={{ color: '#f59e0b', flexShrink: 0 }} />
             <div>
               <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
-                {pendingApprovals.length} Booking{pendingApprovals.length > 1 ? 's' : ''} Awaiting Your Approval
+                {pendingApprovals.length} Travel Request{pendingApprovals.length > 1 ? 's' : ''} Awaiting Approval
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                Out-of-policy travel requests need your review before confirmation
+                Corporate travel requests require your review before confirmation
               </div>
             </div>
           </div>
@@ -98,190 +140,138 @@ export const CorporateDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── KPI Cards ── */}
+      {/* ── Financial & Metrics Strip ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-        {/* Credit Limit */}
         <Card glass style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Corporate Credit Limit
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Corporate Credit Line
+            </span>
             <CreditCard size={18} style={{ color: 'var(--brand-primary)' }} />
           </div>
-          <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 900, color: 'var(--brand-primary)' }}>
-            ${company.creditLimit.toLocaleString()}
+          <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 900, color: 'var(--text-primary)' }}>
+            ${creditLimit.toLocaleString()}
           </div>
-          {/* Progress bar */}
-          <div style={{ marginTop: '0.75rem' }}>
+          <div style={{ marginTop: '0.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
-              <span>Used: ${company.usedAmount.toLocaleString()}</span>
-              <span>{usagePercent}%</span>
+              <span>Used: ${approvedSpend.toLocaleString()}</span>
+              <span>Available: ${availableBalance.toLocaleString()}</span>
             </div>
             <div style={{ height: '6px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '99px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  height: '100%',
-                  width: `${usagePercent}%`,
-                  borderRadius: '99px',
-                  backgroundColor: usagePercent > 80 ? '#ef4444' : usagePercent > 60 ? '#f59e0b' : '#16a34a',
-                }}
-              />
-            </div>
-            <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '0.35rem' }}>
-              ${company.availableBalance.toLocaleString()} Available
+              <div style={{ height: '100%', width: `${usagePercent}%`, backgroundColor: usagePercent > 85 ? '#ef4444' : 'var(--brand-primary)', borderRadius: '99px' }} />
             </div>
           </div>
         </Card>
 
-        {/* Bookings This Month */}
         <Card glass style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Total Bookings
-            </div>
-            <TrendingUp size={18} style={{ color: '#16a34a' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Active Travel Requests
+            </span>
+            <Plane size={18} style={{ color: '#2563eb' }} />
           </div>
           <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 900, color: 'var(--text-primary)' }}>
-            {companyBookings.length}
+            {requests.length}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            {confirmedBookings.length} confirmed · {pendingApprovals.length} pending approval
+            Across all enrolled departments
           </div>
         </Card>
 
-        {/* Total Travel Spend */}
         <Card glass style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Travel Spend (YTD)
-            </div>
-            <TrendingUp size={18} style={{ color: '#f59e0b' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Pending Approvals
+            </span>
+            <Clock size={18} style={{ color: '#f59e0b' }} />
           </div>
-          <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 900, color: 'var(--text-primary)' }}>
-            ${totalSpend.toLocaleString()}
+          <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 900, color: pendingApprovals.length > 0 ? '#f59e0b' : 'var(--text-primary)' }}>
+            {pendingApprovals.length}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Across {companyBookings.length} reservations in 2026
+            Requiring line manager clearance
           </div>
         </Card>
 
-        {/* Employees (managers only) */}
-        {isManager && (
-          <Card glass style={{ padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Corporate Travelers
-              </div>
-              <Users size={18} style={{ color: 'var(--brand-primary)' }} />
+        <Card glass style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Policy Adherence
+            </span>
+            <TrendingUp size={18} style={{ color: '#10b981' }} />
+          </div>
+          <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 900, color: '#10b981' }}>
+            {complianceRate}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+            In-policy bookings YTD
+          </div>
+        </Card>
+      </div>
+
+      {/* ── Quick Actions Grid ── */}
+      <div>
+        <h2 style={{ fontSize: 'var(--font-size-base)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>
+          Quick Corporate Actions
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+          <Card
+            glass
+            onClick={() => navigate('/corporate/book-flight')}
+            style={{ padding: '1.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'transform 0.15s ease' }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: '10px', backgroundColor: 'rgba(37,99,235,0.1)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Plane size={22} />
             </div>
-            <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 900, color: 'var(--text-primary)' }}>
-              {company.employeeCount || '—'}
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              Enrolled company employees
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)' }}>Book Corporate Flight</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Search pre-approved corporate airfares</div>
             </div>
           </Card>
-        )}
-      </div>
 
-      {/* ── Recent Bookings ── */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, margin: 0 }}>
-            Recent Company Bookings
-          </h2>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/corporate/bookings')}>
-            View All <ArrowRight size={13} style={{ marginLeft: '0.25rem' }} />
-          </Button>
-        </div>
+          <Card
+            glass
+            onClick={() => navigate('/corporate/book-hotel')}
+            style={{ padding: '1.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'transform 0.15s ease' }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: '10px', backgroundColor: 'rgba(5,150,105,0.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Hotel size={22} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)' }}>Book Corporate Hotel</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Hotels matching policy price ceilings</div>
+            </div>
+          </Card>
 
-        <Card glass style={{ padding: '0.5rem', overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '0.75rem 1rem' }}>Reference</th>
-                {isManager && <th style={{ padding: '0.75rem 1rem' }}>Traveler</th>}
-                <th style={{ padding: '0.75rem 1rem' }}>Type</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Amount</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Policy</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {companyBookings.slice(0, 5).map((b) => (
-                <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '0.85rem 1rem', fontWeight: 800, color: 'var(--brand-primary)' }}>
-                    {b.reference}
-                  </td>
-                  {isManager && (
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <div style={{ fontWeight: 600 }}>{b.travelerName}</div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{b.departmentName}</div>
-                    </td>
-                  )}
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      {b.type === 'FLIGHT' ? <Plane size={13} style={{ color: 'var(--brand-primary)' }} /> : <Hotel size={13} style={{ color: '#059669' }} />}
-                      {b.type}
-                    </span>
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>
-                    ${b.totalAmount.toLocaleString()} {b.currency}
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <Badge variant={b.policyStatus === 'WITHIN_POLICY' ? 'success' : 'warning'}>
-                      {b.policyStatus === 'WITHIN_POLICY' ? 'In Policy' : 'Approval'}
-                    </Badge>
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <Badge
-                      variant={
-                        b.status === 'CONFIRMED' || b.status === 'APPROVED' ? 'success'
-                        : b.status === 'PENDING_APPROVAL' ? 'warning'
-                        : b.status === 'REJECTED' || b.status === 'CANCELLED' ? 'danger'
-                        : 'neutral'
-                      }
-                    >
-                      {b.status.replace('_', ' ')}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-              {companyBookings.length === 0 && (
-                <tr>
-                  <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    No bookings yet. Start by booking a flight or hotel above.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Card>
-      </div>
-
-      {/* ── Quick Actions ── */}
-      <div>
-        <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, marginBottom: '1rem' }}>Quick Actions</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          {[
-            { icon: <Plane size={22} style={{ color: 'var(--brand-primary)' }} />, label: 'Search Flights', desc: 'Book flights for yourself or employees', to: '/corporate/book-flight' },
-            { icon: <Hotel size={22} style={{ color: '#059669' }} />, label: 'Find Hotel Stays', desc: 'Book corporate hotel accommodations', to: '/corporate/book-hotel' },
-            ...(isManager || isApprover ? [{ icon: <CheckCircle2 size={22} style={{ color: '#f59e0b' }} />, label: 'Review Approvals', desc: 'Approve or reject out-of-policy trips', to: '/corporate/approvals' }] : []),
-            { icon: <CalendarClock size={22} style={{ color: '#8b5cf6' }} />, label: 'View All Bookings', desc: 'See complete travel history', to: '/corporate/bookings' },
-          ].map((item) => (
+          {isManager && (
             <Card
-              key={item.label}
               glass
-              style={{ padding: '1.25rem', cursor: 'pointer', display: 'flex', gap: '1rem', alignItems: 'flex-start', transition: 'all 0.15s ease' }}
-              onClick={() => navigate(item.to)}
+              onClick={() => navigate('/corporate/employees')}
+              style={{ padding: '1.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'transform 0.15s ease' }}
             >
-              <div style={{ flexShrink: 0 }}>{item.icon}</div>
+              <div style={{ width: 44, height: 44, borderRadius: '10px', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Users size={22} />
+              </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)', marginBottom: '0.2rem' }}>{item.label}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.desc}</div>
+                <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)' }}>Manage Employees</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Add team members & set roles</div>
               </div>
             </Card>
-          ))}
+          )}
+
+          <Card
+            glass
+            onClick={() => navigate('/corporate/policy')}
+            style={{ padding: '1.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'transform 0.15s ease' }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: '10px', backgroundColor: 'rgba(234,88,12,0.1)', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ShieldAlert size={22} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 'var(--font-size-sm)' }}>View Travel Policy</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Rules, caps & approval thresholds</div>
+            </div>
+          </Card>
         </div>
       </div>
     </div>

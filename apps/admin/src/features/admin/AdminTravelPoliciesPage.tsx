@@ -141,11 +141,35 @@ export const AdminTravelPoliciesPage: React.FC = () => {
     if (!selectedCompanyId) return;
     setSaving(true);
     try {
-      const approvalSteps = Array.from({ length: stepsCount }, (_, idx) => ({
-        stepOrder: idx + 1,
-        stepName: `Approval Level ${idx + 1}`,
-        approverRole: idx === 0 ? 'LINE_MANAGER' : 'FINANCE_DIRECTOR',
-      }));
+      const approvalSteps = requiresApproval
+        ? Array.from({ length: stepsCount }, (_, idx) => {
+            if (idx === 0) {
+              return {
+                stepOrder: 1,
+                approverType: 'DEPARTMENT_MANAGER' as const,
+                approverRole: 'APPROVER' as const,
+                label: 'Department Manager Review',
+                isRequired: true,
+              };
+            }
+            if (idx === 1) {
+              return {
+                stepOrder: 2,
+                approverType: 'ROLE' as const,
+                approverRole: 'TRAVEL_MANAGER' as const,
+                label: 'Travel Desk Clearance',
+                isRequired: true,
+              };
+            }
+            return {
+              stepOrder: idx + 1,
+              approverType: 'COMPANY_ADMIN' as const,
+              approverRole: 'CORPORATE_ADMIN' as const,
+              label: `Executive Approval (Level ${idx + 1})`,
+              isRequired: true,
+            };
+          })
+        : [];
 
       if (editingPolicy) {
         await corporateService.updatePolicy(selectedCompanyId, editingPolicy.id, {

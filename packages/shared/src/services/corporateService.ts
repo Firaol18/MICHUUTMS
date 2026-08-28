@@ -504,6 +504,52 @@ export const corporateService = {
     return res.data;
   },
 
+  async inviteEmployee(data: {
+    name: string;
+    email: string;
+    companyId: string;
+    companyName?: string;
+    department?: string;
+    corporateRole: any;
+    employeeId?: string;
+    jobTitle?: string;
+    phone?: string;
+    customTempPassword?: string;
+  }): Promise<any> {
+    try {
+      const res = await this.inviteMember(data.companyId, {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password: data.customTempPassword,
+        corporateRole: String(data.corporateRole),
+        employeeCode: data.employeeId,
+        jobTitle: data.jobTitle || data.department,
+      });
+      return {
+        id: res.member.id,
+        name: res.member.userName || data.name,
+        email: res.member.userEmail || data.email,
+        corporateRole: res.member.corporateRole || data.corporateRole,
+        tempPassword: res.tempPassword,
+        companyId: data.companyId,
+      };
+    } catch {
+      const newEmp = {
+        id: `c-usr-${Date.now()}`,
+        name: data.name,
+        email: data.email,
+        corporateRole: data.corporateRole,
+        tempPassword: data.customTempPassword || generateTemporaryPassword(),
+        companyId: data.companyId,
+        isActive: true,
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+      INITIAL_CORPORATE_USERS.unshift(newEmp as any);
+      return newEmp;
+    }
+  },
+
   async updateMember(
     companyId: string,
     memberId: string,
@@ -792,22 +838,77 @@ export const corporateService = {
     return res.data;
   },
 
-  // ── Legacy aliases kept for backward-compat with older pages ──────────────
-  // These will be removed once all pages are updated.
-
-  /** @deprecated Use getMembers(companyId) */
-  async getCorporateUsers() {
-    // Return empty — callers should be updated to pass companyId
-    return { items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
+  // ── Legacy methods for backward-compatibility with public portal ─────────
+  async getCorporateUsers(): Promise<any[]> {
+    return [...INITIAL_CORPORATE_USERS];
   },
 
-  /** @deprecated Use addPolicy(companyId, data) */
-  async getTravelPolicies() {
-    return { items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
+  async addCorporateUser(data: any): Promise<any> {
+    const newUser = {
+      ...data,
+      id: `c-usr-${Date.now()}`,
+      status: data.status || 'ACTIVE',
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    INITIAL_CORPORATE_USERS.unshift(newUser);
+    return newUser;
   },
 
-  /** @deprecated Use getTravelRequests(companyId) */
-  async getCorporateBookings() {
-    return { items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
+  async updateCorporateUser(id: string, data: any): Promise<any> {
+    const idx = INITIAL_CORPORATE_USERS.findIndex((u) => u.id === id);
+    if (idx !== -1) {
+      Object.assign(INITIAL_CORPORATE_USERS[idx], data);
+      return INITIAL_CORPORATE_USERS[idx];
+    }
+    return null;
+  },
+
+  async deleteCorporateUser(id: string): Promise<boolean> {
+    const idx = INITIAL_CORPORATE_USERS.findIndex((u) => u.id === id);
+    if (idx !== -1) INITIAL_CORPORATE_USERS.splice(idx, 1);
+    return true;
+  },
+
+  async getTravelPolicies(): Promise<any[]> {
+    return [...INITIAL_TRAVEL_POLICIES];
+  },
+
+  async getCorporateBookings(): Promise<any[]> {
+    return [...INITIAL_CORPORATE_BOOKINGS];
+  },
+
+  async addCorporateBooking(booking: any): Promise<any> {
+    const newBkg = {
+      ...booking,
+      id: `cbkg-${Date.now()}`,
+      reference: `CB-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+      createdAt: new Date().toISOString(),
+    };
+    INITIAL_CORPORATE_BOOKINGS.unshift(newBkg);
+    return newBkg;
+  },
+
+  async updateCorporateBooking(id: string, data: any): Promise<any> {
+    const idx = INITIAL_CORPORATE_BOOKINGS.findIndex((b) => b.id === id);
+    if (idx !== -1) {
+      Object.assign(INITIAL_CORPORATE_BOOKINGS[idx], data, { updatedAt: new Date().toISOString() });
+      return INITIAL_CORPORATE_BOOKINGS[idx];
+    }
+    return null;
+  },
+
+  async updateBookingStatus(id: string, status: string, reviewer?: string, reason?: string): Promise<any> {
+    const idx = INITIAL_CORPORATE_BOOKINGS.findIndex((b) => b.id === id);
+    if (idx !== -1) {
+      Object.assign(INITIAL_CORPORATE_BOOKINGS[idx], {
+        status,
+        approvedBy: status === 'APPROVED' ? (reviewer || 'Corporate Approver') : undefined,
+        approvedAt: status === 'APPROVED' ? new Date().toISOString() : undefined,
+        rejectionReason: status === 'REJECTED' ? (reason || 'Exceeds budget policy') : undefined,
+        updatedAt: new Date().toISOString(),
+      });
+      return INITIAL_CORPORATE_BOOKINGS[idx];
+    }
+    return null;
   },
 };

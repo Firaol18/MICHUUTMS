@@ -14,6 +14,14 @@ import { Expense } from '../expenses/entities/expense.entity';
 import { Guide } from '../guides/entities/guide.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { CustomTrip } from '../custom-trips/entities/custom-trip.entity';
+import { Company } from '../corporate/entities/company.entity';
+import { Department } from '../corporate/entities/department.entity';
+import { CorporateMember } from '../corporate/entities/corporate-member.entity';
+import { TravelPolicy } from '../corporate/entities/travel-policy.entity';
+import { ApprovalStep } from '../corporate/entities/approval-step.entity';
+import { CorporateBudget } from '../corporate/entities/corporate-budget.entity';
+import { TravelRequest } from '../corporate/entities/travel-request.entity';
+import { TravelApproval } from '../corporate/entities/travel-approval.entity';
 import { SeedService } from './seed.service';
 
 @Module({
@@ -21,6 +29,7 @@ import { SeedService } from './seed.service';
     TypeOrmModule.forFeature([
       User, Tour, Event, BlogPost, Enquiry, Issue,
       Supplier, Driver, Vehicle, Payment, Expense, Guide, Booking, CustomTrip,
+      Company, Department, CorporateMember, TravelPolicy, ApprovalStep, CorporateBudget, TravelRequest, TravelApproval,
     ]),
   ],
   providers: [SeedService],

@@ -89,17 +89,14 @@ export class AuthService {
   // ── Login ──────────────────────────────────────────────────────────────────
 
   async login(dto: LoginDto) {
-    const user = await this.usersRepo.findOne({
-      where: [{ email: dto.email }],
-      select: [
-        'id', 'name', 'email', 'password', 'isActive', 'roleId',
-        'roleName', 'companyId', 'companyName', 'departmentId', 'departmentName',
-        'managerId', 'managerName',
-        'emailVerified', 'loginAttempts', 'lockUntil',
-        'phone', 'nationality', 'avatarUrl',
-      ],
-      relations: ['role'],
-    });
+    const cleanEmail = (dto.email || '').toLowerCase().trim();
+
+    const user = await this.usersRepo
+      .createQueryBuilder('u')
+      .leftJoinAndSelect('u.role', 'role')
+      .where('LOWER(u.email) = :email', { email: cleanEmail })
+      .addSelect('u.password')
+      .getOne();
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password.');
@@ -113,7 +110,15 @@ export class AuthService {
       );
     }
 
-    const isMatch = await bcrypt.compare(dto.password, user.password);
+    let isMatch = false;
+    if (user.password) {
+      isMatch = await bcrypt.compare(dto.password, user.password).catch(() => false);
+      if (!isMatch && dto.password === user.password) {
+        isMatch = true;
+        const hashed = await bcrypt.hash(dto.password, 10);
+        await this.usersRepo.update(user.id, { password: hashed });
+      }
+    }
 
     if (!isMatch) {
       const newAttempts = (user.loginAttempts || 0) + 1;

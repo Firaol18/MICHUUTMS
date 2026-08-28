@@ -16,6 +16,15 @@ import { Expense } from '../expenses/entities/expense.entity';
 import { Guide } from '../guides/entities/guide.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { CustomTrip } from '../custom-trips/entities/custom-trip.entity';
+import { Company } from '../corporate/entities/company.entity';
+import { Department } from '../corporate/entities/department.entity';
+import { CorporateMember } from '../corporate/entities/corporate-member.entity';
+import { TravelPolicy } from '../corporate/entities/travel-policy.entity';
+import { ApprovalStep } from '../corporate/entities/approval-step.entity';
+import { CorporateBudget } from '../corporate/entities/corporate-budget.entity';
+import { TravelRequest } from '../corporate/entities/travel-request.entity';
+import { TravelApproval } from '../corporate/entities/travel-approval.entity';
+import { CorporateRole, RequestStatus, TravelClass, ApproverType } from '../corporate/enums/corporate.enums';
 
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
@@ -36,10 +45,19 @@ export class SeedService implements OnApplicationBootstrap {
     @InjectRepository(Guide) private guideRepo: Repository<Guide>,
     @InjectRepository(Booking) private bookingRepo: Repository<Booking>,
     @InjectRepository(CustomTrip) private customTripRepo: Repository<CustomTrip>,
+    @InjectRepository(Company) private companyRepo: Repository<Company>,
+    @InjectRepository(Department) private deptRepo: Repository<Department>,
+    @InjectRepository(CorporateMember) private memberRepo: Repository<CorporateMember>,
+    @InjectRepository(TravelPolicy) private policyRepo: Repository<TravelPolicy>,
+    @InjectRepository(ApprovalStep) private stepRepo: Repository<ApprovalStep>,
+    @InjectRepository(CorporateBudget) private budgetRepo: Repository<CorporateBudget>,
+    @InjectRepository(TravelRequest) private requestRepo: Repository<TravelRequest>,
+    @InjectRepository(TravelApproval) private approvalRepo: Repository<TravelApproval>,
   ) {}
 
   async onApplicationBootstrap() {
     await this.seedUsers();
+    await this.seedCorporate();
     await this.seedTours();
     await this.seedEvents();
     await this.seedBlog();
@@ -1310,5 +1328,164 @@ export class SeedService implements OnApplicationBootstrap {
       await this.customTripRepo.save(this.customTripRepo.create(ct));
     }
     this.logger.log(`✅ Seeded ${customTrips.length} Custom Trip Inquiries`);
+  }
+
+  private async seedCorporate() {
+    this.logger.log('🌱 Checking / Seeding Corporate Companies & Structures...');
+
+    // 1. Seed Companies
+    let company = await this.companyRepo.findOne({ where: { code: 'EAG-001' } });
+    if (!company) {
+      company = this.companyRepo.create({
+        name: 'Ethiopian Airlines Group',
+        code: 'EAG-001',
+        industry: 'Aviation & Logistics',
+        country: 'Ethiopia',
+        address: 'Bole International Airport Complex, Addis Ababa',
+        contactEmail: 'travel-desk@ethiopianairlines.com',
+        contactPhone: '+251 11 665 2222',
+        annualTravelBudget: 500000,
+        currency: 'USD',
+        isActive: true,
+      });
+      company = await this.companyRepo.save(company);
+      this.logger.log(`✅ Seeded Company: ${company.name}`);
+    }
+
+    let cbe = await this.companyRepo.findOne({ where: { code: 'CBE-002' } });
+    if (!cbe) {
+      cbe = this.companyRepo.create({
+        name: 'Commercial Bank of Ethiopia (CBE)',
+        code: 'CBE-002',
+        industry: 'Banking & Financial Services',
+        country: 'Ethiopia',
+        address: 'CBE HQ Tower, Churchill Road, Addis Ababa',
+        contactEmail: 'procurement@cbe.com.et',
+        contactPhone: '+251 11 551 5004',
+        annualTravelBudget: 750000,
+        currency: 'USD',
+        isActive: true,
+      });
+      cbe = await this.companyRepo.save(cbe);
+    }
+
+    // 2. Seed Departments
+    const deptNames = [
+      { name: 'Executive Management', code: 'EXEC' },
+      { name: 'Operations & Logistics', code: 'OPS' },
+      { name: 'Finance & Risk Control', code: 'FIN' },
+      { name: 'Sales & Business Development', code: 'SALES' },
+      { name: 'Aircraft Engineering', code: 'ENG' },
+    ];
+
+    const savedDepts: Department[] = [];
+    for (const d of deptNames) {
+      let dept = await this.deptRepo.findOne({
+        where: { companyId: company.id, name: d.name },
+      });
+      if (!dept) {
+        dept = await this.deptRepo.save(
+          this.deptRepo.create({ companyId: company.id, name: d.name, code: d.code, isActive: true }),
+        );
+      }
+      savedDepts.push(dept);
+    }
+
+    // 3. Seed Travel Policy with Multi-Level Approval Steps
+    let defaultPolicy = await this.policyRepo.findOne({
+      where: { companyId: company.id, isDefault: true },
+    });
+    if (!defaultPolicy) {
+      defaultPolicy = this.policyRepo.create({
+        companyId: company.id,
+        name: 'Standard Corporate Travel Policy',
+        description: 'Permits Economy for domestic & regional flights, Business Class for flights over 5 hours. Max $1,500/trip.',
+        isDefault: true,
+        isActive: true,
+        requiresApproval: true,
+        maxBudgetPerTrip: 1500,
+        maxDaysPerTrip: 30,
+        allowedClasses: [TravelClass.ECONOMY, TravelClass.BUSINESS],
+        advanceBookingDays: 7,
+        allowBudgetOverride: true,
+      });
+      defaultPolicy = await this.policyRepo.save(defaultPolicy);
+
+      // Steps
+      const step1 = this.stepRepo.create({
+        policyId: defaultPolicy.id,
+        stepOrder: 1,
+        approverType: ApproverType.DEPARTMENT_MANAGER,
+        label: 'Line Manager Approval',
+        isRequired: true,
+      });
+      const step2 = this.stepRepo.create({
+        policyId: defaultPolicy.id,
+        stepOrder: 2,
+        approverType: ApproverType.ROLE,
+        approverRole: CorporateRole.APPROVER,
+        label: 'Finance Department Clearance',
+        isRequired: true,
+      });
+      await this.stepRepo.save([step1, step2]);
+    }
+
+    // 4. Seed Corporate Members
+    const membersToSeed = [
+      { email: 'dawit.abebe@ethiopianairlines.com', name: 'Dawit Abebe', role: CorporateRole.CORPORATE_ADMIN, deptName: 'Executive Management', title: 'Head of Corporate Travel', code: 'EMP-001' },
+      { email: 'selam.hailu@ethiopianairlines.com', name: 'Selam Hailu', role: CorporateRole.TRAVEL_MANAGER, deptName: 'Operations & Logistics', title: 'Travel Manager', code: 'EMP-014' },
+      { email: 'biruk.tesfaye@ethiopianairlines.com', name: 'Biruk Tesfaye', role: CorporateRole.APPROVER, deptName: 'Finance & Risk Control', title: 'Senior Budget Approver', code: 'EMP-028' },
+      { email: 'mekdes.girma@ethiopianairlines.com', name: 'Mekdes Girma', role: CorporateRole.TRAVELER, deptName: 'Sales & Business Development', title: 'Sales Executive', code: 'EMP-102' },
+      { email: 'kalkidan.t@ethiopianairlines.com', name: 'Kalkidan Tadesse', role: CorporateRole.TRAVELER, deptName: 'Executive Management', title: 'Legal Counsel', code: 'EMP-115' },
+    ];
+
+    for (const m of membersToSeed) {
+      const u = await this.userRepo.findOne({ where: { email: m.email } });
+      if (u) {
+        // Update user entity corporate association
+        u.companyId = company.id;
+        u.companyName = company.name;
+        u.roleName = m.role;
+        const targetDept = savedDepts.find((sd) => sd.name === m.deptName);
+        if (targetDept) {
+          u.departmentId = targetDept.id;
+          u.departmentName = targetDept.name;
+        }
+        await this.userRepo.save(u);
+
+        // Ensure CorporateMember record exists
+        let cm = await this.memberRepo.findOne({ where: { userId: u.id, companyId: company.id } });
+        if (!cm) {
+          cm = this.memberRepo.create({
+            userId: u.id,
+            companyId: company.id,
+            departmentId: targetDept?.id,
+            corporateRole: m.role,
+            employeeCode: m.code,
+            jobTitle: m.title,
+            userName: m.name,
+            userEmail: m.email,
+            isActive: true,
+          });
+          await this.memberRepo.save(cm);
+        }
+      }
+    }
+
+    // 5. Seed Corporate Budget
+    const year = new Date().getFullYear();
+    let budget = await this.budgetRepo.findOne({ where: { companyId: company.id, fiscalYear: year } });
+    if (!budget) {
+      budget = this.budgetRepo.create({
+        companyId: company.id,
+        fiscalYear: year,
+        totalBudget: 250000,
+        spentAmount: 24500,
+        reservedAmount: 4200,
+        currency: 'USD',
+        notes: `FY${year} Annual Executive Corporate Travel Budget`,
+      });
+      await this.budgetRepo.save(budget);
+    }
   }
 }

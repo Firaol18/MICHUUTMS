@@ -68,19 +68,48 @@ export const CorporateEmployeesPage: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   const companyId = user?.companyId || 'comp-1';
-  const companyName = user?.companyName || 'Ethiopian Airlines Group';
+  const companyName = user?.companyName || 'Corporate Workspace';
   const isCompanyAdmin = user?.role === 'CORPORATE_ADMIN' || user?.role === 'TRAVEL_MANAGER';
 
-  const loadEmployees = () => {
-    corporateService.getCorporateUsers().then((all) => {
+  const loadEmployees = async () => {
+    try {
+      let cid = companyId;
+      const compList = await corporateService.getCompanies({ limit: 50 });
+      const matched = compList.items.find(
+        (c) => c.id === companyId || (user?.companyName && c.name.toLowerCase() === user.companyName.toLowerCase())
+      );
+      if (matched) cid = matched.id;
+
+      const membersRes = await corporateService.getMembers(cid, { limit: 100 });
+      if (membersRes?.items?.length) {
+        setEmployees(membersRes.items.map((m) => ({
+          id: m.id,
+          name: m.userName || (m as any).user?.name || 'Member',
+          email: m.userEmail || (m as any).user?.email || '',
+          corporateRole: m.corporateRole as any,
+          department: m.department?.name || 'General',
+          departmentName: m.department?.name || 'General',
+          jobTitle: m.jobTitle || m.corporateRole,
+          companyId: m.companyId,
+          companyName: companyName,
+          isActive: m.isActive,
+          createdAt: m.createdAt,
+        })));
+      } else {
+        const all = await corporateService.getCorporateUsers();
+        setEmployees(all.filter((u) => u.companyId === cid || u.companyId === companyId));
+      }
+    } catch {
+      const all = await corporateService.getCorporateUsers();
       setEmployees(all.filter((u) => u.companyId === companyId));
+    } finally {
       setLoading(false);
-    });
+    }
   };
 
   useEffect(() => {
     loadEmployees();
-  }, [companyId]);
+  }, [companyId, user?.companyName]);
 
   const handleRandomizePassword = () => {
     const words = ['Michuu', 'Habesha', 'Abyssinia', 'Safari', 'Expedition', 'Summit'];

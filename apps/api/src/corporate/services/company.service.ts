@@ -83,10 +83,16 @@ export class CompanyService {
           });
           user = await qr.manager.save(User, user);
         } else {
-          user.companyId = savedCompany.id;
-          user.companyName = savedCompany.name;
-          user.roleName = CorporateRole.CORPORATE_ADMIN;
-          await qr.manager.save(User, user);
+          await qr.manager.update(User, user.id, {
+            name: dto.adminName.trim(),
+            password: hashedPassword,
+            companyId: savedCompany.id,
+            companyName: savedCompany.name,
+            roleName: CorporateRole.CORPORATE_ADMIN,
+            isActive: true,
+            loginAttempts: 0,
+            lockUntil: null,
+          });
         }
 
         const member = this.memberRepo.create({

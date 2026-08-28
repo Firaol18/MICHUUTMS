@@ -23,8 +23,19 @@ export const setInMemoryToken = (t: string | null) => { _inMemoryAccessToken = t
 // ── Request interceptor: attach in-memory access token ────────────────────────
 http.interceptors.request.use(
   (config) => {
-    if (_inMemoryAccessToken && config.headers) {
-      config.headers.Authorization = `Bearer ${_inMemoryAccessToken}`;
+    let token = _inMemoryAccessToken;
+    if (!token && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('michuu-tms-auth');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          token = parsed?.state?.token || null;
+          if (token) _inMemoryAccessToken = token;
+        }
+      } catch {}
+    }
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

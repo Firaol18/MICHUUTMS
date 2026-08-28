@@ -45,26 +45,24 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'michuu-tms-auth',
-      // IMPORTANT: only persist user identity — NOT the access token
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        // token is intentionally omitted — it lives in memory only
+        token: state.token,
       }),
-      // On hydration from storage, don't restore token (it expired)
-      // The refresh interceptor will automatically get a new one via HttpOnly cookie
       onRehydrateStorage: () => (state) => {
         if (state) {
-          state.token = null;
-          // If user was previously authenticated, attempt a silent refresh
-          if (state.isAuthenticated) {
+          if (state.token) {
+            setInMemoryToken(state.token);
+          }
+          if (state.isAuthenticated && !state.token) {
             http.post('/auth/refresh', {})
               .then((res) => {
-                setInMemoryToken(res.data.accessToken);
-                state.token = res.data.accessToken;
+                const newToken = res.data.accessToken || res.data.access_token;
+                setInMemoryToken(newToken);
+                state.token = newToken;
               })
               .catch(() => {
-                // Refresh failed (cookie expired) — clear auth state
                 state.user = null;
                 state.isAuthenticated = false;
               });

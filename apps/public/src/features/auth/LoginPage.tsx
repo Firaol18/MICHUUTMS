@@ -107,51 +107,11 @@ export const LoginPage: React.FC = () => {
         ? { name: cleanName, email: cleanEmail, password }
         : { email: cleanEmail, password };
 
-      let userData: any = null;
-      let token = 'mock-jwt-token';
+      const response = await http.post(endpoint, body);
+      const userData = response.data.user;
+      const token = response.data.accessToken || response.data.access_token;
 
-      try {
-        const response = await http.post(endpoint, body);
-        userData = response.data.user;
-        token = response.data.accessToken || response.data.access_token || token;
-      } catch (httpErr) {
-        // Fallback for locally provisioned corporate users or offline dev mode
-        const corpUsers = await corporateService.getCorporateUsers();
-        const matchedCorpUser = corpUsers.find((u) => u.email.toLowerCase() === cleanEmail);
 
-        if (matchedCorpUser && mode === 'signin') {
-          // Check if entered password matches tempPassword or default password
-          const isValidPass =
-            password === matchedCorpUser.tempPassword ||
-            password === 'password123' ||
-            password.length >= 8;
-
-          if (!isValidPass) {
-            throw httpErr;
-          }
-
-          userData = {
-            id: matchedCorpUser.id,
-            name: matchedCorpUser.name,
-            email: matchedCorpUser.email,
-            role: matchedCorpUser.corporateRole,
-            department: matchedCorpUser.departmentName || matchedCorpUser.department,
-            avatarUrl: matchedCorpUser.avatarUrl,
-            companyId: matchedCorpUser.companyId,
-            companyName: matchedCorpUser.companyName,
-            departmentId: matchedCorpUser.departmentId,
-            departmentName: matchedCorpUser.departmentName,
-            managerId: matchedCorpUser.managerId,
-            managerName: matchedCorpUser.managerName,
-            mustChangePassword: Boolean(matchedCorpUser.mustChangePassword),
-            emailVerified: true,
-          };
-        } else {
-          throw httpErr;
-        }
-      }
-
-      if (!userData) throw new Error('Invalid response from authentication server.');
 
       // Check if corporate user in corporateService has mustChangePassword flag
       const corpUsers = await corporateService.getCorporateUsers();

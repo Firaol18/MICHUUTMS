@@ -1,9 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@tms/shared/store/useAuthStore';
 import { useUIStore } from '@tms/shared/store/useUIStore';
 import { isCorporateRole } from '@tms/shared/types/rbac';
-import { INITIAL_COMPANIES, INITIAL_CORPORATE_BOOKINGS } from '@tms/shared/services/corporateService';
+import {
+  corporateService,
+  type ApiCompany,
+} from '@tms/shared/services/corporateService';
 import {
   LayoutDashboard,
   ListOrdered,
@@ -31,26 +34,53 @@ export const CorporateLayout: React.FC = () => {
   const { theme, toggleTheme } = useUIStore();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [company, setCompany] = useState<ApiCompany | null>(null);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLayoutData = async () => {
+      if (!user) return;
+      try {
+        const rawCid = user.companyId;
+        const compList = await corporateService.getCompanies({ limit: 50 });
+        const matched = compList.items.find(
+          (c) => c.id === rawCid || (user.companyName && c.name.toLowerCase() === user.companyName.toLowerCase())
+        );
+
+        if (matched && isMounted) {
+          setCompany(matched);
+          const reqs = await corporateService.getTravelRequests(matched.id, { limit: 100 });
+          const pending = reqs.items.filter((r) => ['SUBMITTED', 'UNDER_REVIEW', 'PENDING'].includes(r.status));
+          if (isMounted) setPendingApprovalsCount(pending.length);
+        } else if (isMounted && user.companyName) {
+          setCompany({
+            id: user.companyId || 'comp-custom',
+            name: user.companyName,
+            code: 'CORP',
+            isActive: true,
+            annualTravelBudget: 250000,
+            currency: 'USD',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          } as any);
+        }
+      } catch {}
+    };
+
+    fetchLayoutData();
+    return () => { isMounted = false; };
+  }, [user?.companyId, user?.companyName]);
 
   if (!user || !isCorporateRole(user.role)) {
     return null;
   }
 
-  const companyId = user.companyId || 'comp-1';
-  const company = useMemo(() => {
-    return INITIAL_COMPANIES.find((c) => c.id === companyId) || INITIAL_COMPANIES[0];
-  }, [companyId]);
-
+  const companyName = company?.name || user.companyName || 'Corporate Workspace';
+  const availableBudget = Number(company?.annualTravelBudget) || 250000;
   const userRole = user.role as string;
   const isManagerOrAdmin = userRole === 'CORPORATE_ADMIN' || userRole === 'TRAVEL_MANAGER';
   const isApprover = userRole === 'APPROVER';
-
-  // Count pending approvals for badge
-  const pendingApprovalsCount = useMemo(() => {
-    return INITIAL_CORPORATE_BOOKINGS.filter(
-      (b) => b.companyId === companyId && b.status === 'PENDING_APPROVAL'
-    ).length;
-  }, [companyId]);
 
   // Sidebar Links in the exact clean structure requested:
   // Company Dashboard, Bookings, Flights, Hotels, Approvals, Employees, Travel Policy, Reports
@@ -200,7 +230,7 @@ export const CorporateLayout: React.FC = () => {
             }}
           >
             <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {company.name}
+              {companyName}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '10px', color: 'var(--text-muted)' }}>
               <span>{userRole.replace('_', ' ')}</span>
@@ -327,7 +357,7 @@ export const CorporateLayout: React.FC = () => {
             </span>
             <span style={{ color: 'var(--border-color)' }}>|</span>
             <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-              {company.name}
+              {companyName}
             </span>
           </div>
 
@@ -349,7 +379,7 @@ export const CorporateLayout: React.FC = () => {
               }}
             >
               <CreditCard size={13} />
-              <span>Credit Available: ${company.availableBalance.toLocaleString()}</span>
+              <span>Credit Available: ${availableBudget.toLocaleString()}</span>
             </div>
 
             {/* Theme Toggle */}
