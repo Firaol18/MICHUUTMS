@@ -307,7 +307,7 @@ export const AdminTravelPoliciesPage: React.FC = () => {
                     <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 800, margin: 0 }}>
                       {pol.name}
                     </h3>
-                    {pol.isDefault && <Badge variant="primary">Default</Badge>}
+                    {pol.isDefault && <Badge variant="info">Default</Badge>}
                   </div>
                   {pol.description && (
                     <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0.3rem 0 0 0', lineHeight: 1.4 }}>

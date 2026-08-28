@@ -202,6 +202,8 @@ export interface ApiCompany {
   currency?: string;
   website?: string;
   logoUrl?: string;
+  annualTravelBudget?: number;
+  creditLimit?: number;
   isActive: boolean;
   departments?: ApiDepartment[];
   travelPolicies?: ApiTravelPolicy[];
@@ -285,6 +287,7 @@ export interface ApiTravelRequest {
   budgetOverride: boolean;
   budgetOverrideReason?: string;
   rejectionReason?: string;
+  policyViolations?: string[];
   currentApprovalStep: number;
   approvedAt?: string;
   completedAt?: string;
@@ -688,12 +691,13 @@ export const corporateService = {
   async createTravelRequest(
     companyId: string,
     data: {
+      title?: string;
       origin: string;
       destination: string;
       departureDate: string;
       returnDate?: string;
-      tripType: 'ONE_WAY' | 'ROUND_TRIP' | 'MULTI_CITY';
-      travelClass: 'ECONOMY' | 'PREMIUM_ECONOMY' | 'BUSINESS' | 'FIRST';
+      tripType?: 'ONE_WAY' | 'ROUND_TRIP' | 'MULTI_CITY';
+      travelClass?: 'ECONOMY' | 'PREMIUM_ECONOMY' | 'BUSINESS' | 'FIRST';
       estimatedCost: number;
       currency?: string;
       purpose: string;
@@ -806,6 +810,15 @@ export const corporateService = {
       `/corporate/companies/${companyId}/travel-requests/${requestId}/submit`,
       {},
     );
+    return res.data;
+  },
+
+  async submitRequest(companyId: string, requestId: string): Promise<ApiTravelRequest> {
+    return this.submitTravelRequest(companyId, requestId);
+  },
+
+  async changeCorporateUserPassword(email: string, newPassword: string): Promise<any> {
+    const res = await http.post('/auth/change-password', { email, newPassword });
     return res.data;
   },
 

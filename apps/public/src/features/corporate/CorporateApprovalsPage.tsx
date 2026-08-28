@@ -7,6 +7,7 @@ import { LoadingSpinner } from '@tms/shared/components/common/LoadingSpinner';
 import {
   corporateService,
   type ApiTravelRequest,
+  type ApiApproval,
 } from '@tms/shared/services/corporateService';
 import {
   CheckCircle2,

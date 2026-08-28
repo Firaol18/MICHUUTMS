@@ -110,7 +110,7 @@ export const CorporateEmployeesPage: React.FC = () => {
       // Load live departments
       try {
         const deptsRes = await corporateService.getDepartments(cid);
-        setDepartments(deptsRes || []);
+        setDepartments(deptsRes?.items || (deptsRes as any) || []);
       } catch {
         // ignore
       }
@@ -223,7 +223,7 @@ Portal URL   : ${window.location.origin}/login
       setNewDeptName('');
       setNewDeptCode('');
       const deptsRes = await corporateService.getDepartments(companyId);
-      setDepartments(deptsRes || []);
+      setDepartments(deptsRes?.items || (deptsRes as any) || []);
     } catch (err: any) {
       alert(err.message || 'Failed to create department');
     } finally {
