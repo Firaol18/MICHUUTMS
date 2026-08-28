@@ -65,7 +65,7 @@ export const CorporateLayout: React.FC = () => {
             updatedAt: new Date().toISOString(),
           } as any);
         }
-      } catch {}
+      } catch { }
     };
 
     fetchLayoutData();

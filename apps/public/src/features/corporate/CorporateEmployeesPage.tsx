@@ -67,6 +67,12 @@ export const CorporateEmployeesPage: React.FC = () => {
   } | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
+  const [newDeptName, setNewDeptName] = useState('');
+  const [newDeptCode, setNewDeptCode] = useState('');
+  const [deptSaving, setDeptSaving] = useState(false);
+
   const companyId = user?.companyId || 'comp-1';
   const companyName = user?.companyName || 'Corporate Workspace';
   const isCompanyAdmin = user?.role === 'CORPORATE_ADMIN' || user?.role === 'TRAVEL_MANAGER';
@@ -80,6 +86,7 @@ export const CorporateEmployeesPage: React.FC = () => {
       );
       if (matched) cid = matched.id;
 
+      // Load live members
       const membersRes = await corporateService.getMembers(cid, { limit: 100 });
       if (membersRes?.items?.length) {
         setEmployees(membersRes.items.map((m) => ({
@@ -98,6 +105,14 @@ export const CorporateEmployeesPage: React.FC = () => {
       } else {
         const all = await corporateService.getCorporateUsers();
         setEmployees(all.filter((u) => u.companyId === cid || u.companyId === companyId));
+      }
+
+      // Load live departments
+      try {
+        const deptsRes = await corporateService.getDepartments(cid);
+        setDepartments(deptsRes || []);
+      } catch {
+        // ignore
       }
     } catch {
       const all = await corporateService.getCorporateUsers();
@@ -196,6 +211,36 @@ Portal URL   : ${window.location.origin}/login
     return matchesSearch && matchesRole;
   });
 
+  const handleCreateDepartment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDeptName.trim() || !newDeptCode.trim()) return;
+    setDeptSaving(true);
+    try {
+      await corporateService.addDepartment(companyId, {
+        name: newDeptName.trim(),
+        code: newDeptCode.trim().toUpperCase(),
+      });
+      setNewDeptName('');
+      setNewDeptCode('');
+      const deptsRes = await corporateService.getDepartments(companyId);
+      setDepartments(deptsRes || []);
+    } catch (err: any) {
+      alert(err.message || 'Failed to create department');
+    } finally {
+      setDeptSaving(false);
+    }
+  };
+
+  const handleDeleteDepartment = async (deptId: string) => {
+    if (!confirm('Are you sure you want to delete this department?')) return;
+    try {
+      await corporateService.deleteDepartment(companyId, deptId);
+      setDepartments((prev) => prev.filter((d) => d.id !== deptId));
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete department');
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       {/* ── Page Header ── */}
@@ -210,9 +255,14 @@ Portal URL   : ${window.location.origin}/login
         </div>
 
         {isCompanyAdmin && (
-          <Button variant="primary" icon={<UserPlus size={16} />} onClick={handleOpenInvite}>
-            Invite Employee
-          </Button>
+          <div style={{ display: 'flex', gap: '0.6rem' }}>
+            <Button variant="outline" icon={<Building2 size={16} />} onClick={() => setIsDeptModalOpen(true)}>
+              Departments ({departments.length})
+            </Button>
+            <Button variant="primary" icon={<UserPlus size={16} />} onClick={handleOpenInvite}>
+              Invite Employee
+            </Button>
+          </div>
         )}
       </div>
 
@@ -471,14 +521,29 @@ Portal URL   : ${window.location.origin}/login
                     <label style={{ fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '0.3rem' }}>
                       Department *
                     </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Finance, Sales, Engineering"
-                      value={inviteDepartment}
-                      onChange={(e) => setInviteDepartment(e.target.value)}
-                      required
-                      style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', boxSizing: 'border-box' }}
-                    />
+                    {departments.length > 0 ? (
+                      <select
+                        value={inviteDepartment}
+                        onChange={(e) => setInviteDepartment(e.target.value)}
+                        required
+                        style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', boxSizing: 'border-box' }}
+                      >
+                        {departments.map((d) => (
+                          <option key={d.id} value={d.name}>
+                            {d.name} ({d.code})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="e.g. Finance, Sales, Engineering"
+                        value={inviteDepartment}
+                        onChange={(e) => setInviteDepartment(e.target.value)}
+                        required
+                        style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', boxSizing: 'border-box' }}
+                      />
+                    )}
                   </div>
 
                   <div>
@@ -738,6 +803,76 @@ Portal URL   : ${window.location.origin}/login
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Manage Departments Modal ── */}
+      {isDeptModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <Card glass style={{ width: '100%', maxWidth: '520px', padding: '1.75rem', borderRadius: '16px', backgroundColor: 'var(--bg-primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, margin: 0 }}>Manage Company Departments</h3>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0.2rem 0 0 0' }}>{companyName} · Create and organize corporate departments</p>
+              </div>
+              <button type="button" onClick={() => setIsDeptModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: 'var(--text-muted)' }}>✕</button>
+            </div>
+
+            {/* Create New Dept Form */}
+            <form onSubmit={handleCreateDepartment} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', alignItems: 'flex-end' }}>
+              <div style={{ flex: 2 }}>
+                <label style={{ fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '0.3rem' }}>Department Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Engineering"
+                  value={newDeptName}
+                  onChange={(e) => setNewDeptName(e.target.value)}
+                  required
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '0.3rem' }}>Code *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ENG"
+                  value={newDeptCode}
+                  onChange={(e) => setNewDeptCode(e.target.value.toUpperCase())}
+                  required
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', boxSizing: 'border-box' }}
+                />
+              </div>
+              <Button variant="primary" size="sm" type="submit" disabled={deptSaving}>
+                {deptSaving ? 'Adding...' : 'Add'}
+              </Button>
+            </form>
+
+            {/* Department List */}
+            <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {departments.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
+                  No custom departments created yet. Use the form above to add one.
+                </div>
+              ) : (
+                departments.map((d) => (
+                  <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.8rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)' }}>{d.name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Code: {d.code}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteDepartment(d.id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.25rem' }}
+                      title="Delete Department"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
         </div>
       )}
     </div>

@@ -7,8 +7,6 @@ import { Button } from '@tms/shared/components/common/Button';
 import { LoadingSpinner } from '@tms/shared/components/common/LoadingSpinner';
 import {
   corporateService,
-  INITIAL_COMPANIES,
-  INITIAL_CORPORATE_BOOKINGS,
   type ApiCompany,
   type ApiTravelRequest,
 } from '@tms/shared/services/corporateService';

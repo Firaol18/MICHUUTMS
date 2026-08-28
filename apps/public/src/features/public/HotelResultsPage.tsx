@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '@tms/shared/components/common/Card';
 import { Badge } from '@tms/shared/components/common/Badge';
@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 
 import { isCorporateRole } from '@tms/shared/types/rbac';
-import { INITIAL_CORPORATE_USERS } from '@tms/shared/services/corporateService';
 
 export const HotelResultsPage: React.FC = () => {
   const location = useLocation();
@@ -36,11 +35,29 @@ export const HotelResultsPage: React.FC = () => {
   const isCorporate = user && isCorporateRole(user.role);
   const isManager = user?.role === 'CORPORATE_ADMIN' || user?.role === 'TRAVEL_MANAGER';
 
-  // Company employees for booking selection
-  const companyEmployees = useMemo(() => {
-    const cid = user?.companyId || 'comp-1';
-    return INITIAL_CORPORATE_USERS.filter((u) => u.companyId === cid);
-  }, [user]);
+  // Company employees for booking selection (live from real API)
+  const [companyEmployees, setCompanyEmployees] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!isCorporate || !user?.companyId) return;
+    corporateService.getMembers(user.companyId, { limit: 100 })
+      .then((res) => {
+        if (res?.items?.length) {
+          setCompanyEmployees(res.items.map((m) => ({
+            id: m.id,
+            name: m.userName || (m as any).user?.name || 'Employee',
+            email: m.userEmail || (m as any).user?.email || '',
+            department: m.department?.name || 'General',
+            corporateRole: m.corporateRole,
+          })));
+        } else {
+          setCompanyEmployees([{ id: user.id, name: user.name, email: user.email, department: user.departmentName || 'General', corporateRole: user.role }]);
+        }
+      })
+      .catch(() => {
+        setCompanyEmployees([{ id: user.id, name: user.name, email: user.email, department: user.departmentName || 'General', corporateRole: user.role }]);
+      });
+  }, [isCorporate, user?.companyId, user?.id, user?.name, user?.email, user?.departmentName, user?.role]);
 
   const searchParams = useMemo<HotelSearchParams>(() => {
     const query = new URLSearchParams(location.search);
@@ -317,8 +334,8 @@ export const HotelResultsPage: React.FC = () => {
                     border: isWithin
                       ? '1px solid rgba(22,163,74,0.3)'
                       : isApproval
-                      ? '1px solid rgba(245,158,11,0.3)'
-                      : '1px solid rgba(239,68,68,0.3)',
+                        ? '1px solid rgba(245,158,11,0.3)'
+                        : '1px solid rgba(239,68,68,0.3)',
                   }}
                 >
                   <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr auto', gap: '1.5rem', padding: '1.5rem', alignItems: 'center' }}>
@@ -625,8 +642,8 @@ export const HotelResultsPage: React.FC = () => {
                     {isSubmitting
                       ? 'Processing...'
                       : selectedHotel.policyStatus === 'WITHIN_POLICY'
-                      ? 'Confirm Stay'
-                      : 'Submit for Manager Approval'}
+                        ? 'Confirm Stay'
+                        : 'Submit for Manager Approval'}
                   </Button>
                 </div>
               </form>
