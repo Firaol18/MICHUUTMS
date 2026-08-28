@@ -150,6 +150,7 @@ export class AuthService {
         role: resolvedRole,
       },
       accessToken,
+      access_token: accessToken,
       refreshToken,
     };
   }

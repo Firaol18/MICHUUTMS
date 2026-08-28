@@ -30,19 +30,25 @@ export const AdminLoginPage: React.FC = () => {
         password,
       });
 
-      if (res.data && res.data.access_token) {
+      const token = res.data?.accessToken || res.data?.access_token;
+      if (token && res.data?.user) {
         const u = res.data.user;
-        const roleKey = u.role?.name ? u.role.name.toLowerCase() : 'admin';
+        const roleKey = (
+          (typeof u.role === 'string' ? u.role : u.role?.name) ||
+          u.roleName ||
+          'admin'
+        ).toLowerCase();
+
         login(
           {
             id: String(u.id),
             name: u.name,
             email: u.email,
             role: roleKey as any,
-            department: u.organizationUnit || 'Executive Operations & Control',
+            department: u.departmentName || u.organizationUnit || 'Executive Operations & Control',
             avatarUrl: u.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           },
-          res.data.access_token
+          token
         );
         navigate('/admin/dashboard');
         return;

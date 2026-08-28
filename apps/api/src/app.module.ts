@@ -30,6 +30,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { CmsModule } from './cms/cms.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { SettingsModule } from './settings/settings.module';
+import { CorporateModule } from './corporate/corporate.module';
 
 const useDatabaseUrl = !!process.env.DATABASE_URL;
 
@@ -102,6 +103,7 @@ if (!useDatabaseUrl && !process.env.DB_PASSWORD) {
     NewsletterModule,
     SettingsModule,
     SeedModule,
+    CorporateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

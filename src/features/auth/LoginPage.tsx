@@ -105,8 +105,9 @@ export const LoginPage: React.FC = () => {
           password,
         });
 
-        const { user, access_token } = response.data;
-        if (!access_token || !user) {
+        const user = response.data?.user;
+        const token = response.data?.accessToken || response.data?.access_token;
+        if (!token || !user) {
           throw new Error('Invalid response structure received from authentication server.');
         }
 
@@ -119,7 +120,7 @@ export const LoginPage: React.FC = () => {
             department: user.department || 'Traveler Member',
             avatarUrl: user.avatarUrl,
           },
-          access_token
+          token
         );
 
         setSuccessMsg('Account created successfully! Redirecting...');
@@ -137,8 +138,9 @@ export const LoginPage: React.FC = () => {
           password,
         });
 
-        const { user, access_token } = response.data;
-        if (!access_token || !user) {
+        const user = response.data?.user;
+        const token = response.data?.accessToken || response.data?.access_token;
+        if (!token || !user) {
           throw new Error('Invalid response structure received from authentication server.');
         }
 
@@ -151,7 +153,7 @@ export const LoginPage: React.FC = () => {
             department: user.department || (user.role === 'admin' ? 'Tourism Operations' : 'Traveler Member'),
             avatarUrl: user.avatarUrl,
           },
-          access_token
+          token
         );
 
         setSuccessMsg(`Welcome back, ${user.name}! Redirecting...`);

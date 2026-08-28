@@ -1,13 +1,38 @@
-import type {
-  Company,
-  CorporateUser,
-  TravelPolicy,
-  CorporateBooking,
-} from '@tms/shared/types/corporate';
+/**
+ * corporateService.ts
+ *
+ * Real API client for all corporate management endpoints.
+ * Replaces all previous mock/in-memory data.
+ *
+ * All calls go to:  /corporate/companies/:companyId/...
+ *
+ * The `http` instance in apiClient automatically attaches the JWT Bearer token
+ * and handles 401 auto-refresh, so no auth boilerplate is needed here.
+ */
 
-// ── Mock Initial Corporate Data ───────────────────────────────────────────────
+import { http } from '@tms/shared/services/apiClient';
 
-export const INITIAL_COMPANIES: Company[] = [
+// ── Pagination wrapper returned by every list endpoint ─────────────────────────
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+// ── Re-export password generator so pages can still use it ─────────────────────
+export const generateTemporaryPassword = (): string => {
+  const words = ['Michuu', 'Habesha', 'Abyssinia', 'Safari', 'Expedition', 'Summit', 'Alpine'];
+  const prefix = words[Math.floor(Math.random() * words.length)];
+  const num = Math.floor(1000 + Math.random() * 9000);
+  const symbols = ['!', '@', '#', '$', '%', '*'];
+  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+  return `${prefix}#${num}${symbol}`;
+};
+
+// ── Legacy initial dataset exports for public app compatibility ───────────────
+export const INITIAL_COMPANIES = [
   {
     id: 'comp-1',
     name: 'Ethiopian Airlines Group',
@@ -46,43 +71,9 @@ export const INITIAL_COMPANIES: Company[] = [
     employeeCount: 850,
     createdAt: '2025-02-10',
   },
-  {
-    id: 'comp-3',
-    name: 'Ethio Telecom Enterprise',
-    code: 'ETC-003',
-    registrationNo: 'ET-TEL-77219',
-    industry: 'Telecommunications',
-    email: 'travel@ethiotelecom.et',
-    phone: '+251 11 550 0000',
-    address: 'Ethio Telecom Building, Churchill Ave',
-    country: 'Ethiopia',
-    creditLimit: 300000,
-    availableBalance: 245000,
-    usedAmount: 55000,
-    isActive: true,
-    employeeCount: 610,
-    createdAt: '2025-03-01',
-  },
-  {
-    id: 'comp-4',
-    name: 'Dangote Cement Ethiopia PLC',
-    code: 'DCE-004',
-    registrationNo: 'ET-IND-33821',
-    industry: 'Manufacturing & Infrastructure',
-    email: 'logistics@dangote-et.com',
-    phone: '+251 11 662 1010',
-    address: 'Muger Cement Plant, Oromia',
-    country: 'Ethiopia',
-    creditLimit: 150000,
-    availableBalance: 128900,
-    usedAmount: 21100,
-    isActive: true,
-    employeeCount: 190,
-    createdAt: '2025-04-18',
-  },
 ];
 
-export const INITIAL_CORPORATE_USERS: CorporateUser[] = [
+export const INITIAL_CORPORATE_USERS = [
   {
     id: 'c-usr-1',
     name: 'Dawit Abebe',
@@ -122,26 +113,6 @@ export const INITIAL_CORPORATE_USERS: CorporateUser[] = [
     createdAt: '2025-01-22',
   },
   {
-    id: 'c-usr-3',
-    name: 'Biruk Tesfaye',
-    email: 'biruk.tesfaye@ethiopianairlines.com',
-    phone: '+251 92 345 6789',
-    employeeId: 'EMP-028',
-    jobTitle: 'Senior Budget Approver',
-    companyId: 'comp-1',
-    companyName: 'Ethiopian Airlines Group',
-    department: 'Finance',
-    departmentName: 'Finance & Risk Control',
-    corporateRole: 'APPROVER',
-    managerId: 'c-usr-2',
-    managerName: 'Selam Hailu',
-    status: 'ACTIVE',
-    isActive: true,
-    totalBookings: 0,
-    totalSpend: 0,
-    createdAt: '2025-02-01',
-  },
-  {
     id: 'c-usr-4',
     name: 'Mekdes Girma',
     email: 'mekdes.girma@ethiopianairlines.com',
@@ -161,53 +132,14 @@ export const INITIAL_CORPORATE_USERS: CorporateUser[] = [
     totalSpend: 4900,
     createdAt: '2025-02-10',
   },
-  {
-    id: 'c-usr-5',
-    name: 'Abel Yonas',
-    email: 'abel.yonas@ethiopianairlines.com',
-    phone: '+251 94 567 8901',
-    employeeId: 'EMP-215',
-    jobTitle: 'Field Engineer',
-    companyId: 'comp-1',
-    companyName: 'Ethiopian Airlines Group',
-    department: 'Engineering',
-    departmentName: 'Aircraft Engineering',
-    corporateRole: 'TRAVELER',
-    managerId: 'c-usr-2',
-    managerName: 'Selam Hailu',
-    status: 'ACTIVE',
-    isActive: true,
-    totalBookings: 3,
-    totalSpend: 2150,
-    createdAt: '2025-03-01',
-  },
-  // CBE employees
-  {
-    id: 'c-usr-6',
-    name: 'Selamawit Tadesse',
-    email: 'selamawit.t@cbe.com.et',
-    phone: '+251 92 345 6789',
-    employeeId: 'CBE-001',
-    jobTitle: 'Head of Procurement',
-    companyId: 'comp-2',
-    companyName: 'Commercial Bank of Ethiopia (CBE)',
-    department: 'Finance',
-    departmentName: 'Finance & Risk Control',
-    corporateRole: 'CORPORATE_ADMIN',
-    status: 'ACTIVE',
-    isActive: true,
-    totalBookings: 8,
-    totalSpend: 11200,
-    createdAt: '2025-02-14',
-  },
 ];
 
-export const INITIAL_TRAVEL_POLICIES: TravelPolicy[] = [
+export const INITIAL_TRAVEL_POLICIES = [
   {
     id: 'pol-1',
     companyId: 'comp-1',
     name: 'Executive & Senior Staff Travel Policy',
-    description: 'Permits Business Class for international flights over 5 hours. Hotel ceiling $300/night. All upgrades beyond Economy require manager pre-approval for trips over $1,200.',
+    description: 'Permits Business Class for international flights over 5 hours. Hotel ceiling $300/night.',
     maxFlightPrice: 2000,
     allowedCabinClasses: ['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS'],
     requiresApprovalAbove: 1200,
@@ -219,41 +151,9 @@ export const INITIAL_TRAVEL_POLICIES: TravelPolicy[] = [
     isActive: true,
     createdAt: '2025-01-22',
   },
-  {
-    id: 'pol-2',
-    companyId: 'comp-2',
-    name: 'Standard Corporate Travel Policy (CBE)',
-    description: 'Economy class standard for all staff. Maximum $1,000 flight, $180 hotel rate ceiling. All requests above $800 require Finance Director approval.',
-    maxFlightPrice: 1000,
-    allowedCabinClasses: ['ECONOMY'],
-    requiresApprovalAbove: 800,
-    approvalThreshold: 800,
-    maxHotelNightlyRate: 180,
-    requiresHotelApprovalAbove: 140,
-    advanceBookingDays: 7,
-    effectiveDate: '2025-02-15',
-    isActive: true,
-    createdAt: '2025-02-15',
-  },
-  {
-    id: 'pol-3',
-    companyId: 'comp-3',
-    name: 'Engineering & Field Ops Travel Policy',
-    description: 'Regional flights with flexible rebooking options. Standard 3-4 star hotels only. All requests require 2 days advance booking.',
-    maxFlightPrice: 850,
-    allowedCabinClasses: ['ECONOMY'],
-    requiresApprovalAbove: 650,
-    approvalThreshold: 650,
-    maxHotelNightlyRate: 150,
-    requiresHotelApprovalAbove: 120,
-    advanceBookingDays: 2,
-    effectiveDate: '2025-03-10',
-    isActive: true,
-    createdAt: '2025-03-10',
-  },
 ];
 
-export const INITIAL_CORPORATE_BOOKINGS: CorporateBooking[] = [
+export const INITIAL_CORPORATE_BOOKINGS = [
   {
     id: 'cbkg-101',
     reference: 'CB-ET-89412',
@@ -282,316 +182,632 @@ export const INITIAL_CORPORATE_BOOKINGS: CorporateBooking[] = [
     },
     createdAt: '2026-08-20T10:15:00Z',
   },
-  {
-    id: 'cbkg-102',
-    reference: 'CB-ET-33910',
-    type: 'HOTEL',
-    status: 'PENDING_APPROVAL',
-    companyId: 'comp-1',
-    companyName: 'Ethiopian Airlines Group',
-    travelerId: 'c-usr-4',
-    travelerName: 'Mekdes Girma',
-    travelerEmail: 'mekdes.girma@ethiopianairlines.com',
-    bookedById: 'c-usr-2',
-    bookedByName: 'Selam Hailu',
-    departmentName: 'Sales & Business Development',
-    totalAmount: 555,
-    currency: 'USD',
-    policyStatus: 'REQUIRES_APPROVAL',
-    businessPurpose: 'Annual KE sales review summit in Nairobi',
-    policyViolationReason: 'Nightly rate $185/night exceeds $300 policy cap per night',
-    hotelData: {
-      hotelName: 'Radisson Blu Nairobi',
-      roomType: 'Deluxe King',
-      checkIn: '2026-09-10',
-      checkOut: '2026-09-13',
-      nights: 3,
-    },
-    createdAt: '2026-08-25T14:40:00Z',
-  },
-  {
-    id: 'cbkg-103',
-    reference: 'CB-ET-55120',
-    type: 'FLIGHT',
-    status: 'PENDING_APPROVAL',
-    companyId: 'comp-1',
-    companyName: 'Ethiopian Airlines Group',
-    travelerId: 'c-usr-5',
-    travelerName: 'Abel Yonas',
-    travelerEmail: 'abel.yonas@ethiopianairlines.com',
-    bookedById: 'c-usr-5',
-    bookedByName: 'Abel Yonas',
-    departmentName: 'Aircraft Engineering',
-    totalAmount: 2200,
-    currency: 'USD',
-    policyStatus: 'REQUIRES_APPROVAL',
-    businessPurpose: 'Aircraft MRO supplier meeting in London',
-    policyViolationReason: 'Total fare $2,200 exceeds $2,000 policy maximum',
-    flightData: {
-      airline: 'Ethiopian Airlines',
-      origin: 'ADD',
-      destination: 'LHR',
-      cabinClass: 'BUSINESS',
-      departureDate: '2026-09-12',
-    },
-    createdAt: '2026-08-26T09:00:00Z',
-  },
-  {
-    id: 'cbkg-104',
-    reference: 'CB-ET-77301',
-    type: 'FLIGHT',
-    status: 'APPROVED',
-    companyId: 'comp-1',
-    companyName: 'Ethiopian Airlines Group',
-    travelerId: 'c-usr-4',
-    travelerName: 'Mekdes Girma',
-    travelerEmail: 'mekdes.girma@ethiopianairlines.com',
-    bookedById: 'c-usr-2',
-    bookedByName: 'Selam Hailu',
-    departmentName: 'Sales & Business Development',
-    totalAmount: 480,
-    currency: 'USD',
-    policyStatus: 'WITHIN_POLICY',
-    businessPurpose: 'Regional sales prospecting — Kigali corridor',
-    flightData: {
-      airline: 'Ethiopian Airlines',
-      origin: 'ADD',
-      destination: 'KGL',
-      cabinClass: 'ECONOMY',
-      departureDate: '2026-08-28',
-    },
-    approvedBy: 'Selam Hailu',
-    approvedAt: '2026-08-24T09:12:00Z',
-    approvalNote: 'Approved — within budget and policy.',
-    createdAt: '2026-08-23T18:00:00Z',
-  },
 ];
 
-// ── In-Memory State & Service Methods ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared API types (matching backend entity shapes)
+// ─────────────────────────────────────────────────────────────────────────────
 
-let companies = [...INITIAL_COMPANIES];
-let corporateUsers = [...INITIAL_CORPORATE_USERS];
-let travelPolicies = [...INITIAL_TRAVEL_POLICIES];
-let corporateBookings = [...INITIAL_CORPORATE_BOOKINGS];
+export interface ApiCompany {
+  id: string;
+  name: string;
+  code: string;
+  registrationNo?: string;
+  industry?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  currency?: string;
+  website?: string;
+  logoUrl?: string;
+  isActive: boolean;
+  departments?: ApiDepartment[];
+  travelPolicies?: ApiTravelPolicy[];
+  createdAt: string;
+  updatedAt?: string;
+}
 
-// ── Helper: Secure Temporary Password Generator ──────────────────────────────
-export const generateTemporaryPassword = (): string => {
-  const words = ['Michuu', 'Habesha', 'Abyssinia', 'Safari', 'Expedition', 'Summit', 'Alpine'];
-  const prefix = words[Math.floor(Math.random() * words.length)];
-  const num = Math.floor(1000 + Math.random() * 9000);
-  const symbols = ['!', '@', '#', '$', '%', '*'];
-  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-  return `${prefix}#${num}${symbol}`;
-};
+export interface ApiDepartment {
+  id: string;
+  companyId: string;
+  name: string;
+  code?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface ApiMember {
+  id: string;
+  userId: string;
+  companyId: string;
+  departmentId?: string;
+  department?: ApiDepartment;
+  corporateRole: string;
+  employeeCode?: string;
+  jobTitle?: string;
+  userName?: string;
+  userEmail?: string;
+  userPhone?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface ApiTravelPolicy {
+  id: string;
+  companyId: string;
+  name: string;
+  description?: string;
+  isDefault: boolean;
+  isActive: boolean;
+  requiresApproval: boolean;
+  maxBudgetPerTrip?: number;
+  maxBudgetPerDay?: number;
+  allowedClasses?: string[];
+  advanceBookingDays?: number;
+  approvalSteps?: ApiApprovalStep[];
+  currency?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ApiApprovalStep {
+  id: string;
+  policyId: string;
+  stepOrder: number;
+  stepName?: string;
+  approverRole?: string;
+  approverId?: string;
+}
+
+export interface ApiTravelRequest {
+  id: string;
+  companyId: string;
+  requesterId: string;
+  requesterName: string;
+  departmentId?: string;
+  department?: ApiDepartment;
+  policyId?: string;
+  policy?: ApiTravelPolicy;
+  title: string;
+  purpose: string;
+  destination: string;
+  origin?: string;
+  departureDate: string;
+  returnDate: string;
+  estimatedCost: number;
+  currency: string;
+  travelClass: string;
+  status: string;
+  notes?: string;
+  attachmentUrls?: string[];
+  budgetOverride: boolean;
+  budgetOverrideReason?: string;
+  rejectionReason?: string;
+  currentApprovalStep: number;
+  approvedAt?: string;
+  completedAt?: string;
+  approvals?: ApiApproval[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ApiApproval {
+  id: string;
+  requestId: string;
+  approverId: string;
+  approverName?: string;
+  stepOrder: number;
+  decision: 'PENDING' | 'APPROVED' | 'REJECTED';
+  comment?: string;
+  decidedAt?: string;
+  createdAt: string;
+}
+
+export interface ApiCorporateBudget {
+  id: string;
+  companyId: string;
+  departmentId?: string;
+  department?: ApiDepartment;
+  fiscalYear: number;
+  fiscalQuarter?: number;
+  totalBudget: number;
+  spentAmount: number;
+  reservedAmount: number;
+  currency: string;
+  notes?: string;
+  utilizationPercent?: number;
+  availableAmount?: number;
+  createdAt: string;
+}
+
+export interface ApiCompanyStats {
+  company: ApiCompany;
+  memberCount: number;
+  requests: {
+    total: number;
+    approved: number;
+    pending: number;
+    rejected: number;
+    totalSpend: number;
+  };
+}
+
+export interface ApiSpendReport {
+  period: string;
+  totalRequests: number;
+  totalSpend: number;
+  averageCostPerTrip: number;
+  byStatus: Record<string, number>;
+  byTravelClass: Record<string, number>;
+  topDestinations: { destination: string; count: number; spend: number }[];
+  monthlyBreakdown: { month: string; amount: number }[];
+  budget: {
+    total: number;
+    spent: number;
+    reserved: number;
+    available: number;
+    utilizationPercent: number;
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// corporateService — all real API calls, zero mock data
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const corporateService = {
+
   // ── Companies ──────────────────────────────────────────────────────────────
-  getCompanies: async (): Promise<Company[]> => {
-    return new Promise((res) => setTimeout(() => res([...companies]), 150));
-  },
-  addCompany: async (
-    data: Omit<Company, 'id' | 'createdAt' | 'usedAmount' | 'availableBalance'> & { tempAdminPassword?: string },
-  ): Promise<{ company: Company; initialAdmin?: CorporateUser }> => {
-    const newCompId = `comp-${Date.now()}`;
-    const newComp: Company = {
-      ...data,
-      id: newCompId,
-      code: data.code || `CORP-${Math.floor(100 + Math.random() * 900)}`,
-      availableBalance: data.creditLimit,
-      usedAmount: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    companies = [newComp, ...companies];
 
-    let initialAdmin: CorporateUser | undefined;
-
-    // If an initial Corporate Admin was specified, automatically provision them with temporary credentials
-    if (data.adminEmail) {
-      const generatedTempPass = data.tempAdminPassword || generateTemporaryPassword();
-      initialAdmin = {
-        id: `c-usr-${Date.now()}`,
-        name: data.adminName || 'Corporate Administrator',
-        email: data.adminEmail,
-        companyId: newCompId,
-        companyName: data.name,
-        department: 'Executive Administration',
-        departmentName: 'Executive Administration',
-        corporateRole: 'CORPORATE_ADMIN',
-        status: 'INVITED',
-        mustChangePassword: true,
-        tempPassword: generatedTempPass,
-        invitedAt: new Date().toISOString(),
-        isActive: true,
-        totalBookings: 0,
-        totalSpend: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      corporateUsers = [initialAdmin, ...corporateUsers];
-    }
-
-    return { company: newComp, initialAdmin };
-  },
-  updateCompany: async (id: string, data: Partial<Company>): Promise<Company | null> => {
-    const idx = companies.findIndex((c) => c.id === id);
-    if (idx === -1) return null;
-    companies[idx] = { ...companies[idx], ...data };
-    return companies[idx];
-  },
-  deleteCompany: async (id: string): Promise<boolean> => {
-    companies = companies.filter((c) => c.id !== id);
-    return true;
+  async getCompanies(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    isActive?: boolean;
+  }): Promise<PaginatedResponse<ApiCompany>> {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.search) q.set('search', params.search);
+    if (params?.isActive !== undefined) q.set('isActive', String(params.isActive));
+    const res = await http.get<PaginatedResponse<ApiCompany>>(`/corporate/companies?${q}`);
+    return res.data;
   },
 
-  // ── Corporate Users & Employee Invitations ─────────────────────────────────
-  getCorporateUsers: async (): Promise<CorporateUser[]> => {
-    return new Promise((res) => setTimeout(() => res([...corporateUsers]), 150));
+  async getCompany(id: string): Promise<ApiCompany> {
+    const res = await http.get<ApiCompany>(`/corporate/companies/${id}`);
+    return res.data;
   },
-  addCorporateUser: async (
-    data: Omit<CorporateUser, 'id' | 'createdAt'> & { tempPassword?: string },
-  ): Promise<CorporateUser> => {
-    const generatedTempPass = data.tempPassword || generateTemporaryPassword();
-    const newUser: CorporateUser = {
-      ...data,
-      id: `c-usr-${Date.now()}`,
-      status: data.status || 'INVITED',
-      mustChangePassword: true,
-      tempPassword: generatedTempPass,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    corporateUsers = [newUser, ...corporateUsers];
-    return newUser;
+
+  async getCompanyStats(id: string): Promise<ApiCompanyStats> {
+    const res = await http.get<ApiCompanyStats>(`/corporate/companies/${id}/stats`);
+    return res.data;
   },
-  // Self-service employee invitation from Corporate Admin
-  inviteEmployee: async (data: {
+
+  async addCompany(data: {
     name: string;
-    email: string;
-    companyId: string;
-    companyName: string;
-    department: string;
-    corporateRole: CorporateUser['corporateRole'];
-    employeeId?: string;
-    jobTitle?: string;
-    phone?: string;
-    customTempPassword?: string;
-  }): Promise<CorporateUser> => {
-    const generatedTempPass = data.customTempPassword || generateTemporaryPassword();
-    const newEmployee: CorporateUser = {
-      id: `c-usr-${Date.now()}`,
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      employeeId: data.employeeId || `EMP-${Math.floor(100 + Math.random() * 900)}`,
-      jobTitle: data.jobTitle,
-      companyId: data.companyId,
-      companyName: data.companyName,
-      department: data.department,
-      departmentName: data.department,
-      corporateRole: data.corporateRole,
-      status: 'INVITED',
-      mustChangePassword: true,
-      tempPassword: generatedTempPass,
-      invitedAt: new Date().toISOString(),
-      isActive: true,
-      totalBookings: 0,
-      totalSpend: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    corporateUsers = [newEmployee, ...corporateUsers];
+    code: string;
+    registrationNo?: string;
+    industry?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    currency?: string;
+    website?: string;
+    adminName?: string;
+    adminEmail?: string;
+    adminPhone?: string;
+    adminPassword?: string;
+  }): Promise<{ company: ApiCompany; initialAdmin?: { id: string; name: string; email: string; tempPassword?: string } }> {
+    const res = await http.post<{ company: ApiCompany; initialAdmin?: { id: string; name: string; email: string; tempPassword?: string } }>(
+      '/corporate/companies',
+      data,
+    );
+    return res.data;
+  },
 
-    // Update company employee count
-    const compIdx = companies.findIndex((c) => c.id === data.companyId);
-    if (compIdx !== -1) {
-      companies[compIdx] = {
-        ...companies[compIdx],
-        employeeCount: (companies[compIdx].employeeCount || 0) + 1,
-      };
-    }
+  async updateCompany(id: string, data: Partial<ApiCompany>): Promise<ApiCompany> {
+    const res = await http.patch<ApiCompany>(`/corporate/companies/${id}`, data);
+    return res.data;
+  },
 
-    return newEmployee;
+  async deactivateCompany(id: string): Promise<ApiCompany> {
+    const res = await http.patch<ApiCompany>(`/corporate/companies/${id}/deactivate`, {});
+    return res.data;
   },
-  updateCorporateUser: async (id: string, data: Partial<CorporateUser>): Promise<CorporateUser | null> => {
-    const idx = corporateUsers.findIndex((u) => u.id === id);
-    if (idx === -1) return null;
-    corporateUsers[idx] = { ...corporateUsers[idx], ...data };
-    return corporateUsers[idx];
+
+  async deleteCompany(id: string): Promise<void> {
+    await http.delete(`/corporate/companies/${id}`);
   },
-  changeCorporateUserPassword: async (email: string, _newPassword: string): Promise<boolean> => {
-    const idx = corporateUsers.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (idx !== -1) {
-      corporateUsers[idx] = {
-        ...corporateUsers[idx],
-        mustChangePassword: false,
-        status: 'ACTIVE',
-        tempPassword: undefined,
-      };
-      return true;
-    }
-    return true;
+
+  // ── Departments ────────────────────────────────────────────────────────────
+
+  async getDepartments(
+    companyId: string,
+    params?: { page?: number; limit?: number; search?: string },
+  ): Promise<PaginatedResponse<ApiDepartment>> {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.search) q.set('search', params.search);
+    const res = await http.get<PaginatedResponse<ApiDepartment>>(
+      `/corporate/companies/${companyId}/departments?${q}`,
+    );
+    return res.data;
   },
-  deleteCorporateUser: async (id: string): Promise<boolean> => {
-    corporateUsers = corporateUsers.filter((u) => u.id !== id);
-    return true;
+
+  async addDepartment(companyId: string, data: { name: string; code?: string }): Promise<ApiDepartment> {
+    const res = await http.post<ApiDepartment>(`/corporate/companies/${companyId}/departments`, data);
+    return res.data;
+  },
+
+  async updateDepartment(companyId: string, deptId: string, data: { name?: string; code?: string }): Promise<ApiDepartment> {
+    const res = await http.patch<ApiDepartment>(`/corporate/companies/${companyId}/departments/${deptId}`, data);
+    return res.data;
+  },
+
+  async deleteDepartment(companyId: string, deptId: string): Promise<void> {
+    await http.delete(`/corporate/companies/${companyId}/departments/${deptId}`);
+  },
+
+  // ── Members ────────────────────────────────────────────────────────────────
+
+  async getMembers(
+    companyId: string,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      corporateRole?: string;
+      departmentId?: string;
+      isActive?: boolean;
+    },
+  ): Promise<PaginatedResponse<ApiMember>> {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.search) q.set('search', params.search);
+    if (params?.corporateRole) q.set('corporateRole', params.corporateRole);
+    if (params?.departmentId) q.set('departmentId', params.departmentId);
+    if (params?.isActive !== undefined) q.set('isActive', String(params.isActive));
+    const res = await http.get<PaginatedResponse<ApiMember>>(
+      `/corporate/companies/${companyId}/members?${q}`,
+    );
+    return res.data;
+  },
+
+  /**
+   * Invite a new employee: directly provisions the User account with corporate company
+   * association and creates the CorporateMember link transactionally on the server.
+   */
+  async inviteMember(
+    companyId: string,
+    data: {
+      name: string;
+      email: string;
+      phone?: string;
+      password?: string;         // temp password — user must change on first login
+      corporateRole: string;
+      employeeCode?: string;
+      jobTitle?: string;
+      departmentId?: string;
+      managerId?: string;
+    },
+  ): Promise<{ member: ApiMember; tempPassword: string; isNewUser: boolean }> {
+    const res = await http.post<{ member: ApiMember; tempPassword: string; isNewUser: boolean }>(
+      `/corporate/companies/${companyId}/members/invite`,
+      data,
+    );
+    return res.data;
+  },
+
+  async updateMember(
+    companyId: string,
+    memberId: string,
+    data: {
+      corporateRole?: string;
+      jobTitle?: string;
+      departmentId?: string;
+      employeeCode?: string;
+      isActive?: boolean;
+    },
+  ): Promise<ApiMember> {
+    const res = await http.patch<ApiMember>(
+      `/corporate/companies/${companyId}/members/${memberId}`,
+      data,
+    );
+    return res.data;
+  },
+
+  async deactivateMember(companyId: string, memberId: string): Promise<ApiMember> {
+    const res = await http.patch<ApiMember>(
+      `/corporate/companies/${companyId}/members/${memberId}/deactivate`,
+      {},
+    );
+    return res.data;
+  },
+
+  async deleteMember(companyId: string, memberId: string): Promise<void> {
+    await http.delete(`/corporate/companies/${companyId}/members/${memberId}`);
+  },
+
+  async getMemberRoleSummary(companyId: string): Promise<Record<string, number>> {
+    const res = await http.get<Record<string, number>>(
+      `/corporate/companies/${companyId}/members/role-summary`,
+    );
+    return res.data;
   },
 
   // ── Travel Policies ────────────────────────────────────────────────────────
-  getTravelPolicies: async (): Promise<TravelPolicy[]> => {
-    return new Promise((res) => setTimeout(() => res([...travelPolicies]), 150));
-  },
-  // Alias for admin pages
-  getPolicies: async (): Promise<TravelPolicy[]> => {
-    return new Promise((res) => setTimeout(() => res([...travelPolicies]), 150));
-  },
-  addPolicy: async (data: Omit<TravelPolicy, 'id' | 'createdAt'>): Promise<TravelPolicy> => {
-    const newPol: TravelPolicy = {
-      ...data,
-      id: `pol-${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    travelPolicies = [newPol, ...travelPolicies];
-    return newPol;
-  },
-  updatePolicy: async (id: string, data: Partial<TravelPolicy>): Promise<TravelPolicy | null> => {
-    const idx = travelPolicies.findIndex((p) => p.id === id);
-    if (idx === -1) return null;
-    travelPolicies[idx] = { ...travelPolicies[idx], ...data };
-    return travelPolicies[idx];
-  },
-  deletePolicy: async (id: string): Promise<boolean> => {
-    travelPolicies = travelPolicies.filter((p) => p.id !== id);
-    return true;
+
+  async getPolicies(
+    companyId: string,
+    params?: { isActive?: boolean; page?: number; limit?: number },
+  ): Promise<PaginatedResponse<ApiTravelPolicy>> {
+    const q = new URLSearchParams();
+    if (params?.isActive !== undefined) q.set('isActive', String(params.isActive));
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    const res = await http.get<PaginatedResponse<ApiTravelPolicy>>(
+      `/corporate/companies/${companyId}/policies?${q}`,
+    );
+    return res.data;
   },
 
-  // ── Corporate Bookings ─────────────────────────────────────────────────────
-  getCorporateBookings: async (): Promise<CorporateBooking[]> => {
-    return new Promise((res) => setTimeout(() => res([...corporateBookings]), 150));
+  async getDefaultPolicy(companyId: string): Promise<ApiTravelPolicy | null> {
+    try {
+      const res = await http.get<ApiTravelPolicy>(`/corporate/companies/${companyId}/policies/default`);
+      return res.data;
+    } catch {
+      return null;
+    }
   },
-  addCorporateBooking: async (booking: Omit<CorporateBooking, 'id' | 'reference' | 'createdAt'>): Promise<CorporateBooking> => {
-    const newBkg: CorporateBooking = {
-      ...booking,
-      id: `cbkg-${Date.now()}`,
-      reference: `CB-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-      createdAt: new Date().toISOString(),
-    };
-    corporateBookings = [newBkg, ...corporateBookings];
-    return newBkg;
+
+  async addPolicy(
+    companyId: string,
+    data: {
+      name: string;
+      description?: string;
+      isDefault?: boolean;
+      requiresApproval?: boolean;
+      maxBudgetPerTrip?: number;
+      maxBudgetPerDay?: number;
+      allowedClasses?: string[];
+      advanceBookingDays?: number;
+      currency?: string;
+      approvalSteps?: { stepOrder: number; stepName?: string; approverRole?: string; approverId?: string }[];
+    },
+  ): Promise<ApiTravelPolicy> {
+    const res = await http.post<ApiTravelPolicy>(`/corporate/companies/${companyId}/policies`, data);
+    return res.data;
   },
-  updateCorporateBooking: async (id: string, data: Partial<CorporateBooking>): Promise<CorporateBooking | null> => {
-    const idx = corporateBookings.findIndex((b) => b.id === id);
-    if (idx === -1) return null;
-    corporateBookings[idx] = { ...corporateBookings[idx], ...data, updatedAt: new Date().toISOString() };
-    return corporateBookings[idx];
+
+  async updatePolicy(
+    companyId: string,
+    policyId: string,
+    data: Partial<{
+      name: string;
+      description: string;
+      isDefault: boolean;
+      isActive: boolean;
+      requiresApproval: boolean;
+      maxBudgetPerTrip: number;
+      maxBudgetPerDay: number;
+      allowedClasses: string[];
+      advanceBookingDays: number;
+      currency: string;
+      approvalSteps: { stepOrder: number; stepName?: string; approverRole?: string; approverId?: string }[];
+    }>,
+  ): Promise<ApiTravelPolicy> {
+    const res = await http.patch<ApiTravelPolicy>(
+      `/corporate/companies/${companyId}/policies/${policyId}`,
+      data,
+    );
+    return res.data;
   },
-  updateBookingStatus: async (id: string, status: CorporateBooking['status'], reviewer?: string, reason?: string): Promise<CorporateBooking | null> => {
-    const idx = corporateBookings.findIndex((b) => b.id === id);
-    if (idx === -1) return null;
-    corporateBookings[idx] = {
-      ...corporateBookings[idx],
-      status,
-      approvedBy: status === 'APPROVED' ? (reviewer || 'Corporate Approver') : undefined,
-      approvedAt: status === 'APPROVED' ? new Date().toISOString() : undefined,
-      rejectionReason: status === 'REJECTED' ? (reason || 'Exceeds budget policy') : undefined,
-      updatedAt: new Date().toISOString(),
-    };
-    return corporateBookings[idx];
+
+  async deletePolicy(companyId: string, policyId: string): Promise<void> {
+    await http.delete(`/corporate/companies/${companyId}/policies/${policyId}`);
+  },
+
+  // ── Travel Requests ────────────────────────────────────────────────────────
+
+  async getTravelRequests(
+    companyId: string,
+    params?: {
+      status?: string;
+      departmentId?: string;
+      requesterId?: string;
+      fromDate?: string;
+      toDate?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+    },
+  ): Promise<PaginatedResponse<ApiTravelRequest>> {
+    const q = new URLSearchParams();
+    if (params?.status) q.set('status', params.status);
+    if (params?.departmentId) q.set('departmentId', params.departmentId);
+    if (params?.requesterId) q.set('requesterId', params.requesterId);
+    if (params?.fromDate) q.set('fromDate', params.fromDate);
+    if (params?.toDate) q.set('toDate', params.toDate);
+    if (params?.search) q.set('search', params.search);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    const res = await http.get<PaginatedResponse<ApiTravelRequest>>(
+      `/corporate/companies/${companyId}/travel-requests?${q}`,
+    );
+    return res.data;
+  },
+
+  async getTravelRequest(companyId: string, requestId: string): Promise<ApiTravelRequest> {
+    const res = await http.get<ApiTravelRequest>(
+      `/corporate/companies/${companyId}/travel-requests/${requestId}`,
+    );
+    return res.data;
+  },
+
+  async approveRequest(
+    companyId: string,
+    requestId: string,
+    data?: { comment?: string; grantBudgetOverride?: boolean; budgetOverrideReason?: string },
+  ): Promise<ApiTravelRequest> {
+    const res = await http.post<ApiTravelRequest>(
+      `/corporate/companies/${companyId}/travel-requests/${requestId}/approve`,
+      data ?? {},
+    );
+    return res.data;
+  },
+
+  async rejectRequest(
+    companyId: string,
+    requestId: string,
+    data: { reason: string; comment?: string },
+  ): Promise<ApiTravelRequest> {
+    const res = await http.post<ApiTravelRequest>(
+      `/corporate/companies/${companyId}/travel-requests/${requestId}/reject`,
+      data,
+    );
+    return res.data;
+  },
+
+  async cancelRequest(
+    companyId: string,
+    requestId: string,
+    reason: string,
+  ): Promise<ApiTravelRequest> {
+    const res = await http.post<ApiTravelRequest>(
+      `/corporate/companies/${companyId}/travel-requests/${requestId}/cancel`,
+      { reason },
+    );
+    return res.data;
+  },
+
+  async completeRequest(companyId: string, requestId: string, notes?: string): Promise<ApiTravelRequest> {
+    const res = await http.post<ApiTravelRequest>(
+      `/corporate/companies/${companyId}/travel-requests/${requestId}/complete`,
+      { notes },
+    );
+    return res.data;
+  },
+
+  async getApprovalHistory(companyId: string, requestId: string): Promise<ApiApproval[]> {
+    const res = await http.get<ApiApproval[]>(
+      `/corporate/companies/${companyId}/travel-requests/${requestId}/approvals`,
+    );
+    return res.data;
+  },
+
+  async getPendingApprovals(companyId: string): Promise<ApiApproval[]> {
+    const res = await http.get<ApiApproval[]>(
+      `/corporate/companies/${companyId}/travel-requests/pending-approvals`,
+    );
+    return res.data;
+  },
+
+  // ── Budgets ────────────────────────────────────────────────────────────────
+
+  async getBudgets(
+    companyId: string,
+    params?: { fiscalYear?: number; departmentId?: string; page?: number; limit?: number },
+  ): Promise<PaginatedResponse<ApiCorporateBudget>> {
+    const q = new URLSearchParams();
+    if (params?.fiscalYear) q.set('fiscalYear', String(params.fiscalYear));
+    if (params?.departmentId) q.set('departmentId', params.departmentId);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    const res = await http.get<PaginatedResponse<ApiCorporateBudget>>(
+      `/corporate/companies/${companyId}/budgets?${q}`,
+    );
+    return res.data;
+  },
+
+  async getBudgetSummary(companyId: string, fiscalYear: number) {
+    const res = await http.get(`/corporate/companies/${companyId}/budgets/summary/${fiscalYear}`);
+    return res.data;
+  },
+
+  async addBudget(
+    companyId: string,
+    data: {
+      fiscalYear: number;
+      fiscalQuarter?: number;
+      totalBudget: number;
+      currency?: string;
+      notes?: string;
+      departmentId?: string;
+    },
+  ): Promise<ApiCorporateBudget> {
+    const res = await http.post<ApiCorporateBudget>(`/corporate/companies/${companyId}/budgets`, data);
+    return res.data;
+  },
+
+  async updateBudget(companyId: string, budgetId: string, data: { totalBudget?: number; notes?: string }): Promise<ApiCorporateBudget> {
+    const res = await http.patch<ApiCorporateBudget>(
+      `/corporate/companies/${companyId}/budgets/${budgetId}`,
+      data,
+    );
+    return res.data;
+  },
+
+  // ── Reports ────────────────────────────────────────────────────────────────
+
+  async getSpendReport(
+    companyId: string,
+    params?: { fiscalYear?: number; departmentId?: string; fromDate?: string; toDate?: string },
+  ): Promise<ApiSpendReport> {
+    const q = new URLSearchParams();
+    if (params?.fiscalYear) q.set('fiscalYear', String(params.fiscalYear));
+    if (params?.departmentId) q.set('departmentId', params.departmentId);
+    if (params?.fromDate) q.set('fromDate', params.fromDate);
+    if (params?.toDate) q.set('toDate', params.toDate);
+    const res = await http.get<ApiSpendReport>(
+      `/corporate/companies/${companyId}/reports/spend?${q}`,
+    );
+    return res.data;
+  },
+
+  async getRequestStats(companyId: string, params?: { fiscalYear?: number; departmentId?: string }) {
+    const q = new URLSearchParams();
+    if (params?.fiscalYear) q.set('fiscalYear', String(params.fiscalYear));
+    if (params?.departmentId) q.set('departmentId', params.departmentId);
+    const res = await http.get(`/corporate/companies/${companyId}/reports/requests?${q}`);
+    return res.data;
+  },
+
+  async getPolicyCompliance(companyId: string, params?: { fiscalYear?: number }) {
+    const q = new URLSearchParams();
+    if (params?.fiscalYear) q.set('fiscalYear', String(params.fiscalYear));
+    const res = await http.get(`/corporate/companies/${companyId}/reports/policy-compliance?${q}`);
+    return res.data;
+  },
+
+  async getApproverPerformance(companyId: string, params?: { fiscalYear?: number }) {
+    const q = new URLSearchParams();
+    if (params?.fiscalYear) q.set('fiscalYear', String(params.fiscalYear));
+    const res = await http.get(`/corporate/companies/${companyId}/reports/approver-performance?${q}`);
+    return res.data;
+  },
+
+  // ── Legacy aliases kept for backward-compat with older pages ──────────────
+  // These will be removed once all pages are updated.
+
+  /** @deprecated Use getMembers(companyId) */
+  async getCorporateUsers() {
+    // Return empty — callers should be updated to pass companyId
+    return { items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
+  },
+
+  /** @deprecated Use addPolicy(companyId, data) */
+  async getTravelPolicies() {
+    return { items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
+  },
+
+  /** @deprecated Use getTravelRequests(companyId) */
+  async getCorporateBookings() {
+    return { items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
   },
 };
