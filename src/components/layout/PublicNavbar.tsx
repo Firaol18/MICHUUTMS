@@ -6,6 +6,7 @@ import { useLanguageStore } from '@/store/useLanguageStore';
 import type { LanguageCode } from '@/store/useLanguageStore';
 import {
   Compass,
+  Plane,
   Sun,
   Moon,
   LogIn,
@@ -234,6 +235,19 @@ export const PublicNavbar: React.FC = () => {
 
             <NavLink to="/tours" style={({ isActive }) => getNavLinkStyle(isActive)}>
               <Compass size={14} /> Tours
+            </NavLink>
+
+            <NavLink
+              to="/flights"
+              style={({ isActive }) =>
+                getNavLinkStyle(
+                  isActive ||
+                  location.pathname.startsWith('/flights') ||
+                  location.pathname.startsWith('/hotels')
+                )
+              }
+            >
+              <Plane size={14} /> Flights & Hotels
             </NavLink>
 
             <NavLink to="/events" style={({ isActive }) => getNavLinkStyle(isActive)}>

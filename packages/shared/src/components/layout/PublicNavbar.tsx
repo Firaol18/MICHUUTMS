@@ -243,12 +243,17 @@ export const PublicNavbar: React.FC = () => {
               <Compass size={14} /> Tours
             </NavLink>
 
-            <NavLink to="/flights" style={({ isActive }) => getNavLinkStyle(isActive)}>
-              <Plane size={14} /> Flights
-            </NavLink>
-
-            <NavLink to="/hotels" style={({ isActive }) => getNavLinkStyle(isActive)}>
-              <Hotel size={14} /> Hotels
+            <NavLink
+              to="/flights"
+              style={({ isActive }) =>
+                getNavLinkStyle(
+                  isActive ||
+                  location.pathname.startsWith('/flights') ||
+                  location.pathname.startsWith('/hotels')
+                )
+              }
+            >
+              <Plane size={14} /> Flights & Hotels
             </NavLink>
 
             <NavLink to="/events" style={({ isActive }) => getNavLinkStyle(isActive)}>
@@ -978,6 +983,20 @@ export const PublicNavbar: React.FC = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Compass size={18} /> {t('explore_tours')}
+              </NavLink>
+
+              <NavLink
+                to="/flights"
+                className={({ isActive }) =>
+                  `pub-nav-mobile-link ${
+                    isActive || location.pathname.startsWith('/flights') || location.pathname.startsWith('/hotels')
+                      ? 'active'
+                      : ''
+                  }`
+                }
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Plane size={18} /> Flights & Hotels
               </NavLink>
 
               <NavLink

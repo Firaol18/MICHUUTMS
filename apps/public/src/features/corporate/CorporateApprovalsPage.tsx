@@ -26,7 +26,6 @@ import {
 export const CorporateApprovalsPage: React.FC = () => {
   const { user } = useAuthStore();
   const [requests, setRequests] = useState<ApiTravelRequest[]>([]);
-  const [resolvedCompanyId, setResolvedCompanyId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'PENDING' | 'HISTORY'>('PENDING');
 
@@ -35,38 +34,34 @@ export const CorporateApprovalsPage: React.FC = () => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [comment, setComment] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [grantBudgetOverride, setGrantBudgetOverride] = useState(false);
+  const [approvalHistory, setApprovalHistory] = useState<ApiApproval[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
 
   const rawCompanyId = user?.companyId || 'comp-1';
+  const [resolvedCompanyId, setResolvedCompanyId] = useState<string>(rawCompanyId);
 
   const loadRequests = useCallback(async () => {
     setLoading(true);
     try {
-      let cid = resolvedCompanyId;
-      if (!cid) {
-        const compList = await corporateService.getCompanies({ limit: 50 });
-        const matched = compList.items.find(
-          (c) => c.id === rawCompanyId || (user?.companyName && c.name.toLowerCase() === user.companyName.toLowerCase())
-        );
-        if (matched) {
-          cid = matched.id;
-          setResolvedCompanyId(matched.id);
-        } else if (rawCompanyId && rawCompanyId !== 'comp-1') {
-          cid = rawCompanyId;
-          setResolvedCompanyId(rawCompanyId);
-        }
+      let cid = rawCompanyId;
+      const compList = await corporateService.getCompanies({ limit: 50 });
+      const matched = compList.items.find(
+        (c) => c.id === rawCompanyId || (user?.companyName && c.name.toLowerCase() === user.companyName.toLowerCase())
+      );
+      if (matched) {
+        cid = matched.id;
+        setResolvedCompanyId(matched.id);
       }
 
-      if (cid) {
-        const res = await corporateService.getTravelRequests(cid, { limit: 100 });
-        setRequests(res.items);
-      }
+      const res = await corporateService.getTravelRequests(cid, { limit: 100 });
+      setRequests(res.items);
     } catch {
       // Fallback
     } finally {
       setLoading(false);
     }
-  }, [resolvedCompanyId, rawCompanyId, user?.companyName]);
+  }, [rawCompanyId, user?.companyName]);
 
   useEffect(() => {
     loadRequests();
@@ -76,6 +71,13 @@ export const CorporateApprovalsPage: React.FC = () => {
     setSelectedRequest(req);
     setComment('');
     setRejectionReason('');
+    setGrantBudgetOverride(false);
+    setApprovalHistory([]);
+    if (resolvedCompanyId) {
+      corporateService.getApprovalHistory(resolvedCompanyId, req.id)
+        .then(setApprovalHistory)
+        .catch(() => setApprovalHistory([]));
+    }
     setIsReviewModalOpen(true);
   };
 
@@ -85,6 +87,7 @@ export const CorporateApprovalsPage: React.FC = () => {
     try {
       await corporateService.approveRequest(resolvedCompanyId, selectedRequest.id, {
         comment,
+        grantBudgetOverride,
       });
       setIsReviewModalOpen(false);
       loadRequests();
@@ -247,11 +250,37 @@ export const CorporateApprovalsPage: React.FC = () => {
               <div><strong>Cost:</strong> ${Number(selectedRequest.estimatedCost).toLocaleString()} {selectedRequest.currency}</div>
             </div>
 
+            {/* Approval History if multiple steps */}
+            {approvalHistory.length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '0.35rem' }}>Approval Workflow Progress</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', backgroundColor: 'var(--bg-secondary)', padding: '0.6rem', borderRadius: '8px' }}>
+                  {approvalHistory.map((a) => (
+                    <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', alignItems: 'center' }}>
+                      <span>Step {a.stepOrder}: <strong>{a.approverName || 'Approver'}</strong></span>
+                      <span style={{ color: a.decision === 'APPROVED' ? '#16a34a' : a.decision === 'REJECTED' ? '#ef4444' : '#f59e0b', fontWeight: 700 }}>
+                        {a.decision}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
               <div>
                 <label style={{ fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '0.3rem' }}>Approver Comment (Optional)</label>
                 <textarea rows={2} placeholder="Feedback or clearance notes..." value={comment} onChange={(e) => setComment(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', boxSizing: 'border-box' }} />
               </div>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '12px', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={grantBudgetOverride}
+                  onChange={(e) => setGrantBudgetOverride(e.target.checked)}
+                />
+                <span>Grant formal <strong>Budget / Policy Override</strong> for this booking</span>
+              </label>
 
               <div style={{ padding: '0.75rem', backgroundColor: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 700, display: 'block', color: '#ef4444', marginBottom: '0.3rem' }}>If Rejecting, Specify Reason:</label>

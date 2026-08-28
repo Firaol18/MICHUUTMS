@@ -504,6 +504,30 @@ export const corporateService = {
     return res.data;
   },
 
+  async addExistingMember(
+    companyId: string,
+    data: {
+      userId: string;
+      corporateRole: string;
+      departmentId?: string;
+      jobTitle?: string;
+      employeeCode?: string;
+    },
+  ): Promise<ApiMember> {
+    const res = await http.post<ApiMember>(
+      `/corporate/companies/${companyId}/members`,
+      data,
+    );
+    return res.data;
+  },
+
+  async getMember(companyId: string, memberId: string): Promise<ApiMember> {
+    const res = await http.get<ApiMember>(
+      `/corporate/companies/${companyId}/members/${memberId}`,
+    );
+    return res.data;
+  },
+
   async inviteEmployee(data: {
     name: string;
     email: string;
@@ -661,6 +685,34 @@ export const corporateService = {
 
   // ── Travel Requests ────────────────────────────────────────────────────────
 
+  async createTravelRequest(
+    companyId: string,
+    data: {
+      origin: string;
+      destination: string;
+      departureDate: string;
+      returnDate?: string;
+      tripType: 'ONE_WAY' | 'ROUND_TRIP' | 'MULTI_CITY';
+      travelClass: 'ECONOMY' | 'PREMIUM_ECONOMY' | 'BUSINESS' | 'FIRST';
+      estimatedCost: number;
+      currency?: string;
+      purpose: string;
+      projectCode?: string;
+      departmentId?: string;
+      travelerId?: string;
+      policyId?: string;
+      hotelRequired?: boolean;
+      estimatedHotelCost?: number;
+      metadata?: Record<string, any>;
+    },
+  ): Promise<ApiTravelRequest> {
+    const res = await http.post<ApiTravelRequest>(
+      `/corporate/companies/${companyId}/travel-requests`,
+      data,
+    );
+    return res.data;
+  },
+
   async getTravelRequests(
     companyId: string,
     params?: {
@@ -689,9 +741,70 @@ export const corporateService = {
     return res.data;
   },
 
+  async getMyTravelRequests(
+    companyId: string,
+    params?: {
+      status?: string;
+      fromDate?: string;
+      toDate?: string;
+      page?: number;
+      limit?: number;
+    },
+  ): Promise<PaginatedResponse<ApiTravelRequest>> {
+    const q = new URLSearchParams();
+    if (params?.status) q.set('status', params.status);
+    if (params?.fromDate) q.set('fromDate', params.fromDate);
+    if (params?.toDate) q.set('toDate', params.toDate);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    const res = await http.get<PaginatedResponse<ApiTravelRequest>>(
+      `/corporate/companies/${companyId}/travel-requests/my?${q}`,
+    );
+    return res.data;
+  },
+
+  async getPendingApprovals(companyId: string): Promise<ApiApproval[]> {
+    const res = await http.get<ApiApproval[]>(
+      `/corporate/companies/${companyId}/travel-requests/pending-approvals`,
+    );
+    return res.data;
+  },
+
   async getTravelRequest(companyId: string, requestId: string): Promise<ApiTravelRequest> {
     const res = await http.get<ApiTravelRequest>(
       `/corporate/companies/${companyId}/travel-requests/${requestId}`,
+    );
+    return res.data;
+  },
+
+  async updateTravelRequest(
+    companyId: string,
+    requestId: string,
+    data: Partial<{
+      origin: string;
+      destination: string;
+      departureDate: string;
+      returnDate: string;
+      tripType: string;
+      travelClass: string;
+      estimatedCost: number;
+      purpose: string;
+      projectCode: string;
+      hotelRequired: boolean;
+      estimatedHotelCost: number;
+    }>,
+  ): Promise<ApiTravelRequest> {
+    const res = await http.patch<ApiTravelRequest>(
+      `/corporate/companies/${companyId}/travel-requests/${requestId}`,
+      data,
+    );
+    return res.data;
+  },
+
+  async submitTravelRequest(companyId: string, requestId: string): Promise<ApiTravelRequest> {
+    const res = await http.post<ApiTravelRequest>(
+      `/corporate/companies/${companyId}/travel-requests/${requestId}/submit`,
+      {},
     );
     return res.data;
   },
@@ -743,13 +856,6 @@ export const corporateService = {
   async getApprovalHistory(companyId: string, requestId: string): Promise<ApiApproval[]> {
     const res = await http.get<ApiApproval[]>(
       `/corporate/companies/${companyId}/travel-requests/${requestId}/approvals`,
-    );
-    return res.data;
-  },
-
-  async getPendingApprovals(companyId: string): Promise<ApiApproval[]> {
-    const res = await http.get<ApiApproval[]>(
-      `/corporate/companies/${companyId}/travel-requests/pending-approvals`,
     );
     return res.data;
   },
